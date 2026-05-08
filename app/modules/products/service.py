@@ -41,7 +41,7 @@ class ProductService:
         return self.repository.delete(product_id)
 
     def _save_photo(self, photo: UploadFile) -> str:
-        products_dir = "static/media/products"
+        products_dir = os.path.join(os.environ["CONTAINER_MEDIA_PATH"], "products")
         os.makedirs(products_dir, exist_ok=True)
 
         ext = photo.filename.split(".")[-1]

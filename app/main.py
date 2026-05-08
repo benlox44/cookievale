@@ -12,11 +12,12 @@ from app.modules.products.admin_router import router as products_admin_router
 from app.modules.products.client_router import router as products_client_router
 from app.core.templates import templates
 
+import os
+
 app = FastAPI(title="CookieVale API")
 
-
 app.mount("/public", StaticFiles(directory="public"), name="public")
-app.mount("/media", StaticFiles(directory="static/media"), name="media")
+app.mount("/media", StaticFiles(directory=os.environ["CONTAINER_MEDIA_PATH"]), name="media")
 
 
 # Exception handler to gracefully redirect HTMX and normal browser requests to login

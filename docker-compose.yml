@@ -3,10 +3,13 @@ services:
     build: .
     volumes:
       - .:/app
+      - ${MEDIA_ROOT}:/app_media
     ports:
       - "8000:8000"
     env_file:
       - .env
+    environment:
+      - CONTAINER_MEDIA_PATH=/app_media
     depends_on:
       db:
         condition: service_healthy

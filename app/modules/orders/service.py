@@ -35,7 +35,7 @@ class OrderService:
 
         saved_paths = []
         if photos and photos[0].filename:
-            order_dir = f"static/media/orders/{order.id}"
+            order_dir = os.path.join(os.environ["CONTAINER_MEDIA_PATH"], f"orders/{order.id}")
             os.makedirs(order_dir, exist_ok=True)
 
             for photo in photos[:3]:
