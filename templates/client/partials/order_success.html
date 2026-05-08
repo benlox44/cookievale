@@ -1,0 +1,23 @@
+<div class="text-center py-12 flex flex-col items-center">
+    <!-- Logo -->
+    <a href="/" class="flex flex-col items-center gap-2 group mb-8">
+        <div
+            class="w-14 h-14 rounded-full bg-cookie-pink/30 flex items-center justify-center group-hover:bg-cookie-pink/50 transition-colors">
+            <img src="/public/icons/icon.png" alt="CookieVale" class="w-10 h-10 object-contain">
+        </div>
+        <span class="font-serif font-bold text-3xl text-cookie-brown tracking-tight">CookieVale</span>
+    </a>
+
+    <div class="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-green-100 mb-6">
+        <svg class="h-8 w-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+        </svg>
+    </div>
+
+    <h2 class="text-2xl font-bold text-gray-900 mb-2">¡Orden Enviada con Éxito!</h2>
+
+    <p class="text-sm font-medium text-cookie-brown/70">
+        Te contactaremos por <span class="text-cookie-pink font-bold text-lg">@{{ order.customer_instagram
+            }}</span>
+    </p>
+</div>

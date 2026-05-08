@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+{% block title %}Productos - CookieVale{% endblock %}
+
+{% block content %}
+<div class="w-full max-w-6xl mx-auto">
+    <!-- Header -->
+    <div class="cv-card mb-6 flex flex-col md:flex-row justify-between items-center py-4 px-6 md:px-8 gap-4">
+        <div class="flex items-center gap-4 w-full md:w-auto">
+            <a href="/admin" class="cv-btn text-xs px-4 py-2">← Volver</a>
+            <h1 class="cv-h2 m-0">Productos</h1>
+        </div>
+
+        <a href="/admin/products/new" class="cv-btn text-xs px-4 py-2 flex items-center gap-1.5">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4" />
+            </svg>
+            Crear Nuevo Producto
+        </a>
+    </div>
+
+    <!-- Product Grid -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-5">
+        {% for product in products %}
+        <div class="cv-card p-4 flex flex-col {% if not product.is_active %}opacity-50{% endif %}">
+            <img src="{{ product.image_url }}" alt="{{ product.name }}"
+                class="w-full h-32 object-cover rounded-xl mb-3 border border-cookie-pink/20">
+
+            <h3 class="cv-h2 text-sm mb-0.5">{{ product.name }}</h3>
+            <p class="text-sm font-bold text-cookie-golden mb-3">${{ '{:,.0f}'.format(product.price) }}</p>
+            <p class="text-xs text-cookie-brown/70 mb-4 line-clamp-2 min-h-[2rem]">
+                {{ product.description or 'Sin descripción' }}
+            </p>
+
+            <div class="mt-auto flex justify-between items-center pt-3 border-t border-cookie-pink/20">
+                <span
+                    class="text-[10px] font-bold px-2 py-1 rounded-full {% if product.is_active %}bg-green-100 text-green-700{% else %}bg-red-100 text-red-700{% endif %}">
+                    {{ "Activo" if product.is_active else "Inactivo" }}
+                </span>
+                <div class="flex gap-2 items-center">
+                    <form action="/admin/products/{{ product.id }}/delete" method="POST" x-data="{ showConfirm: false }"
+                        @submit.prevent="if(showConfirm) { $el.submit() } else { showConfirm = true }">
+                        <button type="submit"
+                            class="w-8 h-8 rounded-full bg-red-50 text-red-500 hover:bg-red-500 hover:text-white flex items-center justify-center transition-colors border border-red-100">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                        </button>
+
+                        <!-- Confirmation Modal -->
+                        <div x-show="showConfirm"
+                            class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4"
+                            style="display: none;">
+                            <div @click.away="showConfirm = false"
+                                class="bg-white rounded-2xl p-6 max-w-sm w-full shadow-2xl transform transition-all">
+                                <h3 class="text-lg font-bold text-cookie-brown mb-2">Eliminar Producto</h3>
+                                <p class="text-cookie-brown/70 text-sm mb-6">¿Estás seguro de eliminar este producto?
+                                </p>
+                                <div class="flex justify-end gap-3">
+                                    <button type="button" @click="showConfirm = false"
+                                        class="cv-btn bg-cookie-cream text-cookie-brown border-cookie-pink/40 hover:bg-cookie-pink/10 hover:border-cookie-golden">Cancelar</button>
+                                    <button type="button" @click="$el.closest('form').submit()"
+                                        class="cv-btn bg-red-500 hover:bg-red-600 text-white border-red-500 shadow-red-200">Eliminar</button>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                    <a href="/admin/products/{{ product.id }}"
+                        class="text-xs px-3 py-1.5 rounded-full bg-cookie-cream border border-cookie-pink/40 text-cookie-brown hover:border-cookie-golden hover:bg-cookie-pink/10 transition-colors font-medium">
+                        Editar
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <div class="col-span-1 sm:col-span-2 md:col-span-3 cv-card py-12 text-center text-cookie-brown/50">
+            <div class="flex flex-col items-center justify-center">
+                <div
+                    class="w-16 h-16 bg-cookie-pink/20 rounded-full flex items-center justify-center mb-3 border border-cookie-pink/30">
+                    <svg class="w-8 h-8 text-cookie-brown/30" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                            d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+                    </svg>
+                </div>
+                <p class="font-medium text-sm">No hay productos creados.</p>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

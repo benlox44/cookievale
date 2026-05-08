@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block title %}Panel de Órdenes - CookieVale{% endblock %}
+
+{% block content %}
+<div class="w-full max-w-6xl mx-auto">
+    <!-- Header -->
+    <div class="cv-card mb-6 flex flex-col md:flex-row justify-between items-center py-4 px-6 md:px-8 gap-4">
+        <div class="flex items-center justify-start gap-4 flex-shrink-0">
+            <a href="/admin" class="cv-btn text-xs px-4 py-2">← Volver</a>
+            <h1 class="cv-h2 m-0">Órdenes</h1>
+        </div>
+
+        
+        
+        <!-- Filters -->
+        <div x-data="{ currentFilter: '{{ current_status.value if current_status else 'all' }}' }"
+            class="flex flex-nowrap gap-2 overflow-x-auto w-full md:w-auto mt-4 md:mt-0 hide-scrollbar justify-start md:justify-end p-1 -mx-1">
+
+            <button @click="currentFilter = 'all'" hx-get="/admin/orders" hx-target="#orders-table-container"
+                class="px-4 py-1.5 text-xs rounded-full transition-all whitespace-nowrap border shadow-sm"
+                :class="currentFilter === 'all' ? 'bg-cookie-cream text-cookie-brown border-cookie-golden/50 ring-2 ring-cookie-golden/30 opacity-100 font-bold' : 'bg-white text-cookie-brown border-cookie-pink/40 hover:bg-cookie-cream/50 opacity-70 hover:opacity-100 font-medium'">
+                Todas
+            </button>
+            <button @click="currentFilter = 'pending'" hx-get="/admin/orders?status=pending" hx-target="#orders-table-container"
+                class="px-4 py-1.5 text-xs rounded-full transition-all whitespace-nowrap border shadow-sm"
+                :class="currentFilter === 'pending' ? 'bg-amber-100 text-amber-800 border-amber-300 ring-2 ring-amber-300 opacity-100 font-bold' : 'bg-white text-cookie-brown border-cookie-pink/40 hover:bg-amber-50 opacity-70 hover:opacity-100 font-medium'">
+                Pendiente
+            </button>
+            <button @click="currentFilter = 'confirmed'" hx-get="/admin/orders?status=confirmed" hx-target="#orders-table-container"
+                class="px-4 py-1.5 text-xs rounded-full transition-all whitespace-nowrap border shadow-sm"
+                :class="currentFilter === 'confirmed' ? 'bg-sky-100 text-sky-800 border-sky-300 ring-2 ring-sky-300 opacity-100 font-bold' : 'bg-white text-cookie-brown border-cookie-pink/40 hover:bg-sky-50 opacity-70 hover:opacity-100 font-medium'">
+                Confirmada
+            </button>
+            <button @click="currentFilter = 'paid'" hx-get="/admin/orders?status=paid" hx-target="#orders-table-container"
+                class="px-4 py-1.5 text-xs rounded-full transition-all whitespace-nowrap border shadow-sm"
+                :class="currentFilter === 'paid' ? 'bg-emerald-100 text-emerald-800 border-emerald-300 ring-2 ring-emerald-300 opacity-100 font-bold' : 'bg-white text-cookie-brown border-cookie-pink/40 hover:bg-emerald-50 opacity-70 hover:opacity-100 font-medium'">
+                Pagada
+            </button>
+            <button @click="currentFilter = 'delivered'" hx-get="/admin/orders?status=delivered" hx-target="#orders-table-container"
+                class="px-4 py-1.5 text-xs rounded-full transition-all whitespace-nowrap border shadow-sm"
+                :class="currentFilter === 'delivered' ? 'bg-purple-100 text-purple-800 border-purple-300 ring-2 ring-purple-300 opacity-100 font-bold' : 'bg-white text-cookie-brown border-cookie-pink/40 hover:bg-purple-50 opacity-70 hover:opacity-100 font-medium'">
+                Entregada
+            </button>
+            <button @click="currentFilter = 'rejected'" hx-get="/admin/orders?status=rejected" hx-target="#orders-table-container"
+                class="px-4 py-1.5 text-xs rounded-full transition-all whitespace-nowrap border shadow-sm"
+                :class="currentFilter === 'rejected' ? 'bg-rose-100 text-rose-800 border-rose-300 ring-2 ring-rose-300 opacity-100 font-bold' : 'bg-white text-cookie-brown border-cookie-pink/40 hover:bg-rose-50 opacity-70 hover:opacity-100 font-medium'">
+                Rechazada
+            </button>
+        </div>
+    </div>
+
+    <!-- Table -->
+    <div class="cv-card p-0 overflow-hidden">
+        <div id="orders-table-container">
+            {% include "admin/partials/orders_table.html" %}
+        </div>
+    </div>
+</div>
+{% endblock %}

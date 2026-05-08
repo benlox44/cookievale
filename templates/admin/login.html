@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}Admin Login - CookieVale{% endblock %}
+
+{% block content %}
+<div class="flex items-center justify-center min-h-[75vh]">
+    <div class="cv-card max-w-sm w-full shadow-[0_8px_30px_rgba(212,149,106,0.1)] p-10">
+        <!-- Icon -->
+        <div
+            class="w-16 h-16 mx-auto bg-cookie-pink/20 rounded-full flex items-center justify-center mb-5 border border-cookie-pink/30">
+            <svg class="w-8 h-8 text-cookie-golden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                    d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+            </svg>
+        </div>
+
+        <h1 class="cv-h2 text-center mb-1">Acceso Admin</h1>
+        <p class="text-center text-cookie-brown/50 text-sm mb-6">CookieVale · Panel de Control</p>
+
+        {% if error %}
+        <div class="flex items-center gap-2 bg-red-50 border border-red-200 text-red-700 text-sm rounded-xl p-3 mb-5">
+            <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            {{ error }}
+        </div>
+        {% endif %}
+
+        <form action="/admin/login" method="POST" class="space-y-4">
+            <div>
+                <label for="password" class="cv-label block mb-1.5">Contraseña</label>
+                <input id="password" name="password" type="password" required class="cv-input" placeholder="••••••••">
+            </div>
+            <button type="submit" class="cv-btn w-full mt-2">
+                Ingresar al Panel
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7" />
+                </svg>
+            </button>
+        </form>
+    </div>
+</div>
+{% endblock %}

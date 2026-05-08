@@ -1,0 +1,203 @@
+{% extends "base.html" %}
+{% block title %}Orden #{{ order.id }} - CookieVale{% endblock %}
+
+{% block content %}
+<div x-data="orderDetail()">
+    <div class="cv-card p-0 overflow-hidden shadow-[0_4px_20px_rgba(212,149,106,0.1)] mb-8">
+
+        <!-- Header -->
+        <div class="px-6 py-4 border-b border-cookie-pink/30 flex items-center gap-4 bg-cookie-cream/50">
+            <a href="/admin/orders" class="cv-btn text-xs px-4 py-2">← Volver</a>
+            <h1 class="cv-h2 mb-0">Orden #{{ order.id }}</h1>
+
+
+            <div class="ml-auto w-full md:w-auto">
+                <form action="/admin/orders/{{ order.id }}/status" method="POST"
+                    class="flex flex-wrap items-center gap-1.5 justify-end m-0">
+                    <span class="cv-label text-cookie-brown mb-0 mr-2 hidden md:inline-block">Estado:</span>
+                    <button type="submit" name="status" value="pending"
+                        class="px-3 py-1.5 text-xs font-bold rounded-full transition-all border shadow-sm {% if order.status.value == 'pending' %}bg-amber-100 text-amber-800 border-amber-300 ring-2 ring-amber-300{% else %}bg-white text-cookie-brown border-cookie-pink/40 hover:bg-amber-50 opacity-70 hover:opacity-100{% endif %}">
+                        Pendiente
+                    </button>
+                    <button type="submit" name="status" value="confirmed"
+                        class="px-3 py-1.5 text-xs font-bold rounded-full transition-all border shadow-sm {% if order.status.value == 'confirmed' %}bg-sky-100 text-sky-800 border-sky-300 ring-2 ring-sky-300{% else %}bg-white text-cookie-brown border-cookie-pink/40 hover:bg-sky-50 opacity-70 hover:opacity-100{% endif %}">
+                        Confirmada
+                    </button>
+                    <button type="submit" name="status" value="paid"
+                        class="px-3 py-1.5 text-xs font-bold rounded-full transition-all border shadow-sm {% if order.status.value == 'paid' %}bg-emerald-100 text-emerald-800 border-emerald-300 ring-2 ring-emerald-300{% else %}bg-white text-cookie-brown border-cookie-pink/40 hover:bg-emerald-50 opacity-70 hover:opacity-100{% endif %}">
+                        Pagada
+                    </button>
+                    <button type="submit" name="status" value="delivered"
+                        class="px-3 py-1.5 text-xs font-bold rounded-full transition-all border shadow-sm {% if order.status.value == 'delivered' %}bg-purple-100 text-purple-800 border-purple-300 ring-2 ring-purple-300{% else %}bg-white text-cookie-brown border-cookie-pink/40 hover:bg-purple-50 opacity-70 hover:opacity-100{% endif %}">
+                        Entregada
+                    </button>
+                    <button type="submit" name="status" value="rejected"
+                        class="px-3 py-1.5 text-xs font-bold rounded-full transition-all border shadow-sm {% if order.status.value == 'rejected' %}bg-rose-100 text-rose-800 border-rose-300 ring-2 ring-rose-300{% else %}bg-white text-cookie-brown border-cookie-pink/40 hover:bg-rose-50 opacity-70 hover:opacity-100{% endif %}">
+                        Rechazada
+                    </button>
+                </form>
+            </div>
+            </form>
+        </div>
+
+    </div>
+
+    <!-- Body -->
+    <div class="px-6 py-6 grid grid-cols-1 md:grid-cols-2 gap-8">
+
+        <!-- Left: Details & Edit -->
+        <div>
+            <h2 class="cv-h2 mb-5">Detalles y Edición</h2>
+            <form action="/admin/orders/{{ order.id }}" method="POST" class="space-y-5">
+
+                <div>
+                    <label class="cv-label block mb-1.5">Instagram</label>
+                    <a href="https://instagram.com/{{ order.customer_instagram | replace('@', '') }}" target="_blank"
+                        class="inline-flex items-center gap-1.5 text-sm font-semibold text-pink-500 hover:text-pink-600 hover:underline transition-colors mt-0.5">
+                        <svg class="w-4 h-4" width="24" height="24" fill="currentColor" viewBox="0 0 24 24">
+                            <path
+                                d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z" />
+                        </svg>
+                        @{{ order.customer_instagram | replace('@', '') }}
+                    </a>
+                </div>
+
+                <!-- Cart summary (read-only) -->
+                <div class="bg-cookie-cream/70 rounded-2xl border border-cookie-pink/30 p-4">
+                    <p class="cv-label mb-3">Carrito</p>
+                    <ul class="space-y-2 mb-3">
+                        {% for item in order.items %}
+                        <li class="flex justify-between text-sm">
+                            <span class="text-cookie-brown">{{ item.quantity }}× {{ item.product_name }}</span>
+                            <span class="text-cookie-brown/60">${{ '{:,.0f}'.format(item.unit_price * item.quantity)
+                                }}</span>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                    <div class="border-t border-cookie-pink/30 pt-3 flex justify-between">
+                        <span class="cv-label">Total</span>
+                        <span class="font-bold text-cookie-golden">${{ '{:,.0f}'.format(order.total_amount)
+                            }}</span>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="cv-label block mb-1.5">Abono Confirmado ($)</label>
+                        <input type="number" step="1" onkeypress="return event.charCode >= 48 && event.charCode <= 57"
+                            name="amount_paid" x-model="formData.amount_paid"
+                            class="cv-input font-bold text-emerald-700">
+                    </div>
+                    <div class="flex flex-col justify-end">
+                        <span class="cv-label">Saldo Restante</span>
+                        <span class="text-lg font-bold text-red-500 mt-1">${{ '{:,.0f}'.format(order.total_amount -
+                            order.amount_paid) }}</span>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="cv-label block mb-1.5">Fecha de Entrega</label>
+                    <input type="date" name="delivery_date" x-model="formData.delivery_date" class="cv-input">
+                </div>
+
+                <div>
+                    <label class="cv-label block mb-1.5">Descripción del Diseño</label>
+                    <textarea name="description" rows="3" x-model="formData.description" class="cv-input resize-none"
+                        required></textarea>
+                </div>
+
+                <button type="submit" :disabled="!isModified"
+                    class="cv-btn w-full disabled:opacity-40 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-none">Guardar
+                    Cambios</button>
+            </form>
+        </div>
+
+        <!-- Right: Photos -->
+        <div>
+            <h2 class="cv-h2 mb-5">Imagen(es) de Referencia</h2>
+            {% if order.reference_photos and order.reference_photos|length > 0 %}
+            <div class="grid grid-cols-1 gap-4">
+                {% for photo in order.reference_photos %}
+                <button type="button" @click="openLightbox('{{ photo }}')" class="focus:outline-none text-left">
+                    <img src="{{ photo }}"
+                        class="rounded-2xl border border-cookie-pink/30 shadow-sm hover:opacity-80 transition object-cover h-48 w-full cursor-pointer">
+                </button>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="rounded-2xl border-2 border-dashed border-cookie-pink/40 text-center py-16 bg-cookie-cream/50">
+                <svg class="w-12 h-12 text-cookie-brown/20 mx-auto mb-3" fill="none" stroke="currentColor"
+                    viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1"
+                        d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01" />
+                </svg>
+                <p class="text-cookie-brown/40 text-sm">Sin imagenes para esta orden</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Lightbox Modal -->
+<div x-show="lightbox.open" style="display: none;"
+    class="fixed inset-0 z-50 flex items-center justify-center bg-brown-900/90 backdrop-blur-sm px-4"
+    x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0"
+    x-transition:enter-end="opacity-100" x-transition:leave="transition ease-in duration-200"
+    x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" @keydown.escape.window="closeLightbox()">
+
+    <!-- Overlay Click (Fondo debajo del boton y foto) -->
+    <div class="absolute inset-0 cursor-pointer" @click="closeLightbox()"></div>
+
+    <!-- Close Button (Asegurado sobre el overlay con bg oscuro y fixed en vez de absolute) -->
+    <button type="button" @click="closeLightbox()"
+        class="absolute top-6 right-6 z-50 flex items-center justify-center w-12 h-12 bg-black/50 hover:bg-red-500 rounded-full text-white cursor-pointer transition-all">
+        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"></path>
+        </svg>
+    </button>
+
+    <!-- Image Container -->
+    <div class="relative z-10 max-w-5xl w-full max-h-[90vh] flex items-center justify-center p-4">
+        <img :src="lightbox.url"
+            class="max-w-full max-h-[85vh] object-contain rounded-xl shadow-2xl border border-white/10" @click.stop>
+    </div>
+</div>
+
+</div>
+
+<script>
+    document.addEventListener('alpine:init', () => {
+        Alpine.data('orderDetail', () => ({
+            formData: {
+                amount_paid: '{{ "{:.0f}".format(order.amount_paid) }}',
+                delivery_date: '{{ order.delivery_date.strftime("%Y-%m-%d") }}',
+                description: `{{ order.description or '' }}`
+            },
+            initialData: {
+                amount_paid: '{{ "{:.0f}".format(order.amount_paid) }}',
+                delivery_date: '{{ order.delivery_date.strftime("%Y-%m-%d") }}',
+                description: `{{ order.description or '' }}`
+            },
+            get isModified() {
+                return String(this.formData.amount_paid) !== String(this.initialData.amount_paid) ||
+                    String(this.formData.delivery_date) !== String(this.initialData.delivery_date) ||
+                    String(this.formData.description) !== String(this.initialData.description);
+            },
+            lightbox: {
+                open: false,
+                url: ''
+            },
+            openLightbox(url) {
+                this.lightbox.url = url;
+                this.lightbox.open = true;
+                document.body.style.overflow = 'hidden';
+            },
+            closeLightbox() {
+                this.lightbox.open = false;
+                setTimeout(() => { this.lightbox.url = ''; }, 300);
+                document.body.style.overflow = 'auto';
+            }
+        }));
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,287 @@
+{% extends "base.html" %}
+
+{% block title %}Realizar Orden - CookieVale{% endblock %}
+
+{% block content %}
+<div x-data="cookieCart()">
+    <div id="form-container">
+
+        <!-- ═══ Products Grid ═══ -->
+        <div class="flex items-center justify-between mb-6">
+            <h1 class="cv-h2">Productos</h1>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 mb-10">
+            {% for product in products %}
+            <div
+                class="cv-card p-4 flex flex-col justify-between hover:shadow-[0_8px_24px_rgba(212,149,106,0.18)] hover:-translate-y-1 hover:border-cookie-golden/40 transition-all duration-300 group">
+                <!-- Image -->
+                <div class="overflow-hidden rounded-xl mb-4">
+                    <img src="{{ product.image_url }}" alt="{{ product.name }}"
+                        class="w-full aspect-square object-cover transform group-hover:scale-105 transition-transform duration-500">
+                </div>
+
+                <!-- Info -->
+                <h3 class="cv-h2 text-base mb-0.5">{{ product.name }}</h3>
+                <p class="text-xs text-cookie-brown/50 line-clamp-2 mb-2 leading-relaxed">{{ product.description or ''
+                    }}</p>
+                <p class="text-lg font-bold text-cookie-golden mb-4">${{ '{:,.0f}'.format(product.price) }}</p>
+
+                <!-- Quantity Controls -->
+                <div
+                    class="flex items-center justify-between bg-cookie-cream rounded-xl p-1.5 border border-cookie-pink/30">
+                    <button type="button" @click="removeItem({{ product.id }})"
+                        class="w-9 h-9 flex items-center justify-center rounded-lg text-cookie-brown/60 hover:bg-white hover:shadow-sm hover:text-red-400 transition-all active:scale-90">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M20 12H4" />
+                        </svg>
+                    </button>
+                    <span class="flex-grow text-center font-bold text-cookie-brown"
+                        x-text="getQuantity({{ product.id }})">0</span>
+                    <button type="button" @click="addItem({{ product.id }}, '{{ product.name }}', {{ product.price }})"
+                        class="w-9 h-9 flex items-center justify-center rounded-lg bg-cookie-pink/40 text-cookie-brown hover:bg-cookie-golden hover:text-white transition-all active:scale-90">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
+                                d="M12 4v16m8-8H4" />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+            {% else %}
+            <div
+                class="col-span-1 md:col-span-2 lg:col-span-3 cv-card py-12 text-center text-cookie-brown/50 flex flex-col items-center justify-center">
+                <div
+                    class="w-16 h-16 bg-cookie-pink/20 rounded-full flex items-center justify-center mb-3 border border-cookie-pink/30">
+                    <svg class="w-8 h-8 text-cookie-brown/30" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                            d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+                    </svg>
+                </div>
+                <p class="font-medium text-sm">No hay productos creados.</p>
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- ═══ Order Form ═══ -->
+        <form hx-post="/orders" hx-target="#form-container" hx-swap="outerHTML transition:fade"
+            hx-encoding="multipart/form-data" @submit="prepSubmit">
+
+            <input type="hidden" name="cart_items_json" x-model="cartJson">
+
+            <!-- Cart Summary -->
+            <div class="cv-card mb-6 border-cookie-pink/40 bg-cookie-cream/50">
+                <h2 class="cv-h2 flex items-center gap-2 mb-5">
+                    <svg class="w-5 h-5 text-cookie-golden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+                    </svg>
+                    Tu pedido
+                </h2>
+
+                <div x-show="cart.length === 0" class="py-8 text-center flex flex-col items-center">
+                    <div
+                        class="w-16 h-16 bg-cookie-pink/20 rounded-full flex items-center justify-center mb-3 border border-cookie-pink/30">
+                        <svg class="w-8 h-8 text-cookie-brown/30" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                                d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+                        </svg>
+                    </div>
+                    <p class="text-cookie-brown/60 font-medium text-sm">Tu carrito está vacío.</p>
+                </div>
+
+                <div x-show="cart.length > 0">
+                    <ul class="space-y-2.5 mb-5">
+                        <template x-for="item in cart" :key="item.product_id">
+                            <li
+                                class="flex justify-between items-center bg-white border border-cookie-pink/30 rounded-xl px-4 py-2.5">
+                                <div class="flex items-center gap-3">
+                                    <span
+                                        class="w-7 h-7 rounded-full bg-cookie-golden text-white flex items-center justify-center font-bold text-xs"
+                                        x-text="item.quantity"></span>
+                                    <span class="font-medium text-cookie-brown text-sm" x-text="item.name"></span>
+                                </div>
+                                <span class="text-sm font-semibold text-cookie-brown/70">$<span
+                                        x-text="(item.price * item.quantity).toLocaleString()"></span></span>
+                            </li>
+                        </template>
+                    </ul>
+                    <div class="flex justify-between items-center border-t border-cookie-pink/30 pt-4">
+                        <span class="cv-label uppercase tracking-wider">Total a pagar</span>
+                        <span class="font-serif font-bold text-2xl text-cookie-golden">$<span
+                                x-text="cartTotal.toLocaleString()"></span></span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Customer Fields -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <div>
+                    <label class="cv-label block mb-1.5">Instagram <span class="text-red-400">*</span></label>
+                    <div class="relative">
+                        <span
+                            class="absolute inset-y-0 left-0 flex items-center pl-4 text-cookie-brown/40 font-medium pointer-events-none">@</span>
+                        <input type="text" name="customer_instagram" placeholder="tu_cuenta" required
+                            oninput="this.value = this.value.replace(/@/g, '')" class="cv-input pl-8">
+                    </div>
+                </div>
+                <div x-data="{
+                    getTomorrow() {
+                        const d = new Date();
+                        d.setDate(d.getDate() + 1);
+                        return d.toISOString().split('T')[0];
+                    }
+                }">
+                    <label class="cv-label block mb-1.5">Fecha de Entrega <span class="text-red-400">*</span></label>
+                    <input type="date" name="delivery_date" required class="cv-input" :min="getTomorrow()">
+                </div>
+            </div>
+
+            <!-- Photos -->
+            <div class="mb-4" x-data="{
+                files: [],
+                previews: [],
+                handleFiles(evt) {
+                    const newFiles = Array.from(evt.target.files);
+                    if (this.files.length + newFiles.length > 3) {
+                        alert('Solo puedes subir un \u00E1ximo de 3 im\u00E1genes.');
+                        evt.target.value = '';
+                        return;
+                    }
+                    this.files = [...this.files, ...newFiles];
+                    this.previews = this.files.map(f => URL.createObjectURL(f));
+                    this.updateInputFiles();
+
+                    // Clear the input to allow selecting the same image consecutively
+                    evt.target.value = '';
+                },
+                removeFile(idx) {
+                    this.files.splice(idx, 1);
+                    this.previews.splice(idx, 1);
+                    this.updateInputFiles();
+                },
+                updateInputFiles() {
+                    const dt = new DataTransfer();
+                    this.files.forEach(f => dt.items.add(f));
+                    if (this.$refs.photoInput) {
+                        this.$refs.photoInput.files = dt.files;
+                    }
+                    const mainInput = document.querySelector('input[name=\u0022photos\u0022]');
+                    if (mainInput) {
+                        mainInput.files = dt.files;
+                    }
+                }
+            }">
+                <label class="cv-label block mb-1.5">Imagen de Referencia <span
+                        class="text-cookie-brown/40 font-normal">(Máximo 3)</span></label>
+                <div class="relative rounded-2xl border-2 border-dashed border-cookie-pink/50 bg-cookie-cream/50 transition-all text-center p-6 min-h-[140px] flex flex-col justify-center items-center"
+                    :class="files.length === 0 ? 'hover:border-cookie-golden/60 hover:bg-cookie-pink/10 cursor-pointer' : ''">
+
+                    <!-- Input layer when empty (covers everything) -->
+                    <input type="file" name="photos" multiple accept="image/*" @change="handleFiles" x-ref="photoInput"
+                        class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                        x-show="files.length === 0">
+
+                    <div class="flex flex-col items-center w-full">
+                        <div x-show="files.length === 0" class="flex flex-col items-center pointer-events-none">
+                            <svg class="w-8 h-8 text-cookie-brown/30 transition-colors mb-2" fill="none"
+                                stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                                    d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                            <span class="text-sm text-cookie-brown/50"><span
+                                    class="text-cookie-golden font-semibold">Haz click</span> o arrastra tus
+                                imágenes</span>
+                        </div>
+
+                        <!-- Thumbnails when photos exist -->
+                        <div x-show="files.length > 0" class="flex justify-center gap-4 flex-wrap w-full relative z-20">
+                            <template x-for="(preview, idx) in previews" :key="idx">
+                                <div
+                                    class="relative group rounded-xl overflow-hidden border-2 border-cookie-pink/50 shadow-sm w-24 h-24">
+                                    <img :src="preview" class="w-full h-full object-cover" />
+                                    <!-- Delete button (dark red) -->
+                                    <button type="button" @click.prevent="removeFile(idx)"
+                                        class="absolute inset-0 bg-red-900/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center cursor-pointer">
+                                        <svg class="w-6 h-6 text-white mb-1" fill="none" stroke="currentColor"
+                                            viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                        </svg>
+                                        <span
+                                            class="text-white text-[10px] uppercase font-bold tracking-wider">Eliminar</span>
+                                    </button>
+                                </div>
+                            </template>
+
+                            <!-- Button to add another optional image -->
+                            <div x-show="files.length > 0 && files.length < 3"
+                                class="relative group rounded-xl border-2 border-dashed border-cookie-pink/50 hover:border-cookie-golden w-24 h-24 flex flex-col items-center justify-center cursor-pointer overflow-hidden text-cookie-brown/50 hover:text-cookie-golden transition-colors">
+                                <input type="file" multiple accept="image/*" @change="handleFiles"
+                                    class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10">
+                                <svg class="w-6 h-6 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M12 4v16m8-8H4" />
+                                </svg>
+                                <span class="text-[10px] uppercase font-bold tracking-wider">Añadir</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Notes -->
+            <div class="mb-6">
+                <label class="cv-label block mb-1.5">Descripción del Diseño <span class="text-red-400">*</span></label>
+                <textarea name="description" rows="3"
+                    placeholder="Ej: Quiero un diseño para un bautizo, colores celeste y blanco..."
+                    class="cv-input resize-none" required></textarea>
+            </div>
+
+            <!-- Submit -->
+            <button type="submit" :disabled="cart.length === 0"
+                class="cv-btn w-full py-4 text-base rounded-2xl disabled:opacity-40 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-none">
+                Enviar mi Orden
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
+                        d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                </svg>
+            </button>
+        </form>
+    </div>
+</div>
+
+<script>
+    function cookieCart() {
+        return {
+            cart: [],
+            cartJson: '[]',
+
+            getQuantity(productId) {
+                const item = this.cart.find(i => i.product_id === productId);
+                return item ? item.quantity : 0;
+            },
+            addItem(productId, name, price) {
+                const item = this.cart.find(i => i.product_id === productId);
+                if (item) { item.quantity++; }
+                else { this.cart.push({ product_id: productId, name, price, quantity: 1 }); }
+                this.updateJson();
+            },
+            removeItem(productId) {
+                const idx = this.cart.findIndex(i => i.product_id === productId);
+                if (idx !== -1) {
+                    if (this.cart[idx].quantity > 1) { this.cart[idx].quantity--; }
+                    else { this.cart.splice(idx, 1); }
+                }
+                this.updateJson();
+            },
+            get cartTotal() {
+                return this.cart.reduce((t, i) => t + i.price * i.quantity, 0);
+            },
+            updateJson() {
+                this.cartJson = JSON.stringify(this.cart.map(i => ({ product_id: i.product_id, quantity: i.quantity })));
+            },
+            prepSubmit() { this.updateJson(); }
+        }
+    }
+</script>
+{% endblock %}

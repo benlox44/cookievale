@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}Panel de Administración - CookieVale{% endblock %}
+{% block body_class %}overflow-hidden h-screen flex flex-col{% endblock %}
+{% block header %}{% endblock %}
+{% block main_class %}flex-grow flex items-center justify-center w-full p-4{% endblock %}
+
+{% block content %}
+<div class="relative w-full flex flex-col items-center justify-center text-center">
+    <!-- Decorative blobs -->
+    <div class="absolute -top-20 -left-10 w-64 h-64 bg-cookie-pink/40 rounded-full blur-3xl -z-10 pointer-events-none">
+    </div>
+    <div
+        class="absolute -bottom-20 -right-10 w-72 h-72 bg-cookie-peach/20 rounded-full blur-3xl -z-10 pointer-events-none">
+    </div>
+
+    <div
+        class="bg-white/70 backdrop-blur-sm border border-cookie-pink/40 rounded-[2.5rem] shadow-[0_8px_40px_rgba(212,149,106,0.12)] p-10 md:p-14 max-w-xl w-full">
+
+        <!-- Icon -->
+        <div
+            class="w-28 h-28 mx-auto bg-cookie-pink/20 rounded-full flex items-center justify-center mb-6 border border-cookie-pink/30 hover:scale-105 transition-transform duration-500">
+            <img src="/public/icons/icon.png" alt="CookieVale" class="w-20 h-20 object-contain drop-shadow">
+        </div>
+
+        <h1 class="cv-h1 mb-3" style="font-size:2.75rem;">CookieVale</h1>
+        <p class="text-cookie-brown/60 mb-10 text-base font-normal leading-relaxed">
+            Panel de control de administración.
+        </p>
+
+        <div class="flex flex-col sm:flex-row gap-3 justify-center">
+            <a href="/admin/orders" class="cv-btn text-base px-8 py-3.5">
+                Órdenes
+            </a>
+            <a href="/admin/products" class="cv-btn text-base px-8 py-3.5">
+                Productos
+            </a>
+        </div>
+
+        <div class="mt-6 border-t border-cookie-pink/20 pt-6">
+            <form action="/admin/logout" method="POST" class="inline-block">
+                <button type="submit"
+                    class="cv-btn-ghost text-red-500 border-red-200 hover:bg-red-50 hover:border-red-300 text-sm px-6 py-2.5">
+                    Cerrar sesión
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

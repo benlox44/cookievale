@@ -1,0 +1,105 @@
+<div class="overflow-x-auto">
+    <table class="min-w-full divide-y divide-cookie-pink/20">
+        <thead class="bg-cookie-cream/50">
+            <tr>
+                <th scope="col"
+                    class="px-6 py-4 text-left text-xs font-semibold text-cookie-brown uppercase tracking-wider">
+                    ID</th>
+                <th scope="col"
+                    class="px-6 py-4 text-left text-xs font-semibold text-cookie-brown uppercase tracking-wider">
+                    Cliente</th>
+                <th scope="col"
+                    class="px-6 py-4 text-left text-xs font-semibold text-cookie-brown uppercase tracking-wider">
+                    Ítem & Cant</th>
+                <th scope="col"
+                    class="px-6 py-4 text-left text-xs font-semibold text-cookie-brown uppercase tracking-wider">
+                    Estado</th>
+                <th scope="col"
+                    class="px-6 py-4 text-left text-xs font-semibold text-cookie-brown uppercase tracking-wider">
+                    Fecha</th>
+                <th scope="col" class="relative px-6 py-4"><span class="sr-only">Acciones</span></th>
+            </tr>
+        </thead>
+        <tbody class="bg-white divide-y divide-cookie-pink/20">
+            {% for order in orders %}
+            <tr class="hover:bg-cookie-pink/5 transition-colors">
+                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-cookie-golden">#{{ order.id }}</td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="text-sm font-medium text-cookie-brown">@{{ order.customer_instagram | replace('@', '')
+                        }}</div>
+                </td>
+                <td class="px-6 py-4">
+                    <div class="text-sm text-cookie-brown/80">{{ order.items|length }} Ítem(s)</div>
+                    <div class="text-sm font-bold text-cookie-golden">${{ '{:,.0f}'.format(order.total_amount) }}</div>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                    <span class="px-3 py-1 inline-flex text-[11px] leading-5 font-bold uppercase tracking-wider rounded-full
+                        {% if order.status.value == 'pending' %} bg-amber-100 text-amber-800 border border-amber-200
+                        {% elif order.status.value == 'confirmed' %} bg-sky-100 text-sky-800 border border-sky-200
+                        {% elif order.status.value == 'paid' %} bg-emerald-100 text-emerald-800 border border-emerald-200
+                        {% elif order.status.value == 'delivered' %} bg-purple-100 text-purple-800 border border-purple-200
+                        {% else %} bg-rose-100 text-rose-800 border border-rose-200 {% endif %}">
+                        {{ {'pending': 'Pendiente', 'confirmed': 'Confirmada', 'paid': 'Pagada', 'delivered':
+                        'Entregada'}.get(order.status.value, order.status.value) }}
+                    </span>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-cookie-brown/80">
+                    {{ order.delivery_date.strftime('%Y-%m-%d') }}
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                    <div class="flex items-center justify-end gap-2">
+                        <a href="/admin/orders/{{ order.id }}"
+                            class="text-cookie-golden hover:text-cookie-brown bg-cookie-cream px-4 py-2 rounded-full border border-cookie-pink/40 hover:border-cookie-golden transition-all inline-block">Ver
+                            / Editar</a>
+
+                        <form action="/admin/orders/{{ order.id }}/delete" method="POST" x-data="{ showConfirm: false }"
+                            @submit.prevent="if(showConfirm) { $el.submit() } else { showConfirm = true }" class="m-0">
+                            <button type="submit"
+                                class="w-8 h-8 rounded-full bg-red-50 text-red-500 hover:bg-red-500 hover:text-white flex items-center justify-center transition-colors border border-red-100">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                </svg>
+                            </button>
+
+                            <!-- Confirmation Modal -->
+                            <div x-show="showConfirm"
+                                class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4"
+                                style="display: none;">
+                                <div @click.away="showConfirm = false"
+                                    class="bg-white rounded-2xl p-6 max-w-sm w-full shadow-2xl transform transition-all text-left whitespace-normal">
+                                    <h3 class="text-lg font-bold text-cookie-brown mb-2">Eliminar Orden</h3>
+                                    <p class="text-cookie-brown/70 text-sm mb-6">¿Estás seguro de eliminar esta orden?
+                                    </p>
+                                    <div class="flex justify-end gap-3">
+                                        <button type="button" @click="showConfirm = false"
+                                            class="cv-btn bg-cookie-cream text-cookie-brown border-cookie-pink/40 hover:bg-cookie-pink/10 hover:border-cookie-golden">Cancelar</button>
+                                        <button type="button" @click="$el.closest('form').submit()"
+                                            class="cv-btn bg-red-500 hover:bg-red-600 text-white border-red-500 shadow-red-200">Eliminar</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="6" class="px-6 py-12 text-center text-cookie-brown/50">
+                    <div class="flex flex-col items-center justify-center">
+                        <div
+                            class="w-16 h-16 bg-cookie-pink/20 rounded-full flex items-center justify-center mb-3 border border-cookie-pink/30">
+                            <svg class="w-8 h-8 text-cookie-brown/30" fill="none" stroke="currentColor"
+                                viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                                    d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+                            </svg>
+                        </div>
+                        <p class="font-medium text-sm">No se encontraron órdenes.</p>
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
