@@ -19,17 +19,15 @@
     </div>
 
     <!-- Product Grid -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-5">
+    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-5 mb-10">
         {% for product in products %}
-        <div class="cv-card p-4 flex flex-col {% if not product.is_active %}opacity-50{% endif %}">
-            <img src="{{ product.image_url }}" alt="{{ product.name }}"
-                class="w-full h-32 object-cover rounded-xl mb-3 border border-cookie-pink/20">
+        <div
+            class="cv-card p-4 flex flex-col justify-between hover:shadow-[0_8px_24px_rgba(212,149,106,0.18)] hover:-translate-y-1 hover:border-cookie-golden/40 transition-all duration-300 group {% if not product.is_active %}opacity-50{% endif %}">
+            <!-- Image Slider -->
+            {% include "partials/slider.html" %}
 
-            <h3 class="cv-h2 text-sm mb-0.5">{{ product.name }}</h3>
-            <p class="text-sm font-bold text-cookie-golden mb-3">${{ '{:,.0f}'.format(product.price) }}</p>
-            <p class="text-xs text-cookie-brown/70 mb-4 line-clamp-2 min-h-[2rem]">
-                {{ product.description or 'Sin descripción' }}
-            </p>
+            <!-- Info -->
+            {% include "partials/product_info.html" %}
 
             <div class="mt-auto flex justify-between items-center pt-3 border-t border-cookie-pink/20">
                 <span
@@ -73,18 +71,7 @@
             </div>
         </div>
         {% else %}
-        <div class="col-span-1 sm:col-span-2 md:col-span-3 cv-card py-12 text-center text-cookie-brown/50">
-            <div class="flex flex-col items-center justify-center">
-                <div
-                    class="w-16 h-16 bg-cookie-pink/20 rounded-full flex items-center justify-center mb-3 border border-cookie-pink/30">
-                    <svg class="w-8 h-8 text-cookie-brown/30" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
-                            d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
-                    </svg>
-                </div>
-                <p class="font-medium text-sm">No hay productos creados.</p>
-            </div>
-        </div>
+        {% include "partials/empty_products.html" %}
         {% endfor %}
     </div>
 </div>

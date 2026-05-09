@@ -1,5 +1,5 @@
-from pydantic import BaseModel, ConfigDict
-from typing import Optional
+from pydantic import BaseModel, ConfigDict, Field
+from typing import Optional, List
 
 
 class ProductBase(BaseModel):
@@ -19,5 +19,5 @@ class ProductUpdate(ProductBase):
 
 class ProductResponse(ProductBase):
     id: int
-    image_url: Optional[str] = None
+    image_urls: List[str] = Field(default_factory=list)
     model_config = ConfigDict(from_attributes=True)

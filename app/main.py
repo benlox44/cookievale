@@ -17,7 +17,9 @@ import os
 app = FastAPI(title="CookieVale API")
 
 app.mount("/public", StaticFiles(directory="public"), name="public")
-app.mount("/media", StaticFiles(directory=os.environ["CONTAINER_MEDIA_PATH"]), name="media")
+app.mount(
+    "/media", StaticFiles(directory=os.environ["CONTAINER_MEDIA_PATH"]), name="media"
+)
 
 
 # Exception handler to gracefully redirect HTMX and normal browser requests to login

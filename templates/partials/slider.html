@@ -1,0 +1,45 @@
+<div class="overflow-hidden rounded-xl mb-4 relative" x-data='{
+    activeSlide: 0,
+    slides: {{ product.image_urls | tojson if product.image_urls else "[]" | safe }}
+}'>
+    <template x-if="slides.length > 0">
+        <div class="relative w-full aspect-square group/slider">
+            <img :src="slides[activeSlide]" alt="{{ product.name }}"
+                class="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-500">
+
+            <!-- Arrows -->
+            <template x-if="slides.length > 1">
+                <div>
+                    <button type="button"
+                        @click.prevent="activeSlide = activeSlide === 0 ? slides.length - 1 : activeSlide - 1"
+                        class="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center rounded-full bg-white/70 text-cookie-brown shadow-sm opacity-0 group-hover:opacity-100 transition-opacity hover:bg-white z-10">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+                        </svg>
+                    </button>
+                    <button type="button"
+                        @click.prevent="activeSlide = activeSlide === slides.length - 1 ? 0 : activeSlide + 1"
+                        class="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center rounded-full bg-white/70 text-cookie-brown shadow-sm opacity-0 group-hover:opacity-100 transition-opacity hover:bg-white z-10">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                        </svg>
+                    </button>
+                </div>
+            </template>
+
+            <!-- Dots -->
+            <template x-if="slides.length > 1">
+                <div class="absolute bottom-2 left-0 right-0 flex justify-center gap-1.5 z-10">
+                    <template x-for="(_, index) in slides" :key="index">
+                        <button type="button" @click.prevent="activeSlide = index"
+                            :class="activeSlide === index ? 'bg-cookie-golden w-3' : 'bg-white/70 hover:bg-white'"
+                            class="h-1.5 rounded-full transition-all focus:outline-none w-1.5 shadow-sm"></button>
+                    </template>
+                </div>
+            </template>
+        </div>
+    </template>
+    <template x-if="slides.length === 0">
+        <div class="w-full aspect-square bg-gray-100 flex items-center justify-center text-gray-400">Sin foto</div>
+    </template>
+</div>

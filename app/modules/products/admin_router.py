@@ -9,7 +9,7 @@ from fastapi import (
     status,
 )
 from fastapi.responses import HTMLResponse, RedirectResponse
-from typing import Optional
+from typing import List
 
 from app.core.templates import templates
 from app.core.security import get_current_admin
@@ -54,14 +54,14 @@ def create_product(
     price: float = Form(...),
     description: str = Form(...),
     is_active: bool = Form(False),
-    photo: UploadFile = File(...),
+    photos: List[UploadFile] = File(...),
     service: ProductService = Depends(get_product_service),
     admin: str = Depends(get_current_admin),
 ):
     dto = ProductCreate(
         name=name, price=price, description=description, is_active=is_active
     )
-    service.create_product(dto, photo)
+    service.create_product(dto, photos)
     return RedirectResponse(
         url="/admin/products", status_code=status.HTTP_303_SEE_OTHER
     )
@@ -91,14 +91,15 @@ def update_product(
     price: float = Form(...),
     description: str = Form(...),
     is_active: bool = Form(False),
-    photo: Optional[UploadFile] = File(None),
+    existing_images: List[str] = Form([]),
+    photos: List[UploadFile] = File(None),
     service: ProductService = Depends(get_product_service),
     admin: str = Depends(get_current_admin),
 ):
     dto = ProductUpdate(
         name=name, price=price, description=description, is_active=is_active
     )
-    service.update_product(product_id, dto, photo)
+    service.update_product(product_id, dto, existing_images, photos)
     return RedirectResponse(
         url="/admin/products", status_code=status.HTTP_303_SEE_OTHER
     )

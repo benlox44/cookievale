@@ -1,6 +1,6 @@
 {% extends "base.html" %}
+{% from "partials/uploader.html" import render_uploader %}
 {% block title %}{% if product %}Editar{% else %}Nuevo{% endif %} Producto - CookieVale{% endblock %}
-
 {% block content %}
 <div class="w-full max-w-2xl mx-auto mt-8">
     <div class="cv-card mb-6 flex items-center justify-start gap-4 py-4 px-6 md:px-8">
@@ -9,7 +9,6 @@
             {% if product %}Editar Producto{% else %}Nuevo Producto{% endif %}
         </h1>
     </div>
-
     <div class="cv-card p-0 overflow-hidden shadow-[0_4px_20px_rgba(212,149,106,0.1)]">
         <form action="{% if product %}/admin/products/{{ product.id }}{% else %}/admin/products{% endif %}"
             method="POST" enctype="multipart/form-data" class="p-6 space-y-5">
@@ -18,110 +17,26 @@
                 <input type="text" name="name" class="cv-input w-full" value="{{ product.name if product else '' }}"
                     required>
             </div>
-
             <div>
                 <label class="cv-label mb-1">Precio</label>
                 <input type="number" step="1" name="price"
                     onkeypress="return event.charCode >= 48 && event.charCode <= 57" class="cv-input w-full"
                     value="{% if product %}{{ '{:.0f}'.format(product.price) }}{% endif %}" required>
             </div>
-
             <div>
                 <label class="cv-label mb-1">Descripción</label>
                 <textarea name="description"
                     class="cv-input w-full min-h-[100px]">{{ product.description if product else '' }}</textarea>
             </div>
 
-            <div x-data="{
-                files: [],
-                previews: [],
-                handleFiles(evt) {
-                    this.files = Array.from(evt.target.files);
-                    this.previews = this.files.map(f => URL.createObjectURL(f));
-                },
-                removeFile(idx) {
-                    this.files.splice(idx, 1);
-                    this.previews.splice(idx, 1);
-
-                    const dt = new DataTransfer();
-                    this.files.forEach(f => dt.items.add(f));
-                    this.$refs.photoInput.files = dt.files;
-                }
-            }">
-                <label class="cv-label block mb-1.5">Imagen</label>
-                <div class="relative rounded-2xl border-2 border-dashed border-cookie-pink/50 bg-cookie-cream/50 transition-all text-center p-6 min-h-[140px] flex flex-col justify-center items-center"
-                    :class="files.length === 0 && !('{{ product.image_url if product else '' }}') ? 'hover:border-cookie-golden/60 hover:bg-cookie-pink/10 cursor-pointer' : ''">
-
-                    <!-- Input (trigger only visible if no photo is selected or exists) -->
-                    <input type="file" name="photo" accept="image/*" @change="handleFiles" x-ref="photoInput"
-                        class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
-                        x-show="files.length === 0 && !('{{ product.image_url if product else '' }}')" {% if not product
-                        %}required{% endif %}>
-
-                    <div class="flex flex-col items-center w-full">
-                        <div x-show="files.length === 0" class="flex flex-col items-center">
-                            {% if product %}
-                            <div
-                                class="relative group rounded-xl overflow-hidden border-2 border-cookie-pink/50 shadow-sm w-24 h-24 mb-2 z-20">
-                                <img src="{{ product.image_url }}" alt="Imagen actual"
-                                    class="w-full h-full object-cover" />
-                                <div
-                                    class="absolute inset-0 bg-red-900/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center cursor-pointer">
-                                    <input type="file" name="photo" accept="image/*" @change="handleFiles"
-                                        class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-30">
-                                    <svg class="w-6 h-6 text-white mb-1" fill="none" stroke="currentColor"
-                                        viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                            d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
-                                    </svg>
-                                    <span
-                                        class="text-white text-[10px] uppercase font-bold tracking-wider">Reemplazar</span>
-                                </div>
-                            </div>
-                            <span class="text-xs text-cookie-brown/50">Imagen actual del producto</span>
-                            {% else %}
-                            <div class="pointer-events-none flex flex-col items-center">
-                                <svg class="w-8 h-8 text-cookie-brown/30 transition-colors mb-2" fill="none"
-                                    stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
-                                        d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                </svg>
-                                <span class="text-sm text-cookie-brown/50"><span
-                                        class="text-cookie-golden font-semibold">Haz click</span> o arrastra tu
-                                    imagen</span>
-                            </div>
-                            {% endif %}
-                        </div>
-
-                        <!-- Thumbnail of the new selection -->
-                        <div x-show="files.length > 0" class="flex justify-center gap-4 flex-wrap w-full relative z-20">
-                            <template x-for="(preview, idx) in previews" :key="idx">
-                                <div
-                                    class="relative group rounded-xl overflow-hidden border-2 border-cookie-pink/50 shadow-sm w-24 h-24">
-                                    <img :src="preview" class="w-full h-full object-cover" />
-                                    <button type="button" @click.prevent="removeFile(idx)"
-                                        class="absolute inset-0 bg-red-900/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center cursor-pointer">
-                                        <svg class="w-6 h-6 text-white mb-1" fill="none" stroke="currentColor"
-                                            viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                        </svg>
-                                        <span
-                                            class="text-white text-[10px] uppercase font-bold tracking-wider">Eliminar</span>
-                                    </button>
-                                </div>
-                            </template>
-                        </div>
-                    </div>
-                </div>
-            </div>
+            <label class="cv-label block mb-1.5">Imágenes</label>
+            {{ render_uploader(max_images=0, is_required=(not product or not product.image_urls), existing_images=(product.image_urls if product and product.image_urls else [])) }}
 
             <label class="flex items-center gap-3 cv-label cursor-pointer mt-4">
                 <input type="checkbox" name="is_active" value="True" {% if product and product.is_active %}checked{%
                     elif not product %}checked{% endif %} class="w-5 h-5 accent-cookie-golden rounded">
                 Producto Activo
             </label>
-
             <div class="pt-4 flex justify-end gap-3">
                 <a href="/admin/products"
                     class="cv-btn bg-cookie-cream text-cookie-brown border-cookie-pink/40 hover:bg-cookie-pink/10 hover:border-cookie-golden">Cancelar</a>
@@ -129,4 +44,5 @@
             </div>
         </form>
     </div>
-    {% endblock %}
+</div>
+{% endblock %}

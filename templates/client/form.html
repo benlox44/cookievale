@@ -15,18 +15,11 @@
             {% for product in products %}
             <div
                 class="cv-card p-4 flex flex-col justify-between hover:shadow-[0_8px_24px_rgba(212,149,106,0.18)] hover:-translate-y-1 hover:border-cookie-golden/40 transition-all duration-300 group">
-                <!-- Image -->
-                <div class="overflow-hidden rounded-xl mb-4">
-                    <img src="{{ product.image_url }}" alt="{{ product.name }}"
-                        class="w-full aspect-square object-cover transform group-hover:scale-105 transition-transform duration-500">
-                </div>
+                <!-- Image Slider -->
+                {% include "partials/slider.html" %}
 
                 <!-- Info -->
-                <h3 class="cv-h2 text-base mb-0.5">{{ product.name }}</h3>
-                <p class="text-xs text-cookie-brown/50 line-clamp-2 mb-2 leading-relaxed">{{ product.description or ''
-                    }}</p>
-                <p class="text-lg font-bold text-cookie-golden mb-4">${{ '{:,.0f}'.format(product.price) }}</p>
-
+                {% include "partials/product_info.html" %}
                 <!-- Quantity Controls -->
                 <div
                     class="flex items-center justify-between bg-cookie-cream rounded-xl p-1.5 border border-cookie-pink/30">
@@ -51,17 +44,7 @@
                 </div>
             </div>
             {% else %}
-            <div
-                class="col-span-1 md:col-span-2 lg:col-span-3 cv-card py-12 text-center text-cookie-brown/50 flex flex-col items-center justify-center">
-                <div
-                    class="w-16 h-16 bg-cookie-pink/20 rounded-full flex items-center justify-center mb-3 border border-cookie-pink/30">
-                    <svg class="w-8 h-8 text-cookie-brown/30" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
-                            d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
-                    </svg>
-                </div>
-                <p class="font-medium text-sm">No hay productos creados.</p>
-            </div>
+            {% include "partials/empty_products.html" %}
             {% endfor %}
         </div>
 
@@ -140,97 +123,12 @@
             </div>
 
             <!-- Photos -->
-            <div class="mb-4" x-data="{
-                files: [],
-                previews: [],
-                handleFiles(evt) {
-                    const newFiles = Array.from(evt.target.files);
-                    if (this.files.length + newFiles.length > 3) {
-                        alert('Solo puedes subir un \u00E1ximo de 3 im\u00E1genes.');
-                        evt.target.value = '';
-                        return;
-                    }
-                    this.files = [...this.files, ...newFiles];
-                    this.previews = this.files.map(f => URL.createObjectURL(f));
-                    this.updateInputFiles();
+            <label class="cv-label block mb-1.5">Imagen de Referencia <span
+                    class="text-cookie-brown/40 font-normal">(Máximo 3)</span> <span
+                    class="text-red-400">*</span></label>
+            {% from "partials/uploader.html" import render_uploader %}
+            {{ render_uploader(max_images=3, is_required=True) }}
 
-                    // Clear the input to allow selecting the same image consecutively
-                    evt.target.value = '';
-                },
-                removeFile(idx) {
-                    this.files.splice(idx, 1);
-                    this.previews.splice(idx, 1);
-                    this.updateInputFiles();
-                },
-                updateInputFiles() {
-                    const dt = new DataTransfer();
-                    this.files.forEach(f => dt.items.add(f));
-                    if (this.$refs.photoInput) {
-                        this.$refs.photoInput.files = dt.files;
-                    }
-                    const mainInput = document.querySelector('input[name=\u0022photos\u0022]');
-                    if (mainInput) {
-                        mainInput.files = dt.files;
-                    }
-                }
-            }">
-                <label class="cv-label block mb-1.5">Imagen de Referencia <span
-                        class="text-cookie-brown/40 font-normal">(Máximo 3)</span></label>
-                <div class="relative rounded-2xl border-2 border-dashed border-cookie-pink/50 bg-cookie-cream/50 transition-all text-center p-6 min-h-[140px] flex flex-col justify-center items-center"
-                    :class="files.length === 0 ? 'hover:border-cookie-golden/60 hover:bg-cookie-pink/10 cursor-pointer' : ''">
-
-                    <!-- Input layer when empty (covers everything) -->
-                    <input type="file" name="photos" multiple accept="image/*" @change="handleFiles" x-ref="photoInput"
-                        class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
-                        x-show="files.length === 0">
-
-                    <div class="flex flex-col items-center w-full">
-                        <div x-show="files.length === 0" class="flex flex-col items-center pointer-events-none">
-                            <svg class="w-8 h-8 text-cookie-brown/30 transition-colors mb-2" fill="none"
-                                stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
-                                    d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                            </svg>
-                            <span class="text-sm text-cookie-brown/50"><span
-                                    class="text-cookie-golden font-semibold">Haz click</span> o arrastra tus
-                                imágenes</span>
-                        </div>
-
-                        <!-- Thumbnails when photos exist -->
-                        <div x-show="files.length > 0" class="flex justify-center gap-4 flex-wrap w-full relative z-20">
-                            <template x-for="(preview, idx) in previews" :key="idx">
-                                <div
-                                    class="relative group rounded-xl overflow-hidden border-2 border-cookie-pink/50 shadow-sm w-24 h-24">
-                                    <img :src="preview" class="w-full h-full object-cover" />
-                                    <!-- Delete button (dark red) -->
-                                    <button type="button" @click.prevent="removeFile(idx)"
-                                        class="absolute inset-0 bg-red-900/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center cursor-pointer">
-                                        <svg class="w-6 h-6 text-white mb-1" fill="none" stroke="currentColor"
-                                            viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                        </svg>
-                                        <span
-                                            class="text-white text-[10px] uppercase font-bold tracking-wider">Eliminar</span>
-                                    </button>
-                                </div>
-                            </template>
-
-                            <!-- Button to add another optional image -->
-                            <div x-show="files.length > 0 && files.length < 3"
-                                class="relative group rounded-xl border-2 border-dashed border-cookie-pink/50 hover:border-cookie-golden w-24 h-24 flex flex-col items-center justify-center cursor-pointer overflow-hidden text-cookie-brown/50 hover:text-cookie-golden transition-colors">
-                                <input type="file" multiple accept="image/*" @change="handleFiles"
-                                    class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10">
-                                <svg class="w-6 h-6 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M12 4v16m8-8H4" />
-                                </svg>
-                                <span class="text-[10px] uppercase font-bold tracking-wider">Añadir</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
 
             <!-- Notes -->
             <div class="mb-6">

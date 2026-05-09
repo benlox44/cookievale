@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Boolean, Float, Text
+from sqlalchemy import Column, Integer, String, Boolean, Float, Text, ARRAY
 from app.core.database import Base
 
 
@@ -9,5 +9,5 @@ class ProductModel(Base):
     name = Column(String(100), nullable=False)
     description = Column(Text, nullable=True)
     price = Column(Float, nullable=False)
-    image_url = Column(String(255), nullable=True)
+    image_urls = Column(ARRAY(String), nullable=True)
     is_active = Column(Boolean, default=True, nullable=False)
