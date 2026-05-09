@@ -35,9 +35,12 @@ echo [*] Saving SQL dump and .env to shared network...
 robocopy "!APP_DIR!" "!BACKUP_DEST!\config" cookievale_db_dump.sql .env /FFT /Z /W:1 /R:1
 :: Ignore minor robocopy errors (1 to 7 are exit codes for success)
 
+echo [*] Cleaning up local SQL dump...
+del /f /q "!APP_DIR!\cookievale_db_dump.sql"
+
 :: 4. Sync Media (Product/Order images)
-if "!MEDIA_ROOT!"=="" ( 
-    echo [WARNING] MEDIA_ROOT is not declared, skipping media files. 
+if "!MEDIA_ROOT!"=="" (
+    echo [WARNING] MEDIA_ROOT is not declared, skipping media files.
 ) else (
     echo [*] Syncing media from !MEDIA_ROOT! to backup destination...
     robocopy "!MEDIA_ROOT!" "!BACKUP_DEST!\media" /MIR /FFT /Z /XA:H /W:1 /R:1 /SL
