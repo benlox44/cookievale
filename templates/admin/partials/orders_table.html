@@ -1,3 +1,4 @@
+{% from "partials/confirm_delete.html" import render_confirm_delete %}
 <div class="overflow-x-auto">
     <table class="min-w-full divide-y divide-cookie-pink/20">
         <thead class="bg-cookie-cream/50">
@@ -62,23 +63,7 @@
                                 </svg>
                             </button>
 
-                            <!-- Confirmation Modal -->
-                            <div x-show="showConfirm"
-                                class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4"
-                                style="display: none;">
-                                <div @click.away="showConfirm = false"
-                                    class="bg-white rounded-2xl p-6 max-w-sm w-full shadow-2xl transform transition-all text-left whitespace-normal">
-                                    <h3 class="text-lg font-bold text-cookie-brown mb-2">Eliminar Orden</h3>
-                                    <p class="text-cookie-brown/70 text-sm mb-6">¿Estás seguro de eliminar esta orden?
-                                    </p>
-                                    <div class="flex justify-end gap-3">
-                                        <button type="button" @click="showConfirm = false"
-                                            class="cv-btn bg-cookie-cream text-cookie-brown border-cookie-pink/40 hover:bg-cookie-pink/10 hover:border-cookie-golden">Cancelar</button>
-                                        <button type="button" @click="$el.closest('form').submit()"
-                                            class="cv-btn bg-red-500 hover:bg-red-600 text-white border-red-500 shadow-red-200">Eliminar</button>
-                                    </div>
-                                </div>
-                            </div>
+                            {{ render_confirm_delete("Eliminar Orden", "¿Estás seguro de eliminar esta orden?") }}
                         </form>
                     </div>
                 </td>

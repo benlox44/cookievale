@@ -1,0 +1,250 @@
+{% macro render_uploader_admin(is_required, existing_images, min_width, min_height, quality, max_images) %}
+{% set existing_cnt = existing_images|length %}
+
+<link href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
+
+<div class="mb-4"
+    x-data="cropperData({{ min_width }}, {{ min_height }}, {{ max_images }}, {{ existing_cnt }}, {{ quality }})">
+    <!-- Base Uploader UI -->
+    <div class="relative rounded-2xl border-2 border-dashed border-cookie-pink/50 bg-cookie-cream/50 transition-all text-center p-6 min-h-[140px] flex flex-col justify-center items-center"
+        :class="(files.length === 0 && {{ existing_cnt }} === 0) ? 'hover:border-cookie-golden/60 hover:bg-cookie-pink/10 cursor-pointer' : ''">
+
+        <input type="file" multiple accept="image/*" @change="handleFiles"
+            class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+            x-show="files.length === 0 && {{ existing_cnt }} === 0">
+
+        <div class="flex flex-col items-center w-full">
+            <div x-show="files.length === 0 && {{ existing_cnt }} === 0"
+                class="flex flex-col items-center pointer-events-none">
+                <svg class="w-8 h-8 text-cookie-brown/30 transition-colors mb-2" fill="none" stroke="currentColor"
+                    viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                        d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+                <span class="text-sm text-cookie-brown/50"><span class="text-cookie-golden font-semibold">Haz
+                        click</span> o arrastra tus imágenes para cortarlas</span>
+            </div>
+
+            <div x-show="files.length > 0 || {{ existing_cnt }} > 0"
+                class="flex justify-center gap-4 flex-wrap w-full relative z-20">
+                {% if existing_images %}
+                {% for img in existing_images %}
+                <div x-data="{ removed: false }" x-show="!removed"
+                    class="relative group rounded-xl overflow-hidden border-2 border-cookie-pink/50 shadow-sm w-24 h-24">
+                    <img src="{{ img }}" class="w-full h-full object-cover" />
+                    <input type="hidden" name="existing_images" value="{{ img }}" x-bind:disabled="removed" />
+                    <button type="button" @click.prevent="removed = true"
+                        class="absolute inset-0 bg-red-900/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center cursor-pointer z-30">
+                        <svg class="w-6 h-6 text-white mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                        <span class="text-white text-[10px] uppercase font-bold tracking-wider">Eliminar</span>
+                    </button>
+                </div>
+                {% endfor %}
+                {% endif %}
+
+                <template x-for="(preview, idx) in previews" :key="idx">
+                    <div
+                        class="relative group rounded-xl overflow-hidden border-2 border-cookie-pink/50 shadow-sm w-24 h-24 z-30">
+                        <img :src="preview" class="w-full h-full object-cover" />
+                        <button type="button" @click.prevent="removeFile(idx)"
+                            class="absolute inset-0 bg-red-900/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center cursor-pointer z-40">
+                            <svg class="w-6 h-6 text-white mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                            <span class="text-white text-[10px] uppercase font-bold tracking-wider">Eliminar</span>
+                        </button>
+                    </div>
+                </template>
+
+                <div x-show="{{ max_images }} === 0 || (files.length + {{ existing_cnt }} < {{ max_images }})"
+                    class="relative group rounded-xl border-2 border-dashed border-cookie-pink/50 hover:border-cookie-golden w-24 h-24 flex flex-col items-center justify-center cursor-pointer overflow-hidden text-cookie-brown/50 hover:text-cookie-golden transition-colors z-30">
+                    <input type="file" multiple accept="image/*" @change="handleFiles"
+                        class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-40">
+                    <svg class="w-6 h-6 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                    </svg>
+                    <span class="text-[10px] uppercase font-bold tracking-wider">Añadir</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Hidden input to actually submit the files to the backend -->
+        <input type="file" name="photos" multiple x-ref="photoInput" class="hidden" {% if is_required and
+            existing_cnt==0 %} x-bind:required="files.length === 0" {% endif %}>
+    </div>
+
+    <!-- Cropper Modal -->
+    <div x-show="isCropping" style="display: none;"
+        class="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 md:p-8">
+        <div class="bg-white rounded-2xl w-full max-w-2xl shadow-2xl flex flex-col max-h-full overflow-hidden"
+            @click.stop>
+
+            <!-- Header -->
+            <div
+                class="px-6 py-4 border-b border-cookie-pink/20 flex justify-between items-center bg-cookie-cream/30 shrink-0">
+                <h3 class="font-bold text-cookie-brown">Ajustar Recorte ({{ min_width }}x{{ min_height }})</h3>
+                <span class="text-xs font-semibold px-2 py-1 bg-cookie-pink/20 text-cookie-brown rounded-full"
+                    x-text="`Imagen ${cropIndex + 1} de ${totalToCrop}`"></span>
+            </div>
+
+            <!-- Cropper Canvas -->
+            <div class="flex-1 bg-[#E5E7EB] relative overflow-hidden h-[50vh] min-h-[300px]">
+                <img x-ref="cropImage" class="block max-w-full">
+            </div>
+
+            <!-- Footer Botones -->
+            <div
+                class="p-4 sm:p-6 border-t border-cookie-pink/20 bg-white flex flex-col-reverse sm:flex-row justify-center gap-3 sm:gap-6 shrink-0 z-10">
+                <button type="button" @click="cancelCrop()"
+                    class="cv-btn w-full sm:w-auto bg-cookie-cream text-cookie-brown border-cookie-pink/40 hover:bg-cookie-pink/10">Saltar/Cancelar</button>
+                <button type="button" @click="applyCrop()" class="cv-btn w-full sm:w-auto">Aplicar y Continuar</button>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<script>
+    function cropperData(minWidth, minHeight, maxImages, existingCnt, quality) {
+        return {
+            files: [],
+            previews: [],
+            cropQueue: [],
+            isCropping: false,
+            cropper: null,
+
+            // Counter variables for UI
+            cropIndex: 0,
+            totalToCrop: 0,
+
+            async handleFiles(evt) {
+                const rawFiles = Array.from(evt.target.files).filter(f => f.type.startsWith('image/'));
+                if (rawFiles.length === 0) return;
+
+                const validFiles = [];
+                const invalidFiles = [];
+
+                for (let file of rawFiles) {
+                    const img = new Image();
+                    img.src = URL.createObjectURL(file);
+                    await new Promise((resolve) => {
+                        img.onload = () => {
+                            if (img.width < minWidth || img.height < minHeight) {
+                                invalidFiles.push(file.name);
+                            } else {
+                                validFiles.push(file);
+                            }
+                            resolve();
+                        };
+                    });
+                }
+
+                if (invalidFiles.length > 0) {
+                    window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: `Las siguientes imágenes son muy pequeñas (mínimo ${minWidth}x${minHeight}px):\n- ${invalidFiles.join('\n- ')}`, duration: 6000 } }));
+                }
+
+                if (validFiles.length === 0) {
+                    evt.target.value = '';
+                    return;
+                }
+
+                if (maxImages > 0 && this.files.length + existingCnt + validFiles.length > maxImages) {
+                    window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: `Solo puedes tener un máximo de ${maxImages} imágenes en total.` } }));
+                    evt.target.value = '';
+                    return;
+                }
+
+                this.cropQueue = [...this.cropQueue, ...validFiles];
+                this.totalToCrop = this.cropQueue.length;
+                this.cropIndex = 0;
+
+                evt.target.value = ''; // clean input
+                this.processQueue();
+            },
+
+            processQueue() {
+                if (this.isCropping) return;
+                if (this.cropQueue.length === 0) return;
+
+                this.isCropping = true;
+                const file = this.cropQueue.shift();
+
+                const url = URL.createObjectURL(file);
+                this.$refs.cropImage.src = url;
+
+                this.$nextTick(() => {
+                    if (this.cropper) {
+                        this.cropper.destroy();
+                    }
+                    this.cropper = new Cropper(this.$refs.cropImage, {
+                        aspectRatio: minWidth / minHeight,
+                        viewMode: 2,
+                        autoCropArea: 1,
+                        background: false,
+                        cropBoxResizable: false,
+                        dragMode: 'move',
+                    });
+                });
+            },
+
+            applyCrop() {
+                if (!this.cropper) return;
+
+                // Extract the canvas explicitly at the requested resolution
+                const canvas = this.cropper.getCroppedCanvas({
+                    width: minWidth,
+                    height: minHeight,
+                    imageSmoothingEnabled: true,
+                    imageSmoothingQuality: 'high',
+                });
+
+                // Use webp to compress seamlessly with high fidelity
+                canvas.toBlob((blob) => {
+                    const ext = "webp";
+                    const fileName = `cropped_${Date.now()}_${Math.floor(Math.random() * 1000)}.${ext}`;
+                    const customFile = new File([blob], fileName, { type: "image/webp" });
+
+                    this.files.push(customFile);
+                    this.previews.push(URL.createObjectURL(blob));
+                    this.updateInputFiles();
+
+                    this.finishCrop();
+                }, "image/webp", quality);
+            },
+
+            cancelCrop() {
+                this.finishCrop();
+            },
+
+            finishCrop() {
+                this.isCropping = false;
+                if (this.cropper) {
+                    this.cropper.destroy();
+                    this.cropper = null;
+                }
+                this.cropIndex++;
+                this.processQueue();
+            },
+
+            removeFile(idx) {
+                this.files.splice(idx, 1);
+                this.previews.splice(idx, 1);
+                this.updateInputFiles();
+            },
+
+            updateInputFiles() {
+                const dt = new DataTransfer();
+                this.files.forEach(f => dt.items.add(f));
+                if (this.$refs.photoInput) {
+                    this.$refs.photoInput.files = dt.files;
+                }
+            }
+        }
+    }
+</script>
+{% endmacro %}

@@ -31,7 +31,7 @@ def get_new_order_form(
 ):
     products = product_service.list_products(only_active=True)
     return templates.TemplateResponse(
-        request=request, name="client/form.html", context={"products": products}
+        request=request, name="client/order_form.html", context={"products": products}
     )
 
 

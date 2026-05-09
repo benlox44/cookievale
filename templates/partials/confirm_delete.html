@@ -1,0 +1,20 @@
+{% macro render_confirm_delete(title, message) %}
+<!-- Fail fast if not provided -->
+{% if title is not defined or message is not defined %}
+{{ raise_error_fail_fast_missing_arguments() }}
+{% endif %}
+<div x-show="showConfirm" class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4"
+    style="display: none;">
+    <div @click.away="showConfirm = false"
+        class="bg-white rounded-2xl p-6 max-w-sm w-full shadow-2xl transform transition-all text-left whitespace-normal">
+        <h3 class="text-lg font-bold text-cookie-brown mb-2">{{ title }}</h3>
+        <p class="text-cookie-brown/70 text-sm mb-6">{{ message }}</p>
+        <div class="flex justify-end gap-3">
+            <button type="button" @click="showConfirm = false"
+                class="cv-btn bg-cookie-cream text-cookie-brown border-cookie-pink/40 hover:bg-cookie-pink/10 hover:border-cookie-golden">Cancelar</button>
+            <button type="button" @click="$el.closest('form').submit()"
+                class="cv-btn bg-red-500 hover:bg-red-600 text-white border-red-500 shadow-red-200">Eliminar</button>
+        </div>
+    </div>
+</div>
+{% endmacro %}

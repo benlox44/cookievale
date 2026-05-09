@@ -1,18 +1,59 @@
-{% macro render_uploader(max_images=0, is_required=False, existing_images=[]) %}
+{% macro render_uploader_client(max_images, is_required, existing_images, quality, max_width) %}
+{% if max_images is not defined or is_required is not defined or existing_images is not defined or quality is not
+defined or max_width is not defined %}
+{{ missing_required_argument_uploader() }}
+{% endif %}
 {% set existing_cnt = existing_images|length %}
 <div class="mb-4" x-data="{
     files: [],
     previews: [],
-    handleFiles(evt) {
-        const newFiles = Array.from(evt.target.files);
-        if ({{ max_images }} > 0 && this.files.length + {{ existing_cnt }} + newFiles.length > {{ max_images }}) {
-            alert('Solo puedes subir un m\u00E1ximo de {{ max_images }} im\u00E1genes en total.');
+    async handleFiles(evt) {
+        const rawFiles = Array.from(evt.target.files).filter(f => f.type.startsWith('image/'));
+        if (rawFiles.length === 0) return;
+
+        if ({{ max_images }} > 0 && this.files.length + {{ existing_cnt }} + rawFiles.length > {{ max_images }}) {
+            window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: `Solo puedes subir un máximo de {{ max_images }} imágenes en total.` } }));
             evt.target.value = '';
             return;
         }
-        this.files = [...this.files, ...newFiles];
-        this.previews = this.files.map(f => URL.createObjectURL(f));
-        this.updateInputFiles();
+
+        for (let file of rawFiles) {
+            const img = new Image();
+            img.src = URL.createObjectURL(file);
+            await new Promise(resolve => {
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    let width = img.width;
+                    let height = img.height;
+                    const maxSize = {{ max_width }};
+
+                    if (width > maxSize || height > maxSize) {
+                        if (width > height) {
+                            height = Math.round((height * maxSize) / width);
+                            width = maxSize;
+                        } else {
+                            width = Math.round((width * maxSize) / height);
+                            height = maxSize;
+                        }
+                    }
+
+                    canvas.width = width;
+                    canvas.height = height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, width, height);
+
+                    canvas.toBlob((blob) => {
+                        const fileName = `compressed_${Date.now()}_${Math.floor(Math.random()*1000)}.webp`;
+                        const customFile = new File([blob], fileName, { type: 'image/webp' });
+
+                        this.files.push(customFile);
+                        this.previews.push(URL.createObjectURL(blob));
+                        this.updateInputFiles();
+                        resolve();
+                    }, 'image/webp', {{ quality }});
+                };
+            });
+        }
         evt.target.value = '';
     },
     removeFile(idx) {

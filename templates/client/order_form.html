@@ -33,7 +33,7 @@
                         @input="if($event.target.value.length > 3) $event.target.value = $event.target.value.slice(0,3); setQuantity({{ product.id }}, '{{ product.name }}', {{ product.price }}, $event.target.value)"
                         title="Escribe la cantidad que deseas"
                         class="w-16 text-center font-bold text-cookie-brown bg-white border border-cookie-pink/20 rounded-md mx-2 box-border focus:outline-none focus:ring-2 focus:ring-cookie-pink/40 transition-all shadow-inner [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
-                        style="-moz-appearance: textfield;">
+                        style="-moz-appearance: textfield; appearance: textfield;">
                     <button type="button" @click="addItem({{ product.id }}, '{{ product.name }}', {{ product.price }})"
                         class="w-9 h-9 flex items-center justify-center rounded-lg bg-cookie-pink/40 text-cookie-brown hover:bg-cookie-golden hover:text-white transition-all active:scale-90 shrink-0">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -102,7 +102,24 @@
             <!-- Customer Fields -->
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                 <div>
-                    <label class="cv-label block mb-1.5">Instagram <span class="text-red-400">*</span></label>
+                    <div class="flex items-center gap-2 mb-1.5">
+                        <label class="cv-label block mb-0">Instagram</label>
+                        <div class="relative group flex items-center">
+                            <svg class="w-4 h-4 text-cookie-brown/50 hover:text-cookie-golden cursor-help transition-colors"
+                                fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            <div
+                                class="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 w-48 p-2 bg-cookie-brown text-white text-xs rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-10 text-center pointer-events-none fade-in">
+                                Para poder contactarte y coordinar tu pedido.
+                                <svg class="absolute top-full left-1/2 -translate-x-1/2 text-cookie-brown h-2 w-full"
+                                    x="0px" y="0px" viewBox="0 0 255 255" xml:space="preserve">
+                                    <polygon fill="currentColor" points="0,0 127.5,127.5 255,0" />
+                                </svg>
+                            </div>
+                        </div>
+                    </div>
                     <div class="relative">
                         <span
                             class="absolute inset-y-0 left-0 flex items-center pl-4 text-cookie-brown/40 font-medium pointer-events-none">@</span>
@@ -117,22 +134,21 @@
                         return d.toISOString().split('T')[0];
                     }
                 }">
-                    <label class="cv-label block mb-1.5">Fecha de Entrega <span class="text-red-400">*</span></label>
+                    <label class="cv-label block mb-1.5">Fecha de Entrega</label>
                     <input type="date" name="delivery_date" required class="cv-input" :min="getTomorrow()">
                 </div>
             </div>
 
             <!-- Photos -->
             <label class="cv-label block mb-1.5">Imagen de Referencia <span
-                    class="text-cookie-brown/40 font-normal">(Máximo 3)</span> <span
-                    class="text-red-400">*</span></label>
-            {% from "partials/uploader.html" import render_uploader %}
-            {{ render_uploader(max_images=3, is_required=True) }}
+                    class="text-cookie-brown/40 font-normal">(Máximo 3)</span></label>
+            {% from "partials/uploader_client.html" import render_uploader_client %}
+            {{ render_uploader_client(3, True, [], 0.8, 2000) }}
 
 
             <!-- Notes -->
             <div class="mb-6">
-                <label class="cv-label block mb-1.5">Descripción del Diseño <span class="text-red-400">*</span></label>
+                <label class="cv-label block mb-1.5">Descripción del Diseño</label>
                 <textarea name="description" rows="3"
                     placeholder="Ej: Quiero un diseño para un bautizo, colores celeste y blanco..."
                     class="cv-input resize-none" required></textarea>
