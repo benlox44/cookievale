@@ -1,4 +1,4 @@
-.PHONY: up down build shell logs restart lint format reset-db
+is .PHONY: up down build shell logs restart lint format reset-db backup
 
 DC := docker-compose
 APP := web
@@ -35,3 +35,6 @@ reset-db:
 	@sleep 5
 	$(DC) exec $(APP) alembic upgrade head
 	@echo "Database reset complete."
+
+backup:
+	@cmd /c "backup.bat"
