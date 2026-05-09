@@ -31,15 +31,18 @@
                 <div
                     class="flex items-center justify-between bg-cookie-cream rounded-xl p-1.5 border border-cookie-pink/30">
                     <button type="button" @click="removeItem({{ product.id }})"
-                        class="w-9 h-9 flex items-center justify-center rounded-lg text-cookie-brown/60 hover:bg-white hover:shadow-sm hover:text-red-400 transition-all active:scale-90">
+                        class="w-9 h-9 flex items-center justify-center rounded-lg text-cookie-brown/60 hover:bg-white hover:shadow-sm hover:text-red-400 transition-all active:scale-90 shrink-0">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M20 12H4" />
                         </svg>
                     </button>
-                    <span class="flex-grow text-center font-bold text-cookie-brown"
-                        x-text="getQuantity({{ product.id }})">0</span>
+                    <input type="number" min="0" max="999" :value="getQuantity({{ product.id }})"
+                        @input="if($event.target.value.length > 3) $event.target.value = $event.target.value.slice(0,3); setQuantity({{ product.id }}, '{{ product.name }}', {{ product.price }}, $event.target.value)"
+                        title="Escribe la cantidad que deseas"
+                        class="w-16 text-center font-bold text-cookie-brown bg-white border border-cookie-pink/20 rounded-md mx-2 box-border focus:outline-none focus:ring-2 focus:ring-cookie-pink/40 transition-all shadow-inner [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                        style="-moz-appearance: textfield;">
                     <button type="button" @click="addItem({{ product.id }}, '{{ product.name }}', {{ product.price }})"
-                        class="w-9 h-9 flex items-center justify-center rounded-lg bg-cookie-pink/40 text-cookie-brown hover:bg-cookie-golden hover:text-white transition-all active:scale-90">
+                        class="w-9 h-9 flex items-center justify-center rounded-lg bg-cookie-pink/40 text-cookie-brown hover:bg-cookie-golden hover:text-white transition-all active:scale-90 shrink-0">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
                                 d="M12 4v16m8-8H4" />
@@ -271,6 +274,20 @@
                 if (idx !== -1) {
                     if (this.cart[idx].quantity > 1) { this.cart[idx].quantity--; }
                     else { this.cart.splice(idx, 1); }
+                }
+                this.updateJson();
+            },
+            setQuantity(productId, name, price, quantity) {
+                let parsedQty = parseInt(quantity);
+                if (isNaN(parsedQty) || parsedQty < 0) return; // Wait for valid input
+                if (parsedQty > 999) parsedQty = 999; // Cap at 3 digits maximum
+
+                const idx = this.cart.findIndex(i => i.product_id === productId);
+                if (parsedQty === 0) {
+                    if (idx !== -1) { this.cart.splice(idx, 1); }
+                } else {
+                    if (idx !== -1) { this.cart[idx].quantity = parsedQty; }
+                    else { this.cart.push({ product_id: productId, name, price, quantity: parsedQty }); }
                 }
                 this.updateJson();
             },
