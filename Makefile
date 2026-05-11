@@ -1,4 +1,4 @@
-is .PHONY: up down build shell logs restart lint format reset-db backup
+.PHONY: up down build shell logs restart lint format migrate reset-db backup
 
 DC := docker-compose
 APP := web
@@ -26,6 +26,9 @@ lint:
 
 format:
 	$(DC) exec $(APP) ruff format .
+
+migrate:
+	$(DC) exec $(APP) alembic upgrade head
 
 reset-db:
 	@echo "Resetting database..."
