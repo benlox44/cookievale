@@ -81,6 +81,7 @@ def update_order_details(
     delivery_date: str = Form(...),
     description: str = Form(...),
     amount_paid: float = Form(0.0),
+    status: OrderStatus = Form(...),
     service: OrderService = Depends(get_order_service),
     admin: str = Depends(get_current_admin),
 ):
@@ -91,6 +92,8 @@ def update_order_details(
     order = service.get_order(order_id)
     if order:
         amount_paid = max(0.0, min(amount_paid, order.total_amount))
+        if order.status != status:
+            service.change_status(order_id, status)
 
     dto = OrderUpdateRequest(
         delivery_date=dt, description=description, amount_paid=amount_paid

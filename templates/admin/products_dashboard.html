@@ -8,15 +8,23 @@
     <!-- Header -->
     <div class="cv-card mb-6 flex flex-col md:flex-row justify-between items-center py-4 px-6 md:px-8 gap-4">
         <div class="flex items-center gap-4 w-full md:w-auto">
-            <a href="/admin" class="cv-btn text-xs px-4 py-2">← Volver</a>
-            <h1 class="cv-h2 m-0">Productos</h1>
+            <a href="/admin"
+                class="text-cookie-golden hover:text-cookie-brown bg-cookie-cream inline-flex items-center justify-center w-10 h-10 rounded-full border border-cookie-pink/40 hover:border-cookie-golden shadow-sm transition-all"
+                title="Volver">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
+                        d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                </svg>
+            </a>
+            <h1 class="cv-h2 m-0 flex items-center gap-2">Productos</h1>
         </div>
 
-        <a href="/admin/products/new" class="cv-btn text-xs px-4 py-2 flex items-center gap-1.5">
+        <a href="/admin/products/new"
+            class="cv-btn text-xs px-4 py-2 flex items-center gap-1.5 w-full md:w-auto mt-2 md:mt-0">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4" />
             </svg>
-            Crear Nuevo Producto
+            Crear nuevo producto
         </a>
     </div>
 
@@ -37,7 +45,8 @@
                     {{ "Activo" if product.is_active else "Inactivo" }}
                 </span>
                 <div class="flex gap-2 items-center">
-                    <form action="/admin/products/{{ product.id }}/delete" method="POST" x-data="{ showConfirm: false }"
+                    <form action="/admin/products/{{ product.id }}/delete" method="POST" id="form-delete-{{product.id}}"
+                        x-data="{ showConfirm: false }"
                         @submit.prevent="if(showConfirm) { $el.submit() } else { showConfirm = true }">
                         <button type="submit"
                             class="w-8 h-8 rounded-full bg-red-50 text-red-500 hover:bg-red-500 hover:text-white flex items-center justify-center transition-colors border border-red-100">

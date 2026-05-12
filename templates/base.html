@@ -253,15 +253,15 @@
     </style>
 </head>
 
-<body class="{% block body_class %}min-h-screen flex flex-col{% endblock %}">
+<body class="{% block body_class %}min-h-screen flex flex-col overflow-x-hidden{% endblock %}">
 
     {% set is_admin = request and '/admin' in request.url.path %}
     {% block header %}
-        {% if is_admin %}
-            {% include "admin/partials/header.html" %}
-        {% else %}
-            {% include "client/partials/header.html" %}
-        {% endif %}
+    {% if is_admin %}
+    {% include "admin/partials/header.html" %}
+    {% else %}
+    {% include "client/partials/header.html" %}
+    {% endif %}
     {% endblock %}
 
     <main class="{% block main_class %}max-w-4xl mx-auto px-4 md:px-8 py-8 flex-grow w-full{% endblock %}">

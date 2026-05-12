@@ -1,0 +1,98 @@
+<style>
+    @keyframes scroll-left {
+        0% {
+            transform: translateX(0);
+        }
+
+        100% {
+            transform: translateX(-50%);
+        }
+    }
+
+    @keyframes scroll-right {
+        0% {
+            transform: translateX(-50%);
+        }
+
+        100% {
+            transform: translateX(0);
+        }
+    }
+
+    .row-scroll-left {
+        animation: scroll-left 100s linear infinite;
+    }
+
+    .row-scroll-right {
+        animation: scroll-right 100s linear infinite;
+    }
+</style>
+
+<div
+    class="absolute inset-0 z-[-20] overflow-hidden bg-[#FDF5EE] pointer-events-none flex flex-col justify-center gap-0 transform -rotate-[15deg] scale-150">
+    {% set images1 = [
+    "/public/background/IMG_3169.webp",
+    "/public/background/IMG_3257.webp",
+    "/public/background/IMG_3447.webp",
+    "/public/background/IMG_4065.webp",
+    "/public/background/IMG_4127.webp",
+    "/public/background/IMG_4476.webp",
+    "/public/background/IMG_4481.webp"
+    ] %}
+    {% set images2 = [
+    "/public/background/IMG_4812.webp",
+    "/public/background/IMG_5059.webp",
+    "/public/background/IMG_5115.webp",
+    "/public/background/IMG_5125.webp",
+    "/public/background/IMG_5249.webp",
+    "/public/background/IMG_8494.webp",
+    "/public/background/IMG_8871.webp"
+    ] %}
+
+    <!-- Fila 1 (hacia la izquierda) -->
+    <div class="flex gap-0 row-scroll-left w-max">
+        {% for _ in range(4) %}
+        {% for img in images1 %}
+        <div class="w-40 h-40 sm:w-56 sm:h-56 overflow-hidden flex-shrink-0">
+            <img src="{{ img }}" class="w-full h-full object-cover" loading="lazy">
+        </div>
+        {% endfor %}
+        {% endfor %}
+    </div>
+
+    <!-- Fila 2 (hacia la derecha) -->
+    <div class="flex gap-0 row-scroll-right w-max -ml-24">
+        {% for _ in range(4) %}
+        {% for img in images2 %}
+        <div class="w-40 h-40 sm:w-56 sm:h-56 overflow-hidden flex-shrink-0">
+            <img src="{{ img }}" class="w-full h-full object-cover" loading="lazy">
+        </div>
+        {% endfor %}
+        {% endfor %}
+    </div>
+
+    <!-- Fila 3 (hacia la izquierda) -->
+    <div class="flex gap-0 row-scroll-left w-max -ml-40">
+        {% for _ in range(4) %}
+        {% for img in images1|reverse %}
+        <div class="w-40 h-40 sm:w-56 sm:h-56 overflow-hidden flex-shrink-0">
+            <img src="{{ img }}" class="w-full h-full object-cover" loading="lazy">
+        </div>
+        {% endfor %}
+        {% endfor %}
+    </div>
+
+    <!-- Fila 4 adicional para llenar pantalla con la rotación -->
+    <div class="flex gap-0 row-scroll-right w-max -ml-16">
+        {% for _ in range(4) %}
+        {% for img in images2|reverse %}
+        <div class="w-40 h-40 sm:w-56 sm:h-56 overflow-hidden flex-shrink-0">
+            <img src="{{ img }}" class="w-full h-full object-cover" loading="lazy">
+        </div>
+        {% endfor %}
+        {% endfor %}
+    </div>
+
+    <!-- Subtle dark overlay -->
+    <div class="absolute inset-0 bg-black/10 pointer-events-none"></div>
+</div>

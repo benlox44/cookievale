@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Realizar Orden - CookieVale{% endblock %}
+{% block title %}Realizar orden - CookieVale{% endblock %}
 
 {% block content %}
 <div x-data="cookieCart()">
@@ -134,13 +134,13 @@
                         return d.toISOString().split('T')[0];
                     }
                 }">
-                    <label class="cv-label block mb-1.5">Fecha de Entrega</label>
+                    <label class="cv-label block mb-1.5">Fecha de entrega deseada</label>
                     <input type="date" name="delivery_date" required class="cv-input" :min="getTomorrow()">
                 </div>
             </div>
 
             <!-- Photos -->
-            <label class="cv-label block mb-1.5">Imagen de Referencia <span
+            <label class="cv-label block mb-1.5">Imagen(es) de referencia <span
                     class="text-cookie-brown/40 font-normal">(Máximo 3)</span></label>
             {% from "partials/uploader_client.html" import render_uploader_client %}
             {{ render_uploader_client(3, True, [], 0.8, 2000) }}
@@ -148,7 +148,7 @@
 
             <!-- Notes -->
             <div class="mb-6">
-                <label class="cv-label block mb-1.5">Descripción del Diseño</label>
+                <label class="cv-label block mb-1.5">Descripción del diseño</label>
                 <textarea name="description" rows="3"
                     placeholder="Ej: Quiero un diseño para un bautizo, colores celeste y blanco..."
                     class="cv-input resize-none" required></textarea>

@@ -4,6 +4,7 @@ import uuid
 from typing import List, Optional
 from fastapi import UploadFile
 
+from app.core.telegram import TelegramNotifier
 from app.modules.orders.domain import Order, OrderStatus, OrderItem
 from app.modules.orders.repository import OrderRepository
 from app.modules.orders.schemas import OrderCreateRequest, OrderUpdateRequest
@@ -56,6 +57,24 @@ class OrderService:
             order.reference_photos = saved_paths
             order = self.repository.save(order)
 
+        try:
+            notifier = TelegramNotifier()
+            items_str = "\n".join(
+                [f"• {i.product_name} x {i.quantity}" for i in order.items]
+            )
+
+            notifier.send_message(
+                f"🛍️ <b>¡Nueva Orden (ID: {order.id})!</b>\n\n"
+                f"👤 <b>Instagram:</b> @{order.customer_instagram}\n"
+                f"🗓️ <b>Fecha Entrega:</b> {order.delivery_date.strftime('%Y-%m-%d')}\n"
+                f"📋 <b>Productos:</b>\n{items_str}\n"
+                f"💰 <b>Total:</b> ${order.total_amount:,.0f}"
+            )
+        except Exception as e:
+            # We catch Exception here broadly so that if TelegramNotifier crashes (e.g. KeyError on missing env vars)
+            # the customer still sees their order as successfully placed.
+            print(f"Failed to send Telegram notification: {e}")
+
         return order
 
     def get_order(self, order_id: int) -> Optional[Order]:
@@ -81,3 +100,9 @@ class OrderService:
 
     def delete_order(self, order_id: int) -> None:
         self.repository.delete(order_id)
+        # Delete related media files
+        order_dir = os.path.join(
+            os.environ["CONTAINER_MEDIA_PATH"], f"orders/{order_id}"
+        )
+        if os.path.exists(order_dir):
+            shutil.rmtree(order_dir)

@@ -1,49 +1,57 @@
 {% extends "base.html" %}
 {% block title %}Panel de Administración - CookieVale{% endblock %}
-{% block body_class %}overflow-hidden h-screen flex flex-col{% endblock %}
+{% block body_class %}h-[100dvh] w-screen overflow-hidden bg-cookie-cream flex flex-col m-0 p-0{% endblock %}
 {% block header %}{% endblock %}
-{% block main_class %}flex-grow flex items-center justify-center w-full p-4{% endblock %}
+
+{% block main_class %}flex-1 flex flex-col items-center justify-center p-4 w-full h-full overflow-hidden relative{%
+endblock %}
 
 {% block content %}
-<div class="relative w-full flex flex-col items-center justify-center text-center">
-    <!-- Decorative blobs -->
-    <div class="absolute -top-20 -left-10 w-64 h-64 bg-cookie-pink/40 rounded-full blur-3xl -z-10 pointer-events-none">
-    </div>
+<!-- Decorative blobs securely contained -->
+<div
+    class="absolute -top-10 -left-10 w-48 h-48 sm:w-64 sm:h-64 bg-cookie-pink/40 rounded-full blur-3xl -z-10 pointer-events-none">
+</div>
+<div
+    class="absolute -bottom-10 -right-10 w-56 h-56 sm:w-72 sm:h-72 bg-cookie-peach/20 rounded-full blur-3xl -z-10 pointer-events-none">
+</div>
+
+<div
+    class="relative bg-white/70 backdrop-blur-sm border border-cookie-pink/40 rounded-[2.5rem] shadow-[0_8px_40px_rgba(212,149,106,0.12)] p-8 sm:p-12 w-full max-w-lg text-center mx-auto z-10">
+
+    <a href="/" target="_blank"
+        class="absolute top-5 right-5 flex items-center justify-center p-2 rounded-full text-cookie-brown/40 hover:text-cookie-brown hover:bg-cookie-brown/5 transition-colors"
+        title="Ver sitio público">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9">
+            </path>
+        </svg>
+    </a>
+
+    <!-- Icon -->
     <div
-        class="absolute -bottom-20 -right-10 w-72 h-72 bg-cookie-peach/20 rounded-full blur-3xl -z-10 pointer-events-none">
+        class="w-20 h-20 sm:w-24 sm:h-24 mx-auto bg-cookie-pink/20 rounded-full flex items-center justify-center mb-5 sm:mb-6 border border-cookie-pink/30 hover:scale-105 transition-transform duration-500">
+        <img src="/public/icons/icon.png" alt="CookieVale" class="w-14 h-14 sm:w-16 sm:h-16 object-contain drop-shadow">
     </div>
 
-    <div
-        class="bg-white/70 backdrop-blur-sm border border-cookie-pink/40 rounded-[2.5rem] shadow-[0_8px_40px_rgba(212,149,106,0.12)] p-10 md:p-14 max-w-xl w-full">
+    <h1 class="cv-h1 mb-2 sm:mb-3 text-[2rem] sm:text-[2.5rem] leading-tight">CookieVale</h1>
+    <p class="text-cookie-brown/70 mb-8 sm:mb-10 text-sm sm:text-base font-normal leading-relaxed px-2">
+        Panel de control de administración.
+    </p>
 
-        <!-- Icon -->
-        <div
-            class="w-28 h-28 mx-auto bg-cookie-pink/20 rounded-full flex items-center justify-center mb-6 border border-cookie-pink/30 hover:scale-105 transition-transform duration-500">
-            <img src="/public/icons/icon.png" alt="CookieVale" class="w-20 h-20 object-contain drop-shadow">
-        </div>
-
-        <h1 class="cv-h1 mb-3" style="font-size:2.75rem;">CookieVale</h1>
-        <p class="text-cookie-brown/60 mb-10 text-base font-normal leading-relaxed">
-            Panel de control de administración.
-        </p>
-
-        <div class="flex flex-col sm:flex-row gap-3 justify-center">
-            <a href="/admin/orders" class="cv-btn text-base px-8 py-3.5">
-                Órdenes
-            </a>
-            <a href="/admin/products" class="cv-btn text-base px-8 py-3.5">
-                Productos
-            </a>
-        </div>
-
-        <div class="mt-6 border-t border-cookie-pink/20 pt-6">
-            <form action="/admin/logout" method="POST" class="inline-block">
-                <button type="submit"
-                    class="cv-btn-ghost text-red-500 border-red-200 hover:bg-red-50 hover:border-red-300 text-sm px-6 py-2.5">
-                    Cerrar sesión
-                </button>
-            </form>
-        </div>
+    <div class="flex flex-col gap-3">
+        <a href="/admin/orders" class="cv-btn w-full text-base py-3.5 flex justify-center items-center">
+            Órdenes
+            <svg class="w-5 h-5 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7" />
+            </svg>
+        </a>
+        <a href="/admin/products" class="cv-btn-ghost w-full text-base py-3.5 flex items-center justify-center gap-2">
+            <svg class="w-5 h-5 text-cookie-golden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M12 4v16m8-8H4" />
+            </svg>
+            Productos
+        </a>
     </div>
 </div>
 {% endblock %}

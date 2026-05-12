@@ -50,7 +50,15 @@ class ProductService:
         return self.repository.update(product_id, data, image_urls)
 
     def delete_product(self, product_id: int) -> bool:
-        return self.repository.delete(product_id)
+        success = self.repository.delete(product_id)
+        if success:
+            # Delete related media files
+            product_dir = os.path.join(
+                os.environ["CONTAINER_MEDIA_PATH"], "products", str(product_id)
+            )
+            if os.path.exists(product_dir):
+                shutil.rmtree(product_dir)
+        return success
 
     def _save_photos(self, product_id: int, photos: List[UploadFile]) -> List[str]:
         products_dir = os.path.join(

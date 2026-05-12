@@ -6,36 +6,51 @@
     <div class="cv-card p-0 overflow-hidden shadow-[0_4px_20px_rgba(212,149,106,0.1)] mb-8">
 
         <!-- Header -->
-        <div class="px-6 py-4 border-b border-cookie-pink/30 flex items-center gap-4 bg-cookie-cream/50">
-            <a href="/admin/orders" class="cv-btn text-xs px-4 py-2">← Volver</a>
-            <h1 class="cv-h2 mb-0">Orden #{{ order.id }}</h1>
+        <div
+            class="flex flex-col md:flex-row justify-between items-center py-4 px-6 border-b border-cookie-pink/30 bg-cookie-cream/50 gap-4">
+            <div class="flex items-center gap-4 flex-shrink-0 w-full md:w-auto">
+                <a href="/admin/orders"
+                    class="text-cookie-golden hover:text-cookie-brown bg-cookie-cream inline-flex items-center justify-center w-10 h-10 rounded-full border border-cookie-pink/40 hover:border-cookie-golden shadow-sm transition-all"
+                    title="Volver">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
+                            d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                    </svg>
+                </a>
+                <h1 class="cv-h2 mb-0 flex items-center gap-2 m-0">Orden <span
+                        class="text-cookie-brown/50 font-normal">#</span>{{ order.id }}</h1>
+            </div>
 
-
-            <div class="ml-auto w-full md:w-auto">
-                <form action="/admin/orders/{{ order.id }}/status" method="POST"
-                    class="flex flex-wrap items-center gap-1.5 justify-end m-0">
+            <div class="w-full md:w-auto mt-2 md:mt-0">
+                <input type="hidden" name="status" x-model="formData.status" form="order-form" />
+                <div class="flex flex-wrap items-center gap-1.5 justify-start md:justify-end m-0">
                     <span class="cv-label text-cookie-brown mb-0 mr-2 hidden md:inline-block">Estado:</span>
-                    <button type="submit" name="status" value="pending"
-                        class="px-3 py-1.5 text-xs font-bold rounded-full transition-all border shadow-sm {% if order.status.value == 'pending' %}bg-amber-100 text-amber-800 border-amber-300 ring-2 ring-amber-300{% else %}bg-white text-cookie-brown border-cookie-pink/40 hover:bg-amber-50 opacity-70 hover:opacity-100{% endif %}">
+                    <button type="button" @click="formData.status = 'pending'"
+                        class="px-3 py-1.5 text-xs font-bold rounded-full transition-all border shadow-sm"
+                        :class="formData.status === 'pending' ? 'bg-amber-100 text-amber-800 border-amber-300 ring-2 ring-amber-300' : 'bg-white text-cookie-brown border-cookie-pink/40 hover:bg-amber-50 opacity-70 hover:opacity-100'">
                         Pendiente
                     </button>
-                    <button type="submit" name="status" value="confirmed"
-                        class="px-3 py-1.5 text-xs font-bold rounded-full transition-all border shadow-sm {% if order.status.value == 'confirmed' %}bg-sky-100 text-sky-800 border-sky-300 ring-2 ring-sky-300{% else %}bg-white text-cookie-brown border-cookie-pink/40 hover:bg-sky-50 opacity-70 hover:opacity-100{% endif %}">
+                    <button type="button" @click="formData.status = 'confirmed'"
+                        class="px-3 py-1.5 text-xs font-bold rounded-full transition-all border shadow-sm"
+                        :class="formData.status === 'confirmed' ? 'bg-sky-100 text-sky-800 border-sky-300 ring-2 ring-sky-300' : 'bg-white text-cookie-brown border-cookie-pink/40 hover:bg-sky-50 opacity-70 hover:opacity-100'">
                         Confirmada
                     </button>
-                    <button type="submit" name="status" value="paid"
-                        class="px-3 py-1.5 text-xs font-bold rounded-full transition-all border shadow-sm {% if order.status.value == 'paid' %}bg-emerald-100 text-emerald-800 border-emerald-300 ring-2 ring-emerald-300{% else %}bg-white text-cookie-brown border-cookie-pink/40 hover:bg-emerald-50 opacity-70 hover:opacity-100{% endif %}">
+                    <button type="button" @click="formData.status = 'paid'"
+                        class="px-3 py-1.5 text-xs font-bold rounded-full transition-all border shadow-sm"
+                        :class="formData.status === 'paid' ? 'bg-emerald-100 text-emerald-800 border-emerald-300 ring-2 ring-emerald-300' : 'bg-white text-cookie-brown border-cookie-pink/40 hover:bg-emerald-50 opacity-70 hover:opacity-100'">
                         Pagada
                     </button>
-                    <button type="submit" name="status" value="delivered"
-                        class="px-3 py-1.5 text-xs font-bold rounded-full transition-all border shadow-sm {% if order.status.value == 'delivered' %}bg-purple-100 text-purple-800 border-purple-300 ring-2 ring-purple-300{% else %}bg-white text-cookie-brown border-cookie-pink/40 hover:bg-purple-50 opacity-70 hover:opacity-100{% endif %}">
+                    <button type="button" @click="formData.status = 'delivered'"
+                        class="px-3 py-1.5 text-xs font-bold rounded-full transition-all border shadow-sm"
+                        :class="formData.status === 'delivered' ? 'bg-purple-100 text-purple-800 border-purple-300 ring-2 ring-purple-300' : 'bg-white text-cookie-brown border-cookie-pink/40 hover:bg-purple-50 opacity-70 hover:opacity-100'">
                         Entregada
                     </button>
-                    <button type="submit" name="status" value="rejected"
-                        class="px-3 py-1.5 text-xs font-bold rounded-full transition-all border shadow-sm {% if order.status.value == 'rejected' %}bg-rose-100 text-rose-800 border-rose-300 ring-2 ring-rose-300{% else %}bg-white text-cookie-brown border-cookie-pink/40 hover:bg-rose-50 opacity-70 hover:opacity-100{% endif %}">
+                    <button type="button" @click="formData.status = 'rejected'"
+                        class="px-3 py-1.5 text-xs font-bold rounded-full transition-all border shadow-sm"
+                        :class="formData.status === 'rejected' ? 'bg-rose-100 text-rose-800 border-rose-300 ring-2 ring-rose-300' : 'bg-white text-cookie-brown border-cookie-pink/40 hover:bg-rose-50 opacity-70 hover:opacity-100'">
                         Rechazada
                     </button>
-                </form>
+                </div>
             </div>
             </form>
         </div>
@@ -48,7 +63,7 @@
         <!-- Left: Details & Edit -->
         <div>
             <h2 class="cv-h2 mb-5">Detalles y Edición</h2>
-            <form action="/admin/orders/{{ order.id }}" method="POST" class="space-y-5">
+            <form id="order-form" action="/admin/orders/{{ order.id }}" method="POST" class="space-y-5">
 
                 <div>
                     <label class="cv-label block mb-1.5">Instagram</label>
@@ -64,7 +79,7 @@
 
                 <!-- Cart summary (read-only) -->
                 <div class="bg-cookie-cream/70 rounded-2xl border border-cookie-pink/30 p-4">
-                    <p class="cv-label mb-3">Carrito</p>
+                    <p class="cv-label mb-3">Pedido</p>
                     <ul class="space-y-2 mb-3">
                         {% for item in order.items %}
                         <li class="flex justify-between text-sm">
@@ -101,7 +116,7 @@
                 </div>
 
                 <div>
-                    <label class="cv-label block mb-1.5">Descripción del Diseño</label>
+                    <label class="cv-label block mb-1.5">Descripción del diseño</label>
                     <textarea name="description" rows="3" x-model="formData.description" class="cv-input resize-none"
                         required></textarea>
                 </div>
@@ -114,7 +129,7 @@
 
         <!-- Right: Photos -->
         <div>
-            <h2 class="cv-h2 mb-5">Imagen(es) de Referencia</h2>
+            <h2 class="cv-h2 mb-5">Imagen(es) de referencia</h2>
             {% if order.reference_photos and order.reference_photos|length > 0 %}
             <div class="grid grid-cols-1 gap-4">
                 {% for photo in order.reference_photos %}
@@ -169,17 +184,20 @@
     document.addEventListener('alpine:init', () => {
         Alpine.data('orderDetail', () => ({
             formData: {
+                status: '{{ order.status.value }}',
                 amount_paid: '{{ "{:.0f}".format(order.amount_paid) }}',
                 delivery_date: '{{ order.delivery_date.strftime("%Y-%m-%d") }}',
                 description: `{{ order.description or '' }}`
             },
             initialData: {
+                status: '{{ order.status.value }}',
                 amount_paid: '{{ "{:.0f}".format(order.amount_paid) }}',
                 delivery_date: '{{ order.delivery_date.strftime("%Y-%m-%d") }}',
                 description: `{{ order.description or '' }}`
             },
             get isModified() {
-                return String(this.formData.amount_paid) !== String(this.initialData.amount_paid) ||
+                return String(this.formData.status) !== String(this.initialData.status) ||
+                    String(this.formData.amount_paid) !== String(this.initialData.amount_paid) ||
                     String(this.formData.delivery_date) !== String(this.initialData.delivery_date) ||
                     String(this.formData.description) !== String(this.initialData.description);
             },

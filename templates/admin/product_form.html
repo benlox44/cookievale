@@ -5,7 +5,7 @@
     <div class="cv-card mb-6 flex items-center justify-start gap-4 py-4 px-6 md:px-8">
         <a href="/admin/products" class="cv-btn text-xs px-4 py-2">← Volver</a>
         <h1 class="cv-h2 m-0">
-            {% if product %}Editar Producto{% else %}Nuevo Producto{% endif %}
+            {% if product %}Editar producto{% else %}Nuevo producto{% endif %}
         </h1>
     </div>
     <div class="cv-card p-0 overflow-hidden shadow-[0_4px_20px_rgba(212,149,106,0.1)]">
@@ -24,10 +24,12 @@
             </div>
             <div>
                 <label class="cv-label mb-1">Descripción</label>
-                <textarea name="description"
-                    class="cv-input w-full min-h-[100px]">{{ product.description if product else '' }}</textarea>
+                <input type="text" name="description" class="cv-input w-full"
+                    value="{{ product.description if product else '' }}">
+            </div>
+            <div>
                 <!-- Image Submissions -->
-                <label class="cv-label block mb-1.5">Imágenes</label>
+                <label class="cv-label block mb-1.5 mt-2">Imágen(es)</label>
                 {% from "partials/uploader_admin.html" import render_uploader_admin %}
                 {{ render_uploader_admin((not product or not product.image_urls),
                 (product.image_urls if product and product.image_urls else []),
@@ -36,7 +38,7 @@
                 <label class="flex items-center gap-3 cv-label cursor-pointer mt-4">
                     <input type="checkbox" name="is_active" value="True" {% if product and product.is_active %}checked{%
                         elif not product %}checked{% endif %} class="w-5 h-5 accent-cookie-golden rounded">
-                    Producto Activo
+                    Producto activo
                 </label>
                 <div class="pt-4 flex justify-end gap-3">
                     <a href="/admin/products"
