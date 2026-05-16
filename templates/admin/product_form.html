@@ -29,11 +29,11 @@
             </div>
             <div>
                 <!-- Image Submissions -->
-                <label class="cv-label block mb-1.5 mt-2">Imágen(es)</label>
+                <label class="cv-label block mb-1.5 mt-2">Imágen(es) <span class="text-cookie-brown/40 font-normal">(Máximo 10)</span></label>
                 {% from "partials/uploader_admin.html" import render_uploader_admin %}
                 {{ render_uploader_admin((not product or not product.image_urls),
                 (product.image_urls if product and product.image_urls else []),
-                1200, 1200, 0.9, 0) }}
+                1200, 1200, 0.9, 10) }}
 
                 <label class="flex items-center gap-3 cv-label cursor-pointer mt-4">
                     <input type="checkbox" name="is_active" value="True" {% if product and product.is_active %}checked{%

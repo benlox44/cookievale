@@ -41,7 +41,7 @@ class OrderService:
             )
             os.makedirs(order_dir, exist_ok=True)
 
-            for photo in photos[:3]:
+            for photo in photos[:8]:
                 if not photo.filename:
                     continue
                 ext = photo.filename.split(".")[-1]

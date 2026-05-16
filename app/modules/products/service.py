@@ -26,7 +26,7 @@ class ProductService:
         product = self.repository.create(data, None)
 
         if photos:
-            valid_photos = [p for p in photos if p.filename]
+            valid_photos = [p for p in photos if p.filename][:10]
             if valid_photos:
                 image_urls = self._save_photos(product.id, valid_photos)
                 product = self.repository.update(product.id, data, image_urls)
@@ -46,6 +46,8 @@ class ProductService:
             if valid_photos:
                 new_urls = self._save_photos(product_id, valid_photos)
                 image_urls.extend(new_urls)
+        
+        image_urls = image_urls[:10]
 
         return self.repository.update(product_id, data, image_urls)
 

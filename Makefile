@@ -3,6 +3,12 @@
 DC := docker-compose
 APP := web
 
+ifeq ($(OS),Windows_NT)
+    SLEEP := timeout /t 5 /nobreak > NUL
+else
+    SLEEP := sleep 5
+endif
+
 up:
 	$(DC) up -d
 
@@ -35,7 +41,7 @@ reset-db:
 	$(DC) down -v
 	$(DC) up -d
 	@echo "Waiting for database to be ready..."
-	@sleep 5
+	@$(SLEEP)
 	$(DC) exec $(APP) alembic upgrade head
 	@echo "Database reset complete."
 

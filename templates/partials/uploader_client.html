@@ -48,13 +48,13 @@ defined or max_width is not defined %}
 
                         this.files.push(customFile);
                         this.previews.push(URL.createObjectURL(blob));
-                        this.updateInputFiles();
                         resolve();
                     }, 'image/webp', {{ quality }});
                 };
             });
         }
         evt.target.value = '';
+        this.updateInputFiles();
     },
     removeFile(idx) {
         this.files.splice(idx, 1);
