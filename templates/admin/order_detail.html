@@ -112,7 +112,7 @@
 
                 <div>
                     <label class="cv-label block mb-1.5">Fecha de Entrega</label>
-                    <input type="date" name="delivery_date" x-model="formData.delivery_date" class="cv-input">
+                    <input type="date" name="delivery_date" x-model="formData.delivery_date" class="cv-input" :min="getToday()">
                 </div>
 
                 <div>
@@ -151,33 +151,31 @@
             {% endif %}
         </div>
     </div>
-</div>
 
-<!-- Lightbox Modal -->
-<div x-show="lightbox.open" style="display: none;"
-    class="fixed inset-0 z-50 flex items-center justify-center bg-brown-900/90 backdrop-blur-sm px-4"
-    x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0"
-    x-transition:enter-end="opacity-100" x-transition:leave="transition ease-in duration-200"
-    x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" @keydown.escape.window="closeLightbox()">
+    <!-- Lightbox Modal -->
+    <div x-show="lightbox.open" style="display: none;"
+        class="fixed inset-0 z-50 flex items-center justify-center bg-brown-900/90 backdrop-blur-sm px-4"
+        x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0"
+        x-transition:enter-end="opacity-100" x-transition:leave="transition ease-in duration-200"
+        x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" @keydown.escape.window="closeLightbox()">
 
-    <!-- Overlay Click (Fondo debajo del boton y foto) -->
-    <div class="absolute inset-0 cursor-pointer" @click="closeLightbox()"></div>
+        <!-- Overlay Click (Fondo debajo del boton y foto) -->
+        <div class="absolute inset-0 cursor-pointer" @click="closeLightbox()"></div>
 
-    <!-- Close Button (Asegurado sobre el overlay con bg oscuro y fixed en vez de absolute) -->
-    <button type="button" @click="closeLightbox()"
-        class="absolute top-6 right-6 z-50 flex items-center justify-center w-12 h-12 bg-black/50 hover:bg-red-500 rounded-full text-white cursor-pointer transition-all">
-        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"></path>
-        </svg>
-    </button>
+        <!-- Close Button (Asegurado sobre el overlay con bg oscuro y fixed en vez de absolute) -->
+        <button type="button" @click="closeLightbox()"
+            class="absolute top-6 right-6 z-50 flex items-center justify-center w-12 h-12 bg-black/50 hover:bg-red-500 rounded-full text-white cursor-pointer transition-all">
+            <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"></path>
+            </svg>
+        </button>
 
-    <!-- Image Container -->
-    <div class="relative z-10 max-w-5xl w-full max-h-[90vh] flex items-center justify-center p-4">
-        <img :src="lightbox.url"
-            class="max-w-full max-h-[85vh] object-contain rounded-xl shadow-2xl border border-white/10" @click.stop>
+        <!-- Image Container -->
+        <div class="relative z-10 max-w-5xl w-full max-h-[90vh] flex items-center justify-center p-4">
+            <img :src="lightbox.url"
+                class="max-w-full max-h-[85vh] object-contain rounded-xl shadow-2xl border border-white/10" @click.stop>
+        </div>
     </div>
-</div>
-
 </div>
 
 <script>
@@ -214,6 +212,10 @@
                 this.lightbox.open = false;
                 setTimeout(() => { this.lightbox.url = ''; }, 300);
                 document.body.style.overflow = 'auto';
+            },
+            getToday() {
+                const d = new Date();
+                return d.toISOString().split('T')[0];
             }
         }));
     });

@@ -1,25 +1,33 @@
-<div class="overflow-hidden rounded-xl mb-4 relative" x-data='{
+<div class="overflow-hidden rounded-xl mb-4 relative group/slider" x-data='{
     activeSlide: 0,
     slides: {{ product.image_urls | tojson if product.image_urls else "[]" | safe }}
 }'>
     <template x-if="slides.length > 0">
-        <div class="relative w-full aspect-square group/slider">
-            <img :src="slides[activeSlide]" alt="{{ product.name }}"
-                class="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-500">
+        <div class="relative w-full aspect-square overflow-hidden">
+            <!-- Pista animada para las imágenes -->
+            <div class="flex w-full h-full transition-transform duration-500 ease-in-out"
+                :style="`transform: translateX(-${activeSlide * 100}%)`">
+                <template x-for="(slide, index) in slides" :key="index">
+                    <div class="w-full h-full shrink-0 overflow-hidden relative">
+                        <img :src="slide" alt="{{ product.name }}"
+                            class="w-full h-full object-cover transform group-hover/slider:scale-105 transition-transform duration-500">
+                    </div>
+                </template>
+            </div>
 
             <!-- Arrows -->
             <template x-if="slides.length > 1">
                 <div>
                     <button type="button"
                         @click.prevent="activeSlide = activeSlide === 0 ? slides.length - 1 : activeSlide - 1"
-                        class="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center rounded-full bg-white/70 text-cookie-brown shadow-sm opacity-0 group-hover:opacity-100 transition-opacity hover:bg-white z-10">
+                        class="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center rounded-full bg-white/70 text-cookie-brown shadow-sm transition-opacity hover:bg-white z-10">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
                         </svg>
                     </button>
                     <button type="button"
                         @click.prevent="activeSlide = activeSlide === slides.length - 1 ? 0 : activeSlide + 1"
-                        class="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center rounded-full bg-white/70 text-cookie-brown shadow-sm opacity-0 group-hover:opacity-100 transition-opacity hover:bg-white z-10">
+                        class="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center rounded-full bg-white/70 text-cookie-brown shadow-sm transition-opacity hover:bg-white z-10">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
                         </svg>

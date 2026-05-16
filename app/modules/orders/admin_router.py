@@ -100,7 +100,7 @@ def update_order_details(
     )
     service.update_order(order_id, dto)
 
-    return RedirectResponse(url=f"/admin/orders/{order_id}", status_code=303)
+    return RedirectResponse(url="/admin/orders", status_code=303)
 
 
 @router.post("/{order_id}/delete")

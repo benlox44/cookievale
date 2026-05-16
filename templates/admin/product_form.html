@@ -8,26 +8,25 @@
             {% if product %}Editar producto{% else %}Nuevo producto{% endif %}
         </h1>
     </div>
-    <div class="cv-card p-0 overflow-hidden shadow-[0_4px_20px_rgba(212,149,106,0.1)]">
+    <div class="cv-card p-0 overflow-hidden shadow-[0_4px_20px_rgba(212,149,106,0.1)]" x-data="productForm()">
         <form action="{% if product %}/admin/products/{{ product.id }}{% else %}/admin/products{% endif %}"
-            method="POST" enctype="multipart/form-data" class="p-6 space-y-5">
+            method="POST" enctype="multipart/form-data" class="p-6 space-y-5" @change="fileChanged = true">
             <div>
                 <label class="cv-label mb-1">Nombre</label>
-                <input type="text" name="name" class="cv-input w-full" value="{{ product.name if product else '' }}"
+                <input type="text" name="name" class="cv-input w-full" x-model="formData.name"
                     required>
             </div>
             <div>
                 <label class="cv-label mb-1">Precio</label>
-                <input type="number" step="1" name="price"
+                <input type="number" step="1" name="price" x-model="formData.price"
                     onkeypress="return event.charCode >= 48 && event.charCode <= 57" class="cv-input w-full"
-                    value="{% if product %}{{ '{:.0f}'.format(product.price) }}{% endif %}" required>
+                    required>
             </div>
             <div>
                 <label class="cv-label mb-1">Descripción</label>
-                <input type="text" name="description" class="cv-input w-full"
-                    value="{{ product.description if product else '' }}">
+                <input type="text" name="description" class="cv-input w-full" x-model="formData.description">
             </div>
-            <div>
+            <div @click="fileChanged = true">
                 <!-- Image Submissions -->
                 <label class="cv-label block mb-1.5 mt-2">Imágen(es) <span class="text-cookie-brown/40 font-normal">(Máximo 10)</span></label>
                 {% from "partials/uploader_admin.html" import render_uploader_admin %}
@@ -36,16 +35,42 @@
                 1200, 1200, 0.9, 10) }}
 
                 <label class="flex items-center gap-3 cv-label cursor-pointer mt-4">
-                    <input type="checkbox" name="is_active" value="True" {% if product and product.is_active %}checked{%
-                        elif not product %}checked{% endif %} class="w-5 h-5 accent-cookie-golden rounded">
+                    <input type="checkbox" name="is_active" value="True" x-model="formData.is_active" class="w-5 h-5 accent-cookie-golden rounded">
                     Producto activo
                 </label>
                 <div class="pt-4 flex justify-end gap-3">
-                    <a href="/admin/products"
-                        class="cv-btn bg-cookie-cream text-cookie-brown border-cookie-pink/40 hover:bg-cookie-pink/10 hover:border-cookie-golden">Cancelar</a>
-                    <button type="submit" class="cv-btn">Guardar</button>
+                    <button type="submit" :disabled="!isModified"
+                        class="cv-btn disabled:opacity-40 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-none">Guardar Cambios</button>
                 </div>
         </form>
     </div>
 </div>
+
+<script>
+    document.addEventListener('alpine:init', () => {
+        Alpine.data('productForm', () => ({
+            fileChanged: false,
+            formData: {
+                name: `{{ product.name | replace('`', '\\`') if product else '' }}`,
+                price: `{{ '{:.0f}'.format(product.price) if product else '' }}`,
+                description: `{{ product.description | replace('`', '\\`') if product else '' }}`,
+                is_active: {% if product %}{{ 'true' if product.is_active else 'false' }}{% else %}true{% endif %}
+            },
+            initialData: {
+                name: `{{ product.name | replace('`', '\\`') if product else '' }}`,
+                price: `{{ '{:.0f}'.format(product.price) if product else '' }}`,
+                description: `{{ product.description | replace('`', '\\`') if product else '' }}`,
+                is_active: {% if product %}{{ 'true' if product.is_active else 'false' }}{% else %}true{% endif %}
+            },
+            get isModified() {
+                // Return true if new files were selected, an old file was removed, or any text field changed
+                return this.fileChanged || 
+                    String(this.formData.name) !== String(this.initialData.name) ||
+                    String(this.formData.price) !== String(this.initialData.price) ||
+                    String(this.formData.description) !== String(this.initialData.description) ||
+                    this.formData.is_active !== this.initialData.is_active;
+            }
+        }));
+    });
+</script>
 {% endblock %}
