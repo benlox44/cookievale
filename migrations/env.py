@@ -9,6 +9,7 @@ from alembic import context
 from app.core.database import Base, DATABASE_URL
 from app.modules.orders.models import OrderModel  # noqa
 from app.modules.products.models import ProductModel  # noqa
+from app.modules.scheduling.models import AvailableDateModel  # noqa
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.

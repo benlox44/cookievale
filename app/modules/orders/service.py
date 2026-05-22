@@ -100,7 +100,7 @@ class OrderService:
 
     def delete_order(self, order_id: int) -> None:
         self.repository.delete(order_id)
-        # Delete related media files
+
         order_dir = os.path.join(
             os.environ["CONTAINER_MEDIA_PATH"], f"orders/{order_id}"
         )

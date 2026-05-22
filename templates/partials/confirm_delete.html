@@ -13,7 +13,7 @@
             <div class="flex justify-end gap-3">
                 <button type="button" @click="showConfirm = false"
                     class="cv-btn bg-cookie-cream text-cookie-brown border-cookie-pink/40 hover:bg-cookie-pink/10 hover:border-cookie-golden">Cancelar</button>
-                <button type="button" @click="$root.submit()"
+                <button type="button" @click="showConfirm = false; if ($root.hasAttribute('hx-delete') || $root.hasAttribute('hx-post')) { htmx.trigger($root, 'submit') } else { $root.submit() }"
                     class="cv-btn bg-red-500 hover:bg-red-600 text-white border-red-500 shadow-red-200">Eliminar</button>
             </div>
         </div>

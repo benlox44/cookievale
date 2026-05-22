@@ -9,7 +9,7 @@ from fastapi import (
     status,
 )
 from fastapi.responses import HTMLResponse, RedirectResponse
-from typing import List
+from typing import List, Optional
 
 from app.core.templates import templates
 from app.core.security import get_current_admin
@@ -54,10 +54,12 @@ def create_product(
     price: float = Form(...),
     description: str = Form(...),
     is_active: bool = Form(False),
-    photos: List[UploadFile] = File(...),
+    photos: Optional[List[UploadFile]] = File(None),
     service: ProductService = Depends(get_product_service),
     admin: str = Depends(get_current_admin),
 ):
+    if photos is None:
+        photos = []
     dto = ProductCreate(
         name=name, price=price, description=description, is_active=is_active
     )
@@ -92,7 +94,7 @@ def update_product(
     description: str = Form(...),
     is_active: bool = Form(False),
     existing_images: List[str] = Form([]),
-    photos: List[UploadFile] = File(None),
+    photos: Optional[List[UploadFile]] = File(None),
     service: ProductService = Depends(get_product_service),
     admin: str = Depends(get_current_admin),
 ):
@@ -115,7 +117,7 @@ def delete_product(
     try:
         service.delete_product(product_id)
     except BaseException:
-        # If it fails due to foreign keys, redirect with an error param or whatever (just redirect for now)
+
         pass
     return RedirectResponse(
         url="/admin/products", status_code=status.HTTP_303_SEE_OTHER

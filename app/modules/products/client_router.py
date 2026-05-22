@@ -23,10 +23,10 @@ def list_client_products(
     If you ever use HTMX to load the product grid in the index, this is the ideal endpoint.
     """
     products = service.list_products(only_active=True)
-    # Example: in the future you could return a partial 'partials/product_grid.html'
-    # return templates.TemplateResponse(request, "partials/product_grid.html", {"products": products})
 
-    # For now we return a simple HTML block as an example
+
+
+
     if not products:
         html_content = "<p>No hay productos activos disponibles.</p>"
     else:

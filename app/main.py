@@ -10,6 +10,7 @@ from app.modules.orders.admin_router import router as admin_router
 from app.modules.auth.router import router as auth_router
 from app.modules.products.admin_router import router as products_admin_router
 from app.modules.products.client_router import router as products_client_router
+from app.modules.scheduling.admin_router import router as scheduling_admin_router
 from app.core.templates import templates
 
 import os
@@ -33,6 +34,7 @@ app.include_router(auth_router)
 app.include_router(admin_router)
 app.include_router(products_admin_router)
 app.include_router(products_client_router)
+app.include_router(scheduling_admin_router)
 
 
 @app.get("/health")

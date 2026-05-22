@@ -32,7 +32,7 @@ def get_login(request: Request):
 def post_login(request: Request, password: str = Form(...)):
     if password == ADMIN_PASSWORD:
         token = create_admin_token()
-        # Ensure we use an HTTP 303 Redirect so the browser redirects via GET
+
         response = RedirectResponse(url="/admin", status_code=status.HTTP_303_SEE_OTHER)
         response.set_cookie(
             key="admin_session", value=token, httponly=True, samesite="lax"

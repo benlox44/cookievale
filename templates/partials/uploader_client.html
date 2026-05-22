@@ -67,6 +67,16 @@ defined or max_width is not defined %}
         if (this.$refs.photoInput) {
             this.$refs.photoInput.files = dt.files;
         }
+    },
+    handleSort(item, position) {
+
+        const itemIndex = this.previews.indexOf(item);
+        if (itemIndex === -1) return;
+        let removedPreview = this.previews.splice(itemIndex, 1)[0];
+        let removedFile = this.files.splice(itemIndex, 1)[0];
+        this.previews.splice(position, 0, removedPreview);
+        this.files.splice(position, 0, removedFile);
+        this.updateInputFiles();
     }
 }">
     <div class="relative rounded-2xl border-2 border-dashed border-cookie-pink/50 bg-cookie-cream/50 transition-all text-center p-6 min-h-[140px] flex flex-col justify-center items-center"
@@ -91,9 +101,11 @@ defined or max_width is not defined %}
             </div>
 
             <div x-show="files.length > 0 || {{ existing_cnt }} > 0"
+                x-sort="handleSort($item, $position)"
                 class="flex justify-center gap-4 flex-wrap w-full relative z-20">
                 {% if existing_images %}
                 {% for img in existing_images %}
+
                 <div x-data="{ removed: false }" x-show="!removed"
                     class="relative group rounded-xl overflow-hidden border-2 border-cookie-pink/50 shadow-sm w-24 h-24">
                     <img src="{{ img }}" class="w-full h-full object-cover" />
@@ -109,9 +121,15 @@ defined or max_width is not defined %}
                 {% endfor %}
                 {% endif %}
 
-                <template x-for="(preview, idx) in previews" :key="idx">
-                    <div
-                        class="relative group rounded-xl overflow-hidden border-2 border-cookie-pink/50 shadow-sm w-24 h-24 z-30">
+                <template x-for="(preview, idx) in previews" :key="preview">
+                    <div x-sort:item="preview"
+                        class="relative group rounded-xl overflow-hidden border-2 border-cookie-pink/50 shadow-sm w-24 h-24 z-30 cursor-move">
+
+                        <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center touch-none pointer-events-none">
+                            <svg class="w-6 h-6 text-white drop-shadow-md" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9h8M8 15h8" />
+                            </svg>
+                        </div>
                         <img :src="preview" class="w-full h-full object-cover" />
                         <button type="button" @click.prevent="removeFile(idx)"
                             class="absolute top-1 right-1 bg-white/90 hover:bg-red-500 text-red-500 hover:text-white rounded-full p-1 transition-colors cursor-pointer z-40 shadow-sm border border-red-100">

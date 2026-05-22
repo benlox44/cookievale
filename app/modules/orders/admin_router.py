@@ -21,7 +21,7 @@ def admin_dashboard(
 ):
     orders = service.repository.list_all(status=status_filter)
 
-    # If the request comes from HTMX, return just the table rendering partial
+
     if "hx-request" in request.headers:
         return templates.TemplateResponse(
             request=request,
@@ -29,7 +29,7 @@ def admin_dashboard(
             context={"orders": orders},
         )
 
-    # Otherwise return the full dashboard layout
+
     return templates.TemplateResponse(
         request=request,
         name="admin/orders_dashboard.html",
@@ -71,7 +71,7 @@ def update_order_status(
     admin: str = Depends(get_current_admin),
 ):
     service.change_status(order_id, status)
-    # Redirecting back to detail to reload with new state
+
     return RedirectResponse(url=f"/admin/orders/{order_id}", status_code=303)
 
 

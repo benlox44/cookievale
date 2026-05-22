@@ -8,9 +8,10 @@
             x-transition:leave-end="opacity-0"
             class="min-w-[250px] max-w-sm bg-white border border-cookie-pink/40 shadow-xl rounded-xl overflow-hidden pointer-events-auto flex flex-col">
             <div class="p-4 text-cookie-brown font-medium text-sm whitespace-pre-wrap" x-text="toast.message"></div>
-            <!-- Progress Line -->
-            <div class="h-1 bg-cookie-pink/20 w-full">
-                <div class="h-full bg-cookie-golden transition-all duration-[100ms] ease-linear"
+
+            <div class="h-1 w-full" :class="toast.type === 'error' ? 'bg-red-100' : 'bg-cookie-pink/20'">
+                <div class="h-full transition-all duration-[100ms] ease-linear"
+                    :class="toast.type === 'error' ? 'bg-red-500' : 'bg-cookie-golden'"
                     :style="`width: ${toast.progress}%`"></div>
             </div>
         </div>
@@ -21,9 +22,9 @@
     document.addEventListener('alpine:init', () => {
         Alpine.data('toastHandler', () => ({
             toasts: [],
-            add({ message, duration = 4000 }) {
+            add({ message, type = 'success', duration = 4000 }) {
                 const id = Date.now() + Math.random();
-                const toast = { id, message, duration, visible: true, progress: 100 };
+                const toast = { id, message, type, duration, visible: true, progress: 100 };
                 this.toasts.push(toast);
 
                 const updateInterval = 50;

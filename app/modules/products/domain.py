@@ -1,6 +1,6 @@
-# app/modules/products/domain.py
-# Pure domain entities (no dependencies to SQLAlchemy or FastAPI)
-# and enumerations, for product states, pure categories, etc.
+
+
+
 
 from dataclasses import dataclass
 
