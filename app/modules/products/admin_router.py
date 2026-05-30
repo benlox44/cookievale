@@ -17,7 +17,7 @@ from app.core.database import get_db
 from sqlalchemy.orm import Session
 from app.modules.products.service import ProductService
 from app.modules.products.repository import ProductRepository
-from app.modules.products.schemas import ProductCreate, ProductUpdate
+from app.modules.products.schemas import ProductCreate, ProductUpdate, ProductReorderRequest
 
 router = APIRouter(prefix="/admin/products", tags=["AdminProducts"])
 
@@ -67,6 +67,16 @@ def create_product(
     return RedirectResponse(
         url="/admin/products", status_code=status.HTTP_303_SEE_OTHER
     )
+
+
+@router.post("/reorder")
+def reorder_products(
+    request: ProductReorderRequest,
+    service: ProductService = Depends(get_product_service),
+    admin: str = Depends(get_current_admin),
+):
+    service.reorder_products(request.ordered_ids)
+    return {"status": "success"}
 
 
 @router.get("/{product_id}", response_class=HTMLResponse)

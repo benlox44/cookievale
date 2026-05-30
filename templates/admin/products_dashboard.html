@@ -29,10 +29,11 @@
     </div>
 
     <!-- Product Grid -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-5 mb-10">
+    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-5 mb-10" x-data="productReorder()"
+        x-sort="handleReorder($item, $position)">
         {% for product in products %}
-        <div
-            class="cv-card p-4 flex flex-col justify-between hover:shadow-[0_8px_24px_rgba(212,149,106,0.18)] hover:-translate-y-1 hover:border-cookie-golden/40 transition-all duration-300 group {% if not product.is_active %}opacity-50{% endif %}">
+        <div x-sort:item="{{ product.id }}" data-product-id="{{ product.id }}"
+            class="cv-card p-4 flex flex-col justify-between cursor-move hover:shadow-[0_8px_24px_rgba(212,149,106,0.18)] hover:-translate-y-1 hover:border-cookie-golden/40 transition-all duration-300 group {% if not product.is_active %}opacity-50{% endif %}">
             <!-- Image Slider -->
             {% include "partials/slider.html" %}
 
@@ -70,4 +71,31 @@
         {% endfor %}
     </div>
 </div>
+
+<script>
+    document.addEventListener('alpine:init', () => {
+        Alpine.data('productReorder', () => ({
+            handleReorder(item, position) {
+                setTimeout(async () => {
+                    const cards = Array.from(document.querySelectorAll('[data-product-id]'));
+                    const ordered_ids = cards.map(el => parseInt(el.dataset.productId));
+
+                    try {
+                        await fetch('/admin/products/reorder', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({ ordered_ids })
+                        });
+                        window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: 'Orden guardado correctamente' } }));
+                    } catch (e) {
+                        console.error("Error saving order", e);
+                        window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: 'Error guardando el orden', type: 'error' } }));
+                    }
+                }, 100);
+            }
+        }));
+    });
+</script>
 {% endblock %}

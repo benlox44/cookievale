@@ -7,6 +7,7 @@ import json
 from app.core.templates import templates
 from app.core.database import get_db
 from sqlalchemy.orm import Session
+from app.modules.orders.domain import DeliveryMethod
 from app.modules.orders.service import OrderService
 from app.modules.orders.schemas import OrderCreateRequest, OrderItemCreate
 from app.modules.products.repository import ProductRepository
@@ -53,6 +54,7 @@ def submit_order(
     customer_instagram: str = Form(...),
     cart_items_json: str = Form(...),
     delivery_date: datetime = Form(...),
+    delivery_method: DeliveryMethod = Form(...),
     description: str = Form(...),
     photos: Optional[List[UploadFile]] = File(None),
     order_service: OrderService = Depends(get_order_service_with_db),
@@ -102,6 +104,7 @@ def submit_order(
         items=items,
         total_amount=total_amount,
         delivery_date=delivery_date,
+        delivery_method=delivery_method,
         description=description,
     )
 

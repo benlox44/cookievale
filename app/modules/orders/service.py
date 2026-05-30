@@ -26,6 +26,7 @@ class OrderService:
             customer_instagram=data.customer_instagram,
             delivery_date=data.delivery_date,
             description=data.description,
+            delivery_method=data.delivery_method,
             total_amount=data.total_amount,
             amount_paid=0.0,
             items=items,
@@ -67,7 +68,8 @@ class OrderService:
                 f"🛍️ <b>¡Nueva Orden (ID: {order.id})!</b>\n\n"
                 f"👤 <b>Instagram:</b> @{order.customer_instagram}\n"
                 f"🗓️ <b>Fecha Entrega:</b> {order.delivery_date.strftime('%Y-%m-%d')}\n"
-                f"📋 <b>Productos:</b>\n{items_str}\n"
+                f"� <b>Método:</b> {'Retiro' if order.delivery_method.value == 'pickup' else 'Delivery'}\n"
+                f"�📋 <b>Productos:</b>\n{items_str}\n"
                 f"💰 <b>Total:</b> ${order.total_amount:,.0f}"
             )
         except Exception as e:
@@ -87,6 +89,7 @@ class OrderService:
 
         order.delivery_date = data.delivery_date
         order.description = data.description
+        order.delivery_method = data.delivery_method
         order.amount_paid = data.amount_paid
         return self.repository.save(order)
 

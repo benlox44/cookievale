@@ -12,6 +12,11 @@ class OrderStatus(str, Enum):
     REJECTED = "rejected"
 
 
+class DeliveryMethod(str, Enum):
+    PICKUP = "pickup"
+    DELIVERY = "delivery"
+
+
 @dataclass
 class OrderItem:
     product_id: int
@@ -27,6 +32,7 @@ class Order:
     customer_instagram: str
     delivery_date: datetime
     description: str
+    delivery_method: DeliveryMethod
     items: List[OrderItem] = field(default_factory=list)
     total_amount: float = 0.0
     amount_paid: float = 0.0

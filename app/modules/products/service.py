@@ -46,10 +46,13 @@ class ProductService:
             if valid_photos:
                 new_urls = self._save_photos(product_id, valid_photos)
                 image_urls.extend(new_urls)
-        
+
         image_urls = image_urls[:10]
 
         return self.repository.update(product_id, data, image_urls)
+
+    def reorder_products(self, ordered_ids: List[int]) -> bool:
+        return self.repository.reorder(ordered_ids)
 
     def delete_product(self, product_id: int) -> bool:
         success = self.repository.delete(product_id)

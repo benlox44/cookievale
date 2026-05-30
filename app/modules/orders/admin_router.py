@@ -7,7 +7,7 @@ from app.core.dependencies import get_order_service
 from app.core.security import get_current_admin
 from app.modules.orders.service import OrderService
 from app.modules.orders.schemas import OrderUpdateRequest
-from app.modules.orders.domain import OrderStatus
+from app.modules.orders.domain import OrderStatus, DeliveryMethod
 
 router = APIRouter(prefix="/admin/orders", tags=["AdminOrders"])
 
@@ -80,6 +80,7 @@ def update_order_details(
     order_id: int,
     delivery_date: str = Form(...),
     description: str = Form(...),
+    delivery_method: DeliveryMethod = Form(...),
     amount_paid: float = Form(0.0),
     status: OrderStatus = Form(...),
     service: OrderService = Depends(get_order_service),
@@ -96,7 +97,7 @@ def update_order_details(
             service.change_status(order_id, status)
 
     dto = OrderUpdateRequest(
-        delivery_date=dt, description=description, amount_paid=amount_paid
+        delivery_date=dt, description=description, delivery_method=delivery_method, amount_paid=amount_paid
     )
     service.update_order(order_id, dto)
 

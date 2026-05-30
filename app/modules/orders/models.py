@@ -11,7 +11,7 @@ from sqlalchemy import (
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from app.core.database import Base
-from app.modules.orders.domain import OrderStatus
+from app.modules.orders.domain import OrderStatus, DeliveryMethod
 
 
 class OrderModel(Base):
@@ -21,6 +21,7 @@ class OrderModel(Base):
     customer_instagram = Column(String, nullable=False)
     delivery_date = Column(DateTime, nullable=False)
     description = Column(String, nullable=False)
+    delivery_method = Column(SAEnum(DeliveryMethod), default=DeliveryMethod.PICKUP, nullable=False)
 
     amount_paid = Column(Float, default=0.0, nullable=False)
     total_amount = Column(Float, default=0.0, nullable=False)

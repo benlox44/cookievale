@@ -1,7 +1,7 @@
 from pydantic import BaseModel, ConfigDict, Field
-from typing import List
+from typing import List, Optional
 from datetime import datetime
-from app.modules.orders.domain import OrderStatus
+from app.modules.orders.domain import OrderStatus, DeliveryMethod
 
 
 class OrderItemCreate(BaseModel):
@@ -14,6 +14,7 @@ class OrderCreateRequest(BaseModel):
     customer_instagram: str
     delivery_date: datetime
     description: str
+    delivery_method: DeliveryMethod
     items: List[OrderItemCreate] = Field(min_length=1)
     total_amount: float
 
@@ -21,6 +22,7 @@ class OrderCreateRequest(BaseModel):
 class OrderUpdateRequest(BaseModel):
     delivery_date: datetime
     description: str
+    delivery_method: DeliveryMethod
     amount_paid: float
 
 

@@ -11,3 +11,4 @@ class ProductModel(Base):
     price = Column(Float, nullable=False)
     image_urls = Column(ARRAY(String), nullable=True)
     is_active = Column(Boolean, default=True, nullable=False)
+    display_order = Column(Integer, default=0, nullable=False)

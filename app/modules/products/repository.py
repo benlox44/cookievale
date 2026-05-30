@@ -12,7 +12,7 @@ class ProductRepository:
         query = self.db.query(ProductModel)
         if only_active:
             query = query.filter(ProductModel.is_active)
-        return query.order_by(ProductModel.id.asc()).all()
+        return query.order_by(ProductModel.display_order.asc(), ProductModel.id.desc()).all()
 
     def get_by_id(self, product_id: int) -> Optional[ProductModel]:
         return self.db.query(ProductModel).filter(ProductModel.id == product_id).first()
@@ -52,6 +52,14 @@ class ProductRepository:
         self.db.commit()
         self.db.refresh(db_product)
         return db_product
+
+    def reorder(self, ordered_ids: List[int]) -> bool:
+        for index, prod_id in enumerate(ordered_ids):
+            db_product = self.get_by_id(prod_id)
+            if db_product:
+                db_product.display_order = index
+        self.db.commit()
+        return True
 
     def delete(self, product_id: int) -> bool:
         db_product = self.get_by_id(product_id)

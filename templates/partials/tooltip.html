@@ -1,0 +1,17 @@
+{% macro render_tooltip(text) %}
+<div class="relative group flex items-center">
+    <svg class="w-4 h-4 text-cookie-brown/50 hover:text-cookie-golden cursor-help transition-colors" fill="none"
+        stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+    </svg>
+    <div
+        class="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 w-48 p-2 bg-cookie-brown text-white text-xs rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-10 text-center pointer-events-none fade-in">
+        {{ text }}
+        <svg class="absolute top-full left-1/2 -translate-x-1/2 text-cookie-brown h-2 w-full" x="0px" y="0px"
+            viewBox="0 0 255 255" xml:space="preserve">
+            <polygon fill="currentColor" points="0,0 127.5,127.5 255,0" />
+        </svg>
+    </div>
+</div>
+{% endmacro %}
