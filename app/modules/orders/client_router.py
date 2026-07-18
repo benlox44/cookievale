@@ -1,4 +1,4 @@
-﻿from fastapi import APIRouter, Depends, Request, Form, UploadFile, File, Response
+from fastapi import APIRouter, Depends, Request, Form, UploadFile, File, Response
 from fastapi.responses import HTMLResponse
 from typing import List, Optional
 from datetime import datetime
@@ -18,9 +18,13 @@ from app.modules.orders.repository import SQLAlchemyOrderRepository
 
 router = APIRouter(prefix="/orders", tags=["Orders"])
 
+
 def _error_toast(message: str) -> Response:
-    headers = {"HX-Trigger": json.dumps({"show-toast": {"message": message, "type": "error"}})}
+    headers = {
+        "HX-Trigger": json.dumps({"show-toast": {"message": message, "type": "error"}})
+    }
     return Response(status_code=204, headers=headers)
+
 
 def get_product_service(db: Session = Depends(get_db)) -> ProductService:
     return ProductService(ProductRepository(db))
@@ -39,7 +43,9 @@ def get_new_order_form(
     db: Session = Depends(get_db),
 ):
     products = product_service.list_products(only_active=True)
-    scheduling_service = SchedulingService(AvailableDateRepository(db), SQLAlchemyOrderRepository(db))
+    scheduling_service = SchedulingService(
+        AvailableDateRepository(db), SQLAlchemyOrderRepository(db)
+    )
     available_dates = scheduling_service.get_available_dates()
     return templates.TemplateResponse(
         request=request,
@@ -64,10 +70,14 @@ def submit_order(
     if photos is None:
         photos = []
 
-    scheduling_service = SchedulingService(AvailableDateRepository(db), SQLAlchemyOrderRepository(db))
+    scheduling_service = SchedulingService(
+        AvailableDateRepository(db), SQLAlchemyOrderRepository(db)
+    )
     available_dates = [d.date for d in scheduling_service.get_available_dates()]
     if delivery_date.date() not in available_dates:
-        return _error_toast("La fecha seleccionada ha sido tomada recientemente y no estÃ¡ disponible.")
+        return _error_toast(
+            "La fecha seleccionada ha sido tomada recientemente y no estÃ¡ disponible."
+        )
 
     try:
         cart_items_raw = json.loads(cart_items_json)
@@ -88,7 +98,7 @@ def submit_order(
 
         product = product_service.get_product(prod_id)
         if not product or not product.is_active:
-            return _error_toast(f"Un producto seleccionado ya no estÃ¡ disponible.")
+            return _error_toast("Un producto seleccionado ya no estÃ¡ disponible.")
 
         unit_p = product.price
         items.append(
@@ -115,4 +125,3 @@ def submit_order(
         name="client/partials/order_success.html",
         context={"order": order},
     )
-

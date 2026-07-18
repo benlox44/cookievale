@@ -1,5 +1,5 @@
 from pydantic import BaseModel, ConfigDict, Field
-from typing import List, Optional
+from typing import List
 from datetime import datetime
 from app.modules.orders.domain import OrderStatus, DeliveryMethod
 
