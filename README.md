@@ -14,9 +14,14 @@ A custom order management system for a boutique bakery. Built with FastAPI, HTMX
    *Set up your `.env` variables if overriding default docker settings.*
 
 3. **Start the Application:**
-   ```bash
-   make up
-   ```
+    ```bash
+    make up
+    ```
+
+4. **Open in Browser:**
+    ```
+    http://localhost:8000
+    ```
 
 ## 🛠️ Development Commands
 
