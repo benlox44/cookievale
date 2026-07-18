@@ -12,7 +12,9 @@ class ProductRepository:
         query = self.db.query(ProductModel)
         if only_active:
             query = query.filter(ProductModel.is_active)
-        return query.order_by(ProductModel.display_order.asc(), ProductModel.id.desc()).all()
+        return query.order_by(
+            ProductModel.display_order.asc(), ProductModel.id.desc()
+        ).all()
 
     def get_by_id(self, product_id: int) -> Optional[ProductModel]:
         return self.db.query(ProductModel).filter(ProductModel.id == product_id).first()

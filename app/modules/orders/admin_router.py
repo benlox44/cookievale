@@ -21,14 +21,12 @@ def admin_dashboard(
 ):
     orders = service.repository.list_all(status=status_filter)
 
-
     if "hx-request" in request.headers:
         return templates.TemplateResponse(
             request=request,
             name="admin/partials/orders_table.html",
             context={"orders": orders},
         )
-
 
     return templates.TemplateResponse(
         request=request,
@@ -97,7 +95,10 @@ def update_order_details(
             service.change_status(order_id, status)
 
     dto = OrderUpdateRequest(
-        delivery_date=dt, description=description, delivery_method=delivery_method, amount_paid=amount_paid
+        delivery_date=dt,
+        description=description,
+        delivery_method=delivery_method,
+        amount_paid=amount_paid,
     )
     service.update_order(order_id, dto)
 

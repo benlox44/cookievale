@@ -17,7 +17,11 @@ from app.core.database import get_db
 from sqlalchemy.orm import Session
 from app.modules.products.service import ProductService
 from app.modules.products.repository import ProductRepository
-from app.modules.products.schemas import ProductCreate, ProductUpdate, ProductReorderRequest
+from app.modules.products.schemas import (
+    ProductCreate,
+    ProductUpdate,
+    ProductReorderRequest,
+)
 
 router = APIRouter(prefix="/admin/products", tags=["AdminProducts"])
 
@@ -127,7 +131,6 @@ def delete_product(
     try:
         service.delete_product(product_id)
     except BaseException:
-
         pass
     return RedirectResponse(
         url="/admin/products", status_code=status.HTTP_303_SEE_OTHER

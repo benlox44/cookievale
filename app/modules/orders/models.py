@@ -21,7 +21,9 @@ class OrderModel(Base):
     customer_instagram = Column(String, nullable=False)
     delivery_date = Column(DateTime, nullable=False)
     description = Column(String, nullable=False)
-    delivery_method = Column(SAEnum(DeliveryMethod), default=DeliveryMethod.PICKUP, nullable=False)
+    delivery_method = Column(
+        SAEnum(DeliveryMethod), default=DeliveryMethod.PICKUP, nullable=False
+    )
 
     amount_paid = Column(Float, default=0.0, nullable=False)
     total_amount = Column(Float, default=0.0, nullable=False)

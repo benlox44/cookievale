@@ -24,9 +24,6 @@ def list_client_products(
     """
     products = service.list_products(only_active=True)
 
-
-
-
     if not products:
         html_content = "<p>No hay productos activos disponibles.</p>"
     else:

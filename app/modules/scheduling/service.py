@@ -1,9 +1,10 @@
-﻿from typing import List
+from typing import List
 from datetime import date
 from app.modules.scheduling.repository import AvailableDateRepository
 from app.modules.scheduling.domain import AvailableDate
 from app.modules.orders.repository import OrderRepository
 from app.modules.orders.domain import OrderStatus
+
 
 class SchedulingService:
     def __init__(self, repo: AvailableDateRepository, order_repo: OrderRepository):
@@ -12,7 +13,9 @@ class SchedulingService:
 
     def _get_occupied_dates(self) -> set[date]:
         orders = self.order_repo.list_all()
-        return {o.delivery_date.date() for o in orders if o.status != OrderStatus.REJECTED}
+        return {
+            o.delivery_date.date() for o in orders if o.status != OrderStatus.REJECTED
+        }
 
     def get_all_dates(self) -> List[AvailableDate]:
         all_dates = self.repo.get_all()
@@ -36,9 +39,11 @@ class SchedulingService:
         target = self.repo.get_by_id(date_id)
         if not target:
             raise ValueError("Fecha no encontrada.")
-            
+
         occupied_dates = self._get_occupied_dates()
         if target.date in occupied_dates:
-            raise ValueError(f"Existe una orden activa en la fecha {target.date.strftime('%d/%m/%Y')}. Rechaza o elimina la orden primero para liberar la fecha.")
-            
+            raise ValueError(
+                f"Existe una orden activa en la fecha {target.date.strftime('%d/%m/%Y')}. Rechaza o elimina la orden primero para liberar la fecha."
+            )
+
         self.repo.delete(date_id)

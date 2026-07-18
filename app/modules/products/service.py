@@ -57,7 +57,6 @@ class ProductService:
     def delete_product(self, product_id: int) -> bool:
         success = self.repository.delete(product_id)
         if success:
-
             product_dir = os.path.join(
                 os.environ["CONTAINER_MEDIA_PATH"], "products", str(product_id)
             )

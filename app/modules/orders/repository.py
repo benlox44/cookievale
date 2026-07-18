@@ -51,7 +51,6 @@ class SQLAlchemyOrderRepository:
         self.db.commit()
         self.db.refresh(db_order)
 
-
         return self._to_domain(db_order)
 
     def get_by_id(self, order_id: int) -> Optional[Order]:
