@@ -6,6 +6,53 @@
 <div x-data="cookieCart()">
     <div id="form-container">
 
+        <!-- ═══ How it works ═══ -->
+        <div x-data="{ open: false }" class="cv-card mb-8 border-cookie-golden/30 bg-cookie-golden/5">
+            <div class="flex items-center justify-between cursor-pointer select-none" @click="open = !open">
+                <div class="flex items-center gap-2">
+                    <svg class="w-5 h-5 text-cookie-golden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                    </svg>
+                    <span class="cv-h2 mb-0">¿Cómo funciona tu pedido?</span>
+                </div>
+                <svg class="w-5 h-5 text-cookie-brown/40 transition-transform duration-300" :class="open ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                </svg>
+            </div>
+            <div x-show="open" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 -translate-y-2" x-transition:enter-end="opacity-100 translate-y-0" x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100 translate-y-0" x-transition:leave-end="opacity-0 -translate-y-2" x-cloak class="mt-5 overflow-hidden">
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div class="flex flex-col items-center text-center p-4 bg-white rounded-2xl border border-cookie-pink/20">
+                        <div class="w-12 h-12 rounded-full bg-cookie-pink/20 flex items-center justify-center mb-3">
+                            <svg class="w-6 h-6 text-cookie-golden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                            </svg>
+                        </div>
+                        <span class="text-xs font-bold text-cookie-golden uppercase tracking-wider mb-1">Paso 1</span>
+                        <p class="text-sm text-cookie-brown/70">Envías tu pedido con los productos, fecha y diseño deseado.</p>
+                    </div>
+                    <div class="flex flex-col items-center text-center p-4 bg-white rounded-2xl border border-cookie-pink/20">
+                        <div class="w-12 h-12 rounded-full bg-cookie-pink/20 flex items-center justify-center mb-3">
+                            <svg class="w-6 h-6 text-cookie-golden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                            </svg>
+                        </div>
+                        <span class="text-xs font-bold text-cookie-golden uppercase tracking-wider mb-1">Paso 2</span>
+                        <p class="text-sm text-cookie-brown/70">Te contactamos por Instagram para confirmar y ajustar detalles.</p>
+                    </div>
+                    <div class="flex flex-col items-center text-center p-4 bg-white rounded-2xl border border-cookie-pink/20">
+                        <div class="w-12 h-12 rounded-full bg-cookie-pink/20 flex items-center justify-center mb-3">
+                            <svg class="w-6 h-6 text-cookie-golden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M5 13l4 4L19 7" />
+                            </svg>
+                        </div>
+                        <span class="text-xs font-bold text-cookie-golden uppercase tracking-wider mb-1">Paso 3</span>
+                        <p class="text-sm text-cookie-brown/70">¡Listo! Nos encargamos de todo. Solo espera tus galletas.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- ═══ Products Grid ═══ -->
         <div class="flex items-center justify-between mb-6">
             <h1 class="cv-h2">Productos</h1>
