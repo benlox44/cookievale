@@ -1,9 +1,13 @@
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import RedirectResponse, HTMLResponse
+from fastapi.responses import RedirectResponse, HTMLResponse, JSONResponse
 from fastapi import Request
 from fastapi import HTTPException
 from fastapi import status
+from slowapi import Limiter
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
+from sqlalchemy import text
 
 from app.modules.orders.client_router import router as client_router
 from app.modules.orders.admin_router import router as admin_router
@@ -12,10 +16,29 @@ from app.modules.products.admin_router import router as products_admin_router
 from app.modules.products.client_router import router as products_client_router
 from app.modules.scheduling.admin_router import router as scheduling_admin_router
 from app.core.templates import templates
+from app.core.database import engine
 
 import os
+import logging
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+)
 
 app = FastAPI(title="CookieVale API")
+
+limiter = Limiter(key_func=get_remote_address)
+app.state.limiter = limiter
+
+
+@app.exception_handler(RateLimitExceeded)
+async def rate_limit_handler(request: Request, exc: RateLimitExceeded):
+    return JSONResponse(
+        status_code=429,
+        content={"detail": "Demasiados intentos. Intenta de nuevo en un minuto."},
+    )
+
 
 app.mount("/public", StaticFiles(directory="public"), name="public")
 app.mount(
@@ -23,7 +46,6 @@ app.mount(
 )
 
 
-# Exception handler to gracefully redirect HTMX and normal browser requests to login
 @app.exception_handler(status.HTTP_401_UNAUTHORIZED)
 async def unauthorized_exception_handler(request: Request, exc: HTTPException):
     return RedirectResponse(url="/admin/login", status_code=status.HTTP_303_SEE_OTHER)
@@ -39,7 +61,12 @@ app.include_router(scheduling_admin_router)
 
 @app.get("/health")
 def health_check():
-    return {"status": "ok"}
+    try:
+        with engine.connect() as conn:
+            conn.execute(text("SELECT 1"))
+        return {"status": "ok", "database": "connected"}
+    except Exception as e:
+        return {"status": "degraded", "database": str(e)}
 
 
 @app.get("/", response_class=HTMLResponse)

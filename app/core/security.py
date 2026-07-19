@@ -1,19 +1,35 @@
 import os
 import hmac
 import hashlib
+import time
 from fastapi import Request, HTTPException, status
 
 SECRET_KEY = os.environ["SECRET_KEY"]
 ADMIN_PASSWORD = os.environ["ADMIN_PASSWORD"]
 
+SESSION_TTL_SECONDS = 8 * 60 * 60
+
 
 def create_admin_token() -> str:
-    msg = "admin::session".encode("utf-8")
-    return hmac.new(SECRET_KEY.encode("utf-8"), msg, hashlib.sha256).hexdigest()
+    timestamp = str(int(time.time()))
+    msg = f"admin::session::{timestamp}".encode("utf-8")
+    signature = hmac.new(SECRET_KEY.encode("utf-8"), msg, hashlib.sha256).hexdigest()
+    return f"{timestamp}:{signature}"
 
 
 def verify_admin_token(token: str) -> bool:
-    return hmac.compare_digest(token, create_admin_token())
+    try:
+        timestamp_str, signature = token.split(":", 1)
+        timestamp = int(timestamp_str)
+    except (ValueError, AttributeError):
+        return False
+
+    if (time.time() - timestamp) > SESSION_TTL_SECONDS:
+        return False
+
+    msg = f"admin::session::{timestamp_str}".encode("utf-8")
+    expected = hmac.new(SECRET_KEY.encode("utf-8"), msg, hashlib.sha256).hexdigest()
+    return hmac.compare_digest(signature, expected)
 
 
 def get_current_admin(request: Request) -> str:
