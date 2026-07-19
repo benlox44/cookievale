@@ -1,4 +1,4 @@
-<div id="dates-list" class="cv-card overflow-hidden" hx-get="/admin/dates/list" hx-trigger="refreshDates from:body">
+<div id="dates-list" class="cv-card overflow-hidden" hx-get="/admin/dates/list" hx-trigger="refreshDates from:body" hx-target="#dates-container" hx-swap="innerHTML">
     {% from "partials/confirm_delete.html" import render_confirm_delete %}
     <div class="overflow-x-auto">
         <table class="w-full text-left border-collapse min-w-[500px]">
@@ -32,7 +32,7 @@
                             </svg>
                         </button>
                         {% else %}
-                        <form hx-delete="/admin/dates/{{ date.id }}" hx-target="#dates-list" hx-swap="outerHTML" x-data="{ showConfirm: false }">
+                        <form hx-delete="/admin/dates/{{ date.id }}" hx-target="#dates-container" hx-swap="innerHTML" x-data="{ showConfirm: false }">
                             <button type="button" @click="showConfirm = true"
                                 class="text-red-500 hover:text-red-700 bg-red-50 hover:bg-red-100 p-2 rounded-full transition-colors" title="Eliminar">
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
