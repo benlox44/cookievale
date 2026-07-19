@@ -30,11 +30,14 @@ We rely on a `Makefile` to encapsulate Docker operations.
 *   `make build` : Rebuild docker images.
 *   `make up` : Spin up the entire stack in the background.
 *   `make down` : Tear down the stack.
+*   `make restart` : Restart the web container.
 *   `make logs` : Attach to the backend logs.
 *   `make shell` : Open a continuous bash session inside the web container.
 *   `make lint` : Run Ruff to check code quality.
 *   `make format` : Run Ruff to auto-format code.
+*   `make migrate` : Apply all pending Alembic migrations (`alembic upgrade head`).
 *   `make reset-db` : Drop the database volume, recreate it, and apply all migrations (seed data).
+*   `make backup` : Dump the database and sync media to `BACKUP_DEST` (requires Docker running).
 
 ## ⚙️ Stack
 
