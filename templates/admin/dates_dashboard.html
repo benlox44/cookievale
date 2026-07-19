@@ -19,10 +19,10 @@
     </div>
 
     <!-- Calendar -->
-    <div class="cv-card mb-6 p-6" x-data="adminCalendar({
-        dates: [{% for d in dates %}{ id: {{ d.id }}, date: '{{ d.date.strftime('%Y-%m-%d') }}', occupied: {{ 'true' if d.is_occupied else 'false' }} }{% if not loop.last %},{% endif %}{% endfor %}],
-        today: '{{ today }}'
-    })">
+    <div class="cv-card mb-6 p-6" x-data="adminCalendar(
+        [{% for d in dates %}{ id: {{ d.id }}, date: '{{ d.date.strftime('%Y-%m-%d') }}', occupied: {{ 'true' if d.is_occupied else 'false' }} }{% if not loop.last %},{% endif %}{% endfor %}],
+        '{{ today }}'
+    )">
         <!-- Month nav -->
         <div class="flex items-center justify-between mb-4">
             <button type="button" @click="prevMonth()"
@@ -31,7 +31,7 @@
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7"/>
                 </svg>
             </button>
-            <span class="font-serif font-bold text-xl text-cookie-brown capitalize" x-text="monthLabel()"></span>
+            <span class="font-serif font-bold text-xl text-cookie-brown capitalize" x-text="monthLabel"></span>
             <button type="button" @click="nextMonth()"
                 class="w-9 h-9 flex items-center justify-center rounded-full hover:bg-cookie-pink/20 transition-colors">
                 <svg class="w-5 h-5 text-cookie-brown" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -76,9 +76,8 @@
             </div>
         </div>
 
-        <!-- Confirm delete modal (inline, no external macro) -->
-        <div x-show="showConfirm" class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4"
-            style="display: none;">
+        <!-- Confirm delete modal -->
+        <div x-show="showConfirm" x-cloak class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
             <div @click.away="showConfirm = false"
                 class="bg-white rounded-2xl p-6 max-w-sm w-full shadow-2xl">
                 <h3 class="text-lg font-bold text-cookie-brown mb-2">Eliminar Fecha</h3>
@@ -95,7 +94,7 @@
 </div>
 
 <script>
-function adminCalendar({ dates, today }) {
+function adminCalendar(dates, today) {
     var pad = function(n) { return String(n).padStart(2,'0'); };
     var parts = today.split('-');
     var ty = parseInt(parts[0]), tm = parseInt(parts[1]), td = parseInt(parts[2]);
@@ -103,49 +102,47 @@ function adminCalendar({ dates, today }) {
     todayDate.setHours(0,0,0,0);
     var MONTHS = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 
-    var statusMap = {};
-    dates.forEach(function(d) { statusMap[d.date] = d; });
+    var _statusMap = {};
+    dates.forEach(function(d) { _statusMap[d.date] = d; });
 
-    var self = {
+    function buildDays(year, month) {
+        var first = new Date(year, month, 1);
+        var last = new Date(year, month + 1, 0);
+        var offset = (first.getDay() + 6) % 7;
+        var result = [];
+        for (var i = 0; i < offset; i++) result.push({ key: 'e'+i, num: '', isPast: false });
+
+        for (var d = 1; d <= last.getDate(); d++) {
+            var ds = year + '-' + pad(month + 1) + '-' + pad(d);
+            var dt = new Date(year, month, d);
+            var entry = _statusMap[ds] || null;
+            result.push({
+                key: ds, num: d, date: ds,
+                status: entry ? (entry.occupied ? 'occupied' : 'free') : null,
+                id: entry ? entry.id : null,
+                isPast: dt < todayDate
+            });
+        }
+        return result;
+    }
+
+    return {
         year: ty,
         month: tm - 1,
-        days: [],
-        statusMap: statusMap,
+        days: buildDays(ty, tm - 1),
         showConfirm: false,
         pendingDelete: null,
 
-        monthLabel: function() { return MONTHS[this.month] + ' ' + this.year; },
+        get monthLabel() { return MONTHS[this.month] + ' ' + this.year; },
 
         init: function() {
-            this.build();
             var self = this;
-            this.$watch('month', function() { self.build(); });
-            this.$watch('year', function() { self.build(); });
+            this.$watch('year', function() { self.days = buildDays(self.year, self.month); });
+            this.$watch('month', function() { self.days = buildDays(self.year, self.month); });
         },
 
         prevMonth: function() { this.month--; if (this.month < 0) { this.month = 11; this.year--; } },
         nextMonth: function() { this.month++; if (this.month > 11) { this.month = 0; this.year++; } },
-
-        build: function() {
-            var first = new Date(this.year, this.month, 1);
-            var last = new Date(this.year, this.month + 1, 0);
-            var offset = (first.getDay() + 6) % 7;
-            var result = [];
-            for (var i = 0; i < offset; i++) result.push({ key: 'e'+i, num: '', isPast: false });
-
-            for (var d = 1; d <= last.getDate(); d++) {
-                var ds = this.year + '-' + pad(this.month + 1) + '-' + pad(d);
-                var dt = new Date(this.year, this.month, d);
-                var entry = statusMap[ds] || null;
-                result.push({
-                    key: ds, num: d, date: ds,
-                    status: entry ? (entry.occupied ? 'occupied' : 'free') : null,
-                    id: entry ? entry.id : null,
-                    isPast: dt < todayDate
-                });
-            }
-            this.days = result;
-        },
 
         handleClick: function(day) {
             if (!day.num || day.isPast) return;
@@ -162,43 +159,50 @@ function adminCalendar({ dates, today }) {
             var id = this.pendingDelete.id;
             var dateStr = this.pendingDelete.date;
             this.showConfirm = false;
+            this.pendingDelete = null;
             var self = this;
+
             fetch('/admin/dates/' + id, { method: 'DELETE' })
                 .then(function(r) {
                     if (r.ok) {
-                        delete self.statusMap[dateStr];
-                        self.build();
-                        return;
+                        delete _statusMap[dateStr];
+                        self.days = buildDays(self.year, self.month);
+                    } else {
+                        return r.json().catch(function() { return {}; }).then(function(data) {
+                            var msg = (typeof data.detail === 'string') ? data.detail : 'Error al eliminar';
+                            window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: msg } }));
+                        });
                     }
-                    return r.json().then(function(data) {
-                        window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: data.detail || 'Error al eliminar' } }));
-                    });
                 })
                 .catch(function() {
-                    self.build();
-                })
-                .finally(function() { self.pendingDelete = null; });
+                    window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: 'Error de conexión' } }));
+                });
         },
 
         createDate: function(dateStr) {
             var form = new FormData();
             form.append('selected_date', dateStr);
             var self = this;
+
             fetch('/admin/dates', { method: 'POST', body: form })
                 .then(function(r) {
                     if (r.ok) {
-                        self.statusMap[dateStr] = { date: dateStr, occupied: false };
-                        self.build();
-                        return;
+                        return r.json().then(function(data) {
+                            _statusMap[dateStr] = { id: data.id, date: dateStr, occupied: false };
+                            self.days = buildDays(self.year, self.month);
+                        });
+                    } else {
+                        return r.json().catch(function() { return {}; }).then(function(data) {
+                            var msg = (typeof data.detail === 'string') ? data.detail : 'Error al crear';
+                            window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: msg } }));
+                        });
                     }
-                    return r.json().then(function(data) {
-                        window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: data.detail || 'Error al crear' } }));
-                    });
+                })
+                .catch(function() {
+                    window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: 'Error de conexión' } }));
                 });
         }
     };
-
-    return self;
 }
 </script>
 {% endblock %}

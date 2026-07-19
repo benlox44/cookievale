@@ -32,10 +32,10 @@ def add_date(
     service: SchedulingService = Depends(get_scheduling_service),
 ):
     try:
-        service.add_date(selected_date)
+        new_date = service.add_date(selected_date)
     except ValueError as e:
         return JSONResponse({"detail": str(e)}, status_code=409)
-    return {"status": "ok"}
+    return {"status": "ok", "id": new_date.id}
 
 
 @router.delete("/{date_id}")
