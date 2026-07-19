@@ -10,25 +10,28 @@ from fastapi import (
 )
 from fastapi.responses import HTMLResponse, RedirectResponse
 from typing import List, Optional
+import logging
+import re
 
 from app.core.templates import templates
 from app.core.security import get_current_admin
-from app.core.database import get_db
-from sqlalchemy.orm import Session
+from app.core.dependencies import get_product_service
 from app.modules.products.service import ProductService
-from app.modules.products.repository import ProductRepository
 from app.modules.products.schemas import (
     ProductCreate,
     ProductUpdate,
     ProductReorderRequest,
 )
 
+logger = logging.getLogger(__name__)
+
 router = APIRouter(prefix="/admin/products", tags=["AdminProducts"])
 
+MEDIA_URL_PATTERN = re.compile(r"^/media/products/\d+/[a-f0-9]+\.\w+$")
 
-def get_product_service(db: Session = Depends(get_db)) -> ProductService:
-    repo = ProductRepository(db)
-    return ProductService(repo)
+
+def _validate_existing_images(urls: List[str]) -> List[str]:
+    return [url for url in urls if MEDIA_URL_PATTERN.match(url)]
 
 
 @router.get("", response_class=HTMLResponse)
@@ -55,7 +58,7 @@ def new_product_form(request: Request, admin: str = Depends(get_current_admin)):
 @router.post("")
 def create_product(
     name: str = Form(...),
-    price: float = Form(...),
+    price: int = Form(...),
     description: str = Form(...),
     is_active: bool = Form(False),
     photos: Optional[List[UploadFile]] = File(None),
@@ -104,7 +107,7 @@ def edit_product_form(
 def update_product(
     product_id: int,
     name: str = Form(...),
-    price: float = Form(...),
+    price: int = Form(...),
     description: str = Form(...),
     is_active: bool = Form(False),
     existing_images: List[str] = Form([]),
@@ -112,10 +115,11 @@ def update_product(
     service: ProductService = Depends(get_product_service),
     admin: str = Depends(get_current_admin),
 ):
+    validated_images = _validate_existing_images(existing_images)
     dto = ProductUpdate(
         name=name, price=price, description=description, is_active=is_active
     )
-    service.update_product(product_id, dto, existing_images, photos)
+    service.update_product(product_id, dto, validated_images, photos)
     return RedirectResponse(
         url="/admin/products", status_code=status.HTTP_303_SEE_OTHER
     )
@@ -130,8 +134,8 @@ def delete_product(
 ):
     try:
         service.delete_product(product_id)
-    except BaseException:
-        pass
+    except Exception as e:
+        logger.error("Failed to delete product %d: %s", product_id, e)
     return RedirectResponse(
         url="/admin/products", status_code=status.HTTP_303_SEE_OTHER
     )
