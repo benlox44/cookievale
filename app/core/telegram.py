@@ -1,7 +1,10 @@
 import os
 import json
+import logging
 import urllib.request
 import urllib.error
+
+logger = logging.getLogger(__name__)
 
 
 class TelegramNotifier:
@@ -22,4 +25,4 @@ class TelegramNotifier:
             with urllib.request.urlopen(req, timeout=5) as response:
                 response.read()
         except urllib.error.URLError as e:
-            print(f"Failed to send Telegram notification: {e}")
+            logger.error("Failed to send Telegram notification: %s", e)

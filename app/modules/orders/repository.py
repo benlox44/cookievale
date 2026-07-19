@@ -1,5 +1,6 @@
 from typing import Protocol, List, Optional
-from sqlalchemy.orm import Session
+from sqlalchemy import select
+from sqlalchemy.orm import Session, selectinload
 from app.modules.orders.domain import Order, OrderStatus, OrderItem
 from app.modules.orders.models import OrderModel, OrderItemModel
 
@@ -7,8 +8,11 @@ from app.modules.orders.models import OrderModel, OrderItemModel
 class OrderRepository(Protocol):
     def save(self, order: Order) -> Order: ...
     def get_by_id(self, order_id: int) -> Optional[Order]: ...
-    def list_all(self, status: Optional[OrderStatus] = None) -> List[Order]: ...
+    def list_all(
+        self, status: Optional[OrderStatus] = None, limit: int = 100, offset: int = 0
+    ) -> List[Order]: ...
     def delete(self, order_id: int) -> None: ...
+    def get_occupied_dates(self) -> set: ...
 
 
 class SQLAlchemyOrderRepository:
@@ -54,24 +58,43 @@ class SQLAlchemyOrderRepository:
         return self._to_domain(db_order)
 
     def get_by_id(self, order_id: int) -> Optional[Order]:
-        db_order = self.db.query(OrderModel).filter(OrderModel.id == order_id).first()
+        stmt = (
+            select(OrderModel)
+            .where(OrderModel.id == order_id)
+            .options(selectinload(OrderModel.items))
+        )
+        db_order = self.db.execute(stmt).scalar_one_or_none()
         if not db_order:
             return None
         return self._to_domain(db_order)
 
-    def list_all(self, status: Optional[OrderStatus] = None) -> List[Order]:
-        query = self.db.query(OrderModel)
+    def list_all(
+        self,
+        status: Optional[OrderStatus] = None,
+        limit: int = 100,
+        offset: int = 0,
+    ) -> List[Order]:
+        stmt = select(OrderModel).options(selectinload(OrderModel.items))
         if status is not None:
-            query = query.filter(OrderModel.status == status)
+            stmt = stmt.where(OrderModel.status == status)
+        stmt = stmt.order_by(OrderModel.created_at.desc()).limit(limit).offset(offset)
 
-        db_orders = query.order_by(OrderModel.created_at.desc()).all()
+        db_orders = self.db.execute(stmt).scalars().all()
         return [self._to_domain(o) for o in db_orders]
 
     def delete(self, order_id: int) -> None:
-        db_order = self.db.query(OrderModel).filter(OrderModel.id == order_id).first()
+        stmt = select(OrderModel).where(OrderModel.id == order_id)
+        db_order = self.db.execute(stmt).scalar_one_or_none()
         if db_order:
             self.db.delete(db_order)
             self.db.commit()
+
+    def get_occupied_dates(self) -> set:
+        stmt = select(OrderModel.delivery_date, OrderModel.status).where(
+            OrderModel.status != OrderStatus.REJECTED
+        )
+        rows = self.db.execute(stmt).all()
+        return {row.delivery_date.date() for row in rows}
 
     def _to_domain(self, db_model: OrderModel) -> Order:
         domain_items = []

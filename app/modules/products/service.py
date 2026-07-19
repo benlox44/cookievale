@@ -1,28 +1,30 @@
 import os
 import shutil
-import uuid
+import logging
 from typing import List, Optional
 from fastapi import UploadFile
 
-from app.modules.products.models import ProductModel
+from app.core.uploads import save_uploads
+from app.modules.products.domain import Product
 from app.modules.products.schemas import ProductCreate, ProductUpdate
 from app.modules.products.repository import ProductRepository
+
+logger = logging.getLogger(__name__)
 
 
 class ProductService:
     def __init__(self, repository: ProductRepository) -> None:
         self.repository = repository
 
-    def list_products(self, only_active: bool = False) -> List[ProductModel]:
+    def list_products(self, only_active: bool = False) -> List[Product]:
         return self.repository.list_all(only_active)
 
-    def get_product(self, product_id: int) -> Optional[ProductModel]:
+    def get_product(self, product_id: int) -> Optional[Product]:
         return self.repository.get_by_id(product_id)
 
     def create_product(
         self, data: ProductCreate, photos: Optional[List[UploadFile]]
-    ) -> ProductModel:
-        # We first create the product to get its ID for the folder structure
+    ) -> Product:
         product = self.repository.create(data, None)
 
         if photos:
@@ -39,7 +41,7 @@ class ProductService:
         data: ProductUpdate,
         existing_urls: List[str],
         photos: Optional[List[UploadFile]],
-    ) -> Optional[ProductModel]:
+    ) -> Optional[Product]:
         image_urls = list(existing_urls)
         if photos:
             valid_photos = [p for p in photos if p.filename]
@@ -68,21 +70,5 @@ class ProductService:
         products_dir = os.path.join(
             os.environ["CONTAINER_MEDIA_PATH"], "products", str(product_id)
         )
-
-        os.makedirs(products_dir, exist_ok=True)
-
-        saved_urls = []
-
-        for photo in photos:
-            if not photo.filename:
-                continue
-            ext = photo.filename.split(".")[-1]
-            filename = f"{uuid.uuid4().hex}.{ext}"
-            filepath = os.path.join(products_dir, filename)
-
-            with open(filepath, "wb") as buffer:
-                shutil.copyfileobj(photo.file, buffer)
-
-            saved_urls.append(f"/media/products/{product_id}/{filename}")
-
-        return saved_urls
+        url_prefix = f"/media/products/{product_id}"
+        return save_uploads(photos, products_dir, url_prefix)

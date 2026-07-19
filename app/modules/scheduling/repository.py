@@ -1,9 +1,17 @@
-from typing import List, Optional
+from typing import Protocol, List, Optional
 from datetime import date
 from sqlalchemy.orm import Session
 from sqlalchemy import select, exc
 from app.modules.scheduling.models import AvailableDateModel
 from app.modules.scheduling.domain import AvailableDate
+
+
+class AvailableDateRepositoryProtocol(Protocol):
+    def get_all(self, limit: int = 100, offset: int = 0) -> List[AvailableDate]: ...
+    def get_by_date(self, target_date: date) -> Optional[AvailableDate]: ...
+    def get_by_id(self, id: int) -> Optional[AvailableDate]: ...
+    def create(self, target_date: date) -> AvailableDate: ...
+    def delete(self, id: int) -> None: ...
 
 
 class AvailableDateRepository:

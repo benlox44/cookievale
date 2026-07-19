@@ -3,7 +3,6 @@ from datetime import date
 from app.modules.scheduling.repository import AvailableDateRepository
 from app.modules.scheduling.domain import AvailableDate
 from app.modules.orders.repository import OrderRepository
-from app.modules.orders.domain import OrderStatus
 
 
 class SchedulingService:
@@ -12,10 +11,7 @@ class SchedulingService:
         self.order_repo = order_repo
 
     def _get_occupied_dates(self) -> set[date]:
-        orders = self.order_repo.list_all()
-        return {
-            o.delivery_date.date() for o in orders if o.status != OrderStatus.REJECTED
-        }
+        return self.order_repo.get_occupied_dates()
 
     def get_all_dates(self) -> List[AvailableDate]:
         all_dates = self.repo.get_all()
