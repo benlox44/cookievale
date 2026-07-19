@@ -3,3 +3,4 @@ __pycache__/
 *.pyc
 *.sql
 docker-compose.override.yml
+.ruff_cache/

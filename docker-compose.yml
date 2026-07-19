@@ -17,15 +17,15 @@ services:
   db:
     image: postgres:15-alpine
     environment:
-      - POSTGRES_USER=cookie_user
-      - POSTGRES_PASSWORD=cookie_pass
-      - POSTGRES_DB=cookievale
+      - POSTGRES_USER=${POSTGRES_USER:-cookie_user}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-cookie_pass}
+      - POSTGRES_DB=${POSTGRES_DB:-cookievale}
     ports:
       - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U cookie_user -d cookievale"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-cookie_user} -d ${POSTGRES_DB:-cookievale}"]
       interval: 5s
       timeout: 5s
       retries: 5

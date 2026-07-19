@@ -5,8 +5,10 @@ APP := web
 
 ifeq ($(OS),Windows_NT)
     SLEEP := timeout /t 5 /nobreak > NUL
+    BACKUP_CMD := cmd /c "backup.bat"
 else
     SLEEP := sleep 5
+    BACKUP_CMD := bash backup.sh
 endif
 
 up:
@@ -46,4 +48,4 @@ reset-db:
 	@echo "Database reset complete."
 
 backup:
-	@cmd /c "backup.bat"
+	@$(BACKUP_CMD)
