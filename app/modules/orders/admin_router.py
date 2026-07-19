@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, Request, Query, Form, HTTPException, status
 from fastapi.responses import HTMLResponse, RedirectResponse
 from typing import Optional
+from datetime import datetime
 
 from app.core.templates import templates
 from app.core.dependencies import get_order_service
@@ -16,10 +17,14 @@ router = APIRouter(prefix="/admin/orders", tags=["AdminOrders"])
 def admin_dashboard(
     request: Request,
     status_filter: Optional[OrderStatus] = Query(None, alias="status"),
+    page: int = Query(1, ge=1),
     service: OrderService = Depends(get_order_service),
     admin: str = Depends(get_current_admin),
 ):
-    orders = service.repository.list_all(status=status_filter)
+    page_size = 50
+    orders = service.list_orders(
+        status=status_filter, limit=page_size, offset=(page - 1) * page_size
+    )
 
     if "hx-request" in request.headers:
         return templates.TemplateResponse(
@@ -79,18 +84,16 @@ def update_order_details(
     delivery_date: str = Form(...),
     description: str = Form(...),
     delivery_method: DeliveryMethod = Form(...),
-    amount_paid: float = Form(0.0),
+    amount_paid: int = Form(0),
     status: OrderStatus = Form(...),
     service: OrderService = Depends(get_order_service),
     admin: str = Depends(get_current_admin),
 ):
-    from datetime import datetime
-
     dt = datetime.fromisoformat(delivery_date)
 
     order = service.get_order(order_id)
     if order:
-        amount_paid = max(0.0, min(amount_paid, order.total_amount))
+        amount_paid = max(0, min(amount_paid, order.total_amount))
         if order.status != status:
             service.change_status(order_id, status)
 

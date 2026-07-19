@@ -1,20 +1,20 @@
 from fastapi import APIRouter, Depends, Request, Form, UploadFile, File, Response
 from fastapi.responses import HTMLResponse
 from typing import List, Optional
-from datetime import datetime
+from datetime import datetime, date
 import json
 
 from app.core.templates import templates
-from app.core.database import get_db
-from sqlalchemy.orm import Session
+from app.core.dependencies import (
+    get_order_service,
+    get_product_service,
+    get_scheduling_service,
+)
 from app.modules.orders.domain import DeliveryMethod
 from app.modules.orders.service import OrderService
 from app.modules.orders.schemas import OrderCreateRequest, OrderItemCreate
-from app.modules.products.repository import ProductRepository
 from app.modules.products.service import ProductService
 from app.modules.scheduling.service import SchedulingService
-from app.modules.scheduling.repository import AvailableDateRepository
-from app.modules.orders.repository import SQLAlchemyOrderRepository
 
 router = APIRouter(prefix="/orders", tags=["Orders"])
 
@@ -26,31 +26,22 @@ def _error_toast(message: str) -> Response:
     return Response(status_code=204, headers=headers)
 
 
-def get_product_service(db: Session = Depends(get_db)) -> ProductService:
-    return ProductService(ProductRepository(db))
-
-
-def get_order_service_with_db(db: Session = Depends(get_db)) -> OrderService:
-    from app.modules.orders.repository import SQLAlchemyOrderRepository
-
-    return OrderService(SQLAlchemyOrderRepository(db))
-
-
 @router.get("/new", response_class=HTMLResponse)
 def get_new_order_form(
     request: Request,
     product_service: ProductService = Depends(get_product_service),
-    db: Session = Depends(get_db),
+    scheduling_service: SchedulingService = Depends(get_scheduling_service),
 ):
     products = product_service.list_products(only_active=True)
-    scheduling_service = SchedulingService(
-        AvailableDateRepository(db), SQLAlchemyOrderRepository(db)
-    )
     available_dates = scheduling_service.get_available_dates()
     return templates.TemplateResponse(
         request=request,
         name="client/order_form.html",
-        context={"products": products, "available_dates": available_dates},
+        context={
+            "products": products,
+            "available_dates": available_dates,
+            "today": date.today().strftime("%Y-%m-%d"),
+        },
     )
 
 
@@ -63,32 +54,29 @@ def submit_order(
     delivery_method: DeliveryMethod = Form(...),
     description: str = Form(...),
     photos: Optional[List[UploadFile]] = File(None),
-    order_service: OrderService = Depends(get_order_service_with_db),
+    order_service: OrderService = Depends(get_order_service),
     product_service: ProductService = Depends(get_product_service),
-    db: Session = Depends(get_db),
+    scheduling_service: SchedulingService = Depends(get_scheduling_service),
 ):
     if photos is None:
         photos = []
 
-    scheduling_service = SchedulingService(
-        AvailableDateRepository(db), SQLAlchemyOrderRepository(db)
-    )
     available_dates = [d.date for d in scheduling_service.get_available_dates()]
     if delivery_date.date() not in available_dates:
         return _error_toast(
-            "La fecha seleccionada ha sido tomada recientemente y no estÃ¡ disponible."
+            "La fecha seleccionada ha sido tomada recientemente y no está disponible."
         )
 
     try:
         cart_items_raw = json.loads(cart_items_json)
     except Exception:
-        return _error_toast("Formato de carrito invÃ¡lido.")
+        return _error_toast("Formato de carrito inválido.")
 
     if not cart_items_raw:
-        return _error_toast("El carrito no puede estar vacÃ­o.")
+        return _error_toast("El carrito no puede estar vacío.")
 
     items = []
-    total_amount = 0.0
+    total_amount = 0
 
     for item in cart_items_raw:
         prod_id = int(item.get("product_id"))
@@ -98,7 +86,7 @@ def submit_order(
 
         product = product_service.get_product(prod_id)
         if not product or not product.is_active:
-            return _error_toast("Un producto seleccionado ya no estÃ¡ disponible.")
+            return _error_toast("Un producto seleccionado ya no está disponible.")
 
         unit_p = product.price
         items.append(
@@ -107,7 +95,7 @@ def submit_order(
         total_amount += unit_p * qty
 
     if not items:
-        return _error_toast("El carrito no puede estar vacÃ­o.")
+        return _error_toast("El carrito no puede estar vacío.")
 
     dto = OrderCreateRequest(
         customer_instagram=customer_instagram,

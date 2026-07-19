@@ -1,15 +1,13 @@
 from dataclasses import dataclass
+from typing import List, Optional
 
 
 @dataclass
-class ProductDomainInfo:
-    """
-    Example of a pure domain entity for Product.
-    For now we use Pydantic models (schemas.py) and SQLAlchemy (models.py),
-    but this file maintains the architectural symmetry of Vertical Slicing.
-    """
-
-    id: int
+class Product:
+    id: Optional[int]
     name: str
-    price: float
-    is_active: bool
+    price: int
+    description: Optional[str] = None
+    is_active: bool = True
+    image_urls: Optional[List[str]] = None
+    display_order: int = 0

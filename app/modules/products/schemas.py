@@ -3,9 +3,9 @@ from typing import Optional, List
 
 
 class ProductBase(BaseModel):
-    name: str
-    description: Optional[str] = None
-    price: float
+    name: str = Field(min_length=1, max_length=100)
+    description: Optional[str] = Field(default=None, max_length=2000)
+    price: int = Field(gt=0)
     is_active: bool = True
 
 
@@ -24,4 +24,4 @@ class ProductResponse(ProductBase):
 
 
 class ProductReorderRequest(BaseModel):
-    ordered_ids: List[int]
+    ordered_ids: List[int] = Field(min_length=1)

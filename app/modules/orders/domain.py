@@ -21,7 +21,7 @@ class DeliveryMethod(str, Enum):
 class OrderItem:
     product_id: int
     quantity: int
-    unit_price: float
+    unit_price: int
     product_name: Optional[str] = None
     id: Optional[int] = None
     order_id: Optional[int] = None
@@ -34,8 +34,8 @@ class Order:
     description: str
     delivery_method: DeliveryMethod
     items: List[OrderItem] = field(default_factory=list)
-    total_amount: float = 0.0
-    amount_paid: float = 0.0
+    total_amount: int = 0
+    amount_paid: int = 0
     id: Optional[int] = None
     reference_photos: Optional[List[str]] = None
     status: OrderStatus = OrderStatus.PENDING
