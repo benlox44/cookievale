@@ -1,0 +1,377 @@
+{% extends "base.html" %}
+
+{% block title %}Crear Orden - CookieVale Admin{% endblock %}
+
+{% block content %}
+{% from "partials/dropdown.html" import render_dropdown %}
+<div class="w-full max-w-6xl mx-auto" x-data="cookieCart()">
+    <!-- Header -->
+    <div class="cv-card mb-6 flex items-center gap-4 py-4 px-6 md:px-8">
+        <a href="/admin/orders"
+            class="text-cookie-golden hover:text-cookie-brown bg-cookie-cream inline-flex items-center justify-center w-10 h-10 rounded-full border border-cookie-pink/40 hover:border-cookie-golden shadow-sm transition-all"
+            title="Volver">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
+                    d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+            </svg>
+        </a>
+        <h1 class="cv-h2 m-0">Crear Orden</h1>
+    </div>
+
+    <div id="form-container">
+
+        <!-- ═══ Products Grid ═══ -->
+        <div class="flex items-center justify-between mb-6">
+            <h2 class="cv-h2">Productos</h2>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 mb-10">
+            {% for product in products %}
+            <div
+                class="cv-card p-4 flex flex-col justify-between hover:shadow-[0_8px_24px_rgba(212,149,106,0.18)] hover:-translate-y-1 hover:border-cookie-golden/40 transition-all duration-300 group">
+                {% include "partials/slider.html" %}
+                {% include "partials/product_info.html" %}
+                <div
+                    class="flex items-center justify-between bg-cookie-cream rounded-xl p-1.5 border border-cookie-pink/30">
+                    <button type="button" @click="removeItem({{ product.id }})"
+                        class="w-9 h-9 flex items-center justify-center rounded-lg text-cookie-brown/60 hover:bg-white hover:shadow-sm hover:text-red-400 transition-all active:scale-90 shrink-0">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M20 12H4" />
+                        </svg>
+                    </button>
+                    <input type="number" min="0" max="999" :value="getQuantity({{ product.id }})"
+                        @input="if($event.target.value.length > 3) $event.target.value = $event.target.value.slice(0,3); setQuantity({{ product.id }}, '{{ product.name }}', {{ product.price }}, $event.target.value)"
+                        title="Escribe la cantidad que deseas"
+                        class="w-16 text-center font-bold text-cookie-brown bg-white border border-cookie-pink/20 rounded-md mx-2 box-border focus:outline-none focus:ring-2 focus:ring-cookie-pink/40 transition-all shadow-inner [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                        style="-moz-appearance: textfield; appearance: textfield;">
+                    <button type="button" @click="addItem({{ product.id }}, '{{ product.name }}', {{ product.price }})"
+                        class="w-9 h-9 flex items-center justify-center rounded-lg bg-cookie-pink/40 text-cookie-brown hover:bg-cookie-golden hover:text-white transition-all active:scale-90 shrink-0">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
+                                d="M12 4v16m8-8H4" />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+            {% else %}
+            {% include "partials/empty_products.html" %}
+            {% endfor %}
+        </div>
+
+        <!-- ═══ Order Form ═══ -->
+        <form hx-post="/admin/orders" hx-target="#form-container" hx-swap="outerHTML transition:fade"
+            hx-encoding="multipart/form-data" @submit="prepSubmit">
+
+            <input type="hidden" name="cart_items_json" x-model="cartJson">
+            {% from "partials/tooltip.html" import render_tooltip %}
+
+            <!-- Cart Summary -->
+            <div class="cv-card mb-6 border-cookie-pink/40 bg-cookie-cream/50">
+                <h2 class="cv-h2 flex items-center gap-2 mb-5">
+                    <svg class="w-5 h-5 text-cookie-golden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+                    </svg>
+                    Resumen del pedido
+                </h2>
+                <div x-show="cart.length === 0" class="py-8 text-center flex flex-col items-center">
+                    <div class="w-16 h-16 bg-cookie-pink/20 rounded-full flex items-center justify-center mb-3 border border-cookie-pink/30">
+                        <svg class="w-8 h-8 text-cookie-brown/30" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                                d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+                        </svg>
+                    </div>
+                    <p class="text-cookie-brown/60 font-medium text-sm">El carrito está vacío.</p>
+                </div>
+                <div x-show="cart.length > 0">
+                    <ul class="space-y-2.5 mb-5">
+                        <template x-for="item in cart" :key="item.product_id">
+                            <li class="flex justify-between items-center bg-white border border-cookie-pink/30 rounded-xl px-4 py-2.5">
+                                <div class="flex items-center gap-3">
+                                    <span class="w-7 h-7 rounded-full bg-cookie-golden text-white flex items-center justify-center font-bold text-xs" x-text="item.quantity"></span>
+                                    <span class="font-medium text-cookie-brown text-sm" x-text="item.name"></span>
+                                </div>
+                                <span class="text-sm font-semibold text-cookie-brown/70">$<span x-text="(item.price * item.quantity).toLocaleString()"></span></span>
+                            </li>
+                        </template>
+                    </ul>
+                    <div class="flex justify-between items-center border-t border-cookie-pink/30 pt-4">
+                        <span class="cv-label uppercase tracking-wider">Total</span>
+                        <span class="font-serif font-bold text-2xl text-cookie-golden">$<span x-text="cartTotal.toLocaleString()"></span></span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Customer Fields -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4 relative z-20">
+                <div>
+                    <div class="flex items-center gap-2 mb-1.5">
+                        <label class="cv-label block mb-0">Instagram</label>
+                        {{ render_tooltip("Cuenta de Instagram del cliente.") }}
+                    </div>
+                    <div class="relative">
+                        <span class="absolute inset-y-0 left-0 flex items-center pl-4 text-cookie-brown/40 font-medium pointer-events-none">@</span>
+                        <input type="text" name="customer_instagram" placeholder="cuenta_cliente" required
+                            oninput="this.value = this.value.replace(/@/g, '')" class="cv-input pl-8">
+                    </div>
+                </div>
+                <div>
+                    <div class="flex items-center gap-2 mb-1.5">
+                        <label class="cv-label block mb-0">Fecha de entrega</label>
+                        {{ render_tooltip("Fechas disponibles para agendar.") }}
+                    </div>
+                    {% if available_dates %}
+                    <div class="cv-card p-4" x-data="adminCalendar(
+                        [{% for d in available_dates %}'{{ d.date.strftime('%Y-%m-%d') }}'{% if not loop.last %},{% endif %}{% endfor %}]
+                    )">
+                        <input type="hidden" name="delivery_date" x-model="selected">
+
+                        <div class="flex items-center justify-between mb-4">
+                            <button type="button" @click="prevMonth()" :disabled="!canPrev()"
+                                class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-cookie-pink/20 transition-colors disabled:opacity-30 disabled:cursor-not-allowed">
+                                <svg class="w-4 h-4 text-cookie-brown" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7"/>
+                                </svg>
+                            </button>
+                            <span class="font-serif font-bold text-cookie-brown capitalize" x-text="months[month] + ' ' + year"></span>
+                            <button type="button" @click="nextMonth()" :disabled="!canNext()"
+                                class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-cookie-pink/20 transition-colors disabled:opacity-30 disabled:cursor-not-allowed">
+                                <svg class="w-4 h-4 text-cookie-brown" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/>
+                                </svg>
+                            </button>
+                        </div>
+
+                        <div class="grid grid-cols-7 gap-1 mb-2">
+                            <template x-for="d in ['Lu','Ma','Mi','Ju','Vi','Sa','Do']" :key="d">
+                                <div class="text-center text-xs font-semibold text-cookie-brown/50 py-1" x-text="d"></div>
+                            </template>
+                        </div>
+
+                        <div class="grid grid-cols-7 gap-1">
+                            <template x-for="day in days" :key="day.key">
+                                <button type="button" @click="day.available && toggle(day.date)" :disabled="!day.available"
+                                    :class="{
+                                        'bg-cookie-golden text-white shadow-md': day.date === selected,
+                                        'hover:bg-cookie-pink/20 text-cookie-brown': day.available && day.date !== selected,
+                                        'text-cookie-brown/20 cursor-not-allowed': !day.available,
+                                        'font-bold ring-2 ring-cookie-pink/40': day.isToday && day.date !== selected
+                                    }"
+                                    class="h-9 w-full rounded-lg text-sm transition-colors flex items-center justify-center"
+                                    x-text="day.num || ''">
+                                </button>
+                            </template>
+                        </div>
+
+                        <p x-show="selected" class="text-center text-sm text-cookie-golden font-medium mt-3" x-text="fmt(selected)"></p>
+                        <p x-show="!selected" class="text-center text-xs text-cookie-brown/40 mt-3">Elige una fecha disponible</p>
+                    </div>
+                    {% else %}
+                    <div class="p-3 bg-red-50 text-red-500 border border-red-200 rounded-xl text-sm font-medium">
+                        No hay fechas disponibles. Agrega fechas desde Disponibilidad.
+                    </div>
+                    {% endif %}
+                </div>
+                <div>
+                    <div class="flex items-center gap-2 mb-1.5">
+                        <label class="cv-label block mb-0">Método de entrega</label>
+                    </div>
+                    {{ render_dropdown(
+                        name="delivery_method",
+                        options=[
+                            {"value": "pickup", "label": "Retiro"},
+                            {"value": "delivery", "label": "Delivery"},
+                        ],
+                        placeholder="Selecciona un método",
+                        required=True,
+                    ) }}
+                </div>
+            </div>
+
+            <!-- Status & Amount Paid -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <div>
+                    <div class="flex items-center gap-2 mb-1.5">
+                        <label class="cv-label block mb-0">Estado inicial</label>
+                        {{ render_tooltip("Estado con el que se crea la orden.") }}
+                    </div>
+                    <select name="order_status" required class="cv-input">
+                        {% for s in OrderStatuses %}
+                        <option value="{{ s.value }}" {% if s.value == 'pending' %}selected{% endif %}>
+                            {% if s.value == 'pending' %}Pendiente
+                            {% elif s.value == 'confirmed' %}Confirmada
+                            {% elif s.value == 'paid' %}Pagada
+                            {% elif s.value == 'delivered' %}Entregada
+                            {% elif s.value == 'rejected' %}Rechazada
+                            {% endif %}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <div class="flex items-center gap-2 mb-1.5">
+                        <label class="cv-label block mb-0">Monto pagado</label>
+                        {{ render_tooltip("Cuánto ha pagado el cliente hasta ahora. Se puede ajustar después.") }}
+                    </div>
+                    <div class="relative">
+                        <span class="absolute inset-y-0 left-0 flex items-center pl-4 text-cookie-brown/40 font-medium pointer-events-none">$</span>
+                        <input type="number" name="amount_paid" value="0" min="0"
+                            class="cv-input pl-8 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                            style="-moz-appearance: textfield;">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Photos -->
+            <div class="relative z-10">
+                <label class="cv-label block mb-1.5">Imagen(es) de referencia <span class="text-cookie-brown/40 font-normal">(Máximo 8)</span></label>
+                {% from "partials/uploader_client.html" import render_uploader_client %}
+                {{ render_uploader_client(8, False, [], 0.8, 2000) }}
+            </div>
+
+            <!-- Notes -->
+            <div class="mb-6">
+                <label class="cv-label block mb-1.5">Descripción del diseño</label>
+                <textarea name="description" rows="3"
+                    placeholder="Ej: Diseño para cumpleaños, colores rosa y dorado..."
+                    class="cv-input resize-none" required></textarea>
+            </div>
+
+            <!-- Submit -->
+            <button type="submit"
+                x-data="{ hasDate: false }"
+                @date-selected.window="hasDate = !!$event.detail.date"
+                :disabled="cart.length === 0 || {{ 'true' if not available_dates else 'false' }} || !hasDate"
+                class="cv-btn w-full py-4 text-base rounded-2xl disabled:opacity-40 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-none">
+                Crear Orden
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
+                        d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                </svg>
+            </button>
+        </form>
+    </div>
+</div>
+
+<script>
+function adminCalendar(availableDates) {
+    const now = new Date();
+    now.setHours(0,0,0,0);
+    const pad = n => String(n).padStart(2,'0');
+    const MONTHS = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+    const SHORT = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+
+    const availableSet = new Set(availableDates);
+    const monthsWithDates = new Set(availableDates.map(d => d.substring(0,7)));
+
+    var cal = {
+        year: now.getFullYear(),
+        month: now.getMonth(),
+        selected: '',
+        days: [],
+        months: MONTHS,
+        availableSet: availableSet,
+        monthsWithDates: monthsWithDates,
+
+        init() {
+            this.build();
+            var self = this;
+            this.$watch('month', function(){ self.build(); });
+            this.$watch('year', function(){ self.build(); });
+        },
+
+        toggle(date) {
+            this.selected = (this.selected === date) ? '' : date;
+            this.$el.dispatchEvent(new CustomEvent('date-selected', { detail: { date: this.selected }, bubbles: true }));
+        },
+
+        fmt(date) {
+            if (!date) return '';
+            var parts = date.split('-');
+            return parseInt(parts[2]) + ' de ' + SHORT[parseInt(parts[1])-1] + ' ' + parts[0];
+        },
+
+        canPrev() {
+            var m = this.month - 1, y = this.year;
+            if (m < 0) { m = 11; y--; }
+            if (y < now.getFullYear() || (y === now.getFullYear() && m < now.getMonth())) return false;
+            return monthsWithDates.has(y + '-' + pad(m+1));
+        },
+
+        canNext() {
+            var m = this.month + 1, y = this.year;
+            if (m > 11) { m = 0; y++; }
+            return monthsWithDates.has(y + '-' + pad(m+1));
+        },
+
+        prevMonth() { if (this.canPrev()) { this.month--; if (this.month < 0) { this.month = 11; this.year--; } } },
+        nextMonth() { if (this.canNext()) { this.month++; if (this.month > 11) { this.month = 0; this.year++; } } },
+
+        build() {
+            var first = new Date(this.year, this.month, 1);
+            var last = new Date(this.year, this.month+1, 0);
+            var offset = (first.getDay() + 6) % 7;
+            var result = [];
+            for (var i = 0; i < offset; i++) result.push({ key: 'e'+i, num: '', available: false });
+
+            for (var d = 1; d <= last.getDate(); d++) {
+                var ds = this.year + '-' + pad(this.month+1) + '-' + pad(d);
+                var dt = new Date(this.year, this.month, d);
+                var available = availableSet.has(ds) && dt >= now;
+                var isToday = dt.getTime() === now.getTime();
+                result.push({ key: ds, num: d, date: ds, available: available, isToday: isToday });
+            }
+            this.days = result;
+        }
+    };
+    return cal;
+}
+
+function cookieCart() {
+    return {
+        cart: [],
+        cartJson: '[]',
+
+        getQuantity(productId) {
+            const item = this.cart.find(i => i.product_id === productId);
+            return item ? item.quantity : 0;
+        },
+        addItem(productId, name, price) {
+            const item = this.cart.find(i => i.product_id === productId);
+            if (item) { item.quantity++; }
+            else { this.cart.push({ product_id: productId, name, price, quantity: 1 }); }
+            this.updateJson();
+        },
+        removeItem(productId) {
+            const idx = this.cart.findIndex(i => i.product_id === productId);
+            if (idx !== -1) {
+                if (this.cart[idx].quantity > 1) { this.cart[idx].quantity--; }
+                else { this.cart.splice(idx, 1); }
+            }
+            this.updateJson();
+        },
+        setQuantity(productId, name, price, quantity) {
+            let parsedQty = parseInt(quantity);
+            if (isNaN(parsedQty) || parsedQty < 0) return;
+            if (parsedQty > 999) parsedQty = 999;
+
+            const idx = this.cart.findIndex(i => i.product_id === productId);
+            if (parsedQty === 0) {
+                if (idx !== -1) { this.cart.splice(idx, 1); }
+            } else {
+                if (idx !== -1) { this.cart[idx].quantity = parsedQty; }
+                else { this.cart.push({ product_id: productId, name, price, quantity: parsedQty }); }
+            }
+            this.updateJson();
+        },
+        get cartTotal() {
+            return this.cart.reduce((t, i) => t + i.price * i.quantity, 0);
+        },
+        updateJson() {
+            this.cartJson = JSON.stringify(this.cart.map(i => ({ product_id: i.product_id, quantity: i.quantity })));
+        },
+        prepSubmit() { this.updateJson(); }
+    }
+}
+</script>
+{% endblock %}
