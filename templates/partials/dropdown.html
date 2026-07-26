@@ -1,0 +1,14 @@
+{% macro render_dropdown(name, options, selected='', id='', required=False, hx_get='', hx_target='', placeholder='', class='') %}
+<select name="{{ name }}"
+    {% if id %}id="{{ id }}"{% endif %}
+    {% if required %}required{% endif %}
+    {% if hx_get %}x-data="{}" @change="htmx.ajax('GET', '{{ hx_get }}' + ($el.value ? '?{{ name }}=' + $el.value : ''), {target: '{{ hx_target }}'})"{% endif %}
+    class="cv-input {{ class }}">
+    {% if placeholder %}
+    <option value="" disabled {% if not selected %}selected{% endif %}>{{ placeholder }}</option>
+    {% endif %}
+    {% for opt in options %}
+    <option value="{{ opt.value }}" {% if opt.value == selected %}selected{% endif %}>{{ opt.label }}</option>
+    {% endfor %}
+</select>
+{% endmacro %}
