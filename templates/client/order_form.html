@@ -97,6 +97,7 @@
 
             <input type="hidden" name="cart_items_json" x-model="cartJson">
             {% from "partials/tooltip.html" import render_tooltip %}
+            {% from "partials/dropdown.html" import render_dropdown %}
 
             <!-- Cart Summary -->
             <div class="cv-card mb-6 border-cookie-pink/40 bg-cookie-cream/50">
@@ -210,11 +211,15 @@
                         <label class="cv-label block mb-0">Método de entrega</label>
                         {{ render_tooltip("Retiro en La Cantera, Coquimbo. Si es delivery, el precio se coordinará luego según tu ubicación.") }}
                     </div>
-                    <select name="delivery_method" required class="cv-input">
-                        <option value="" disabled selected>Selecciona un método</option>
-                        <option value="pickup">Retiro</option>
-                        <option value="delivery">Delivery</option>
-                    </select>
+                    {{ render_dropdown(
+                        name="delivery_method",
+                        options=[
+                            {"value": "pickup", "label": "Retiro"},
+                            {"value": "delivery", "label": "Delivery"},
+                        ],
+                        placeholder="Selecciona un método",
+                        required=True,
+                    ) }}
                 </div>
             </div>
 
