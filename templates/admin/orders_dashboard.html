@@ -2,10 +2,12 @@
 {% block title %}Panel de Órdenes - CookieVale{% endblock %}
 
 {% block content %}
+{% from "partials/dropdown.html" import render_dropdown %}
+
 <div class="w-full max-w-6xl mx-auto">
     <!-- Header -->
-    <div class="cv-card mb-6 flex flex-col md:flex-row justify-between items-center py-4 px-6 md:px-8 gap-4">
-        <div class="flex items-center gap-4 flex-shrink-0 w-full md:w-auto">
+    <div class="cv-card mb-6 flex flex-wrap items-center justify-between gap-4 py-4 px-6 md:px-8">
+        <div class="flex items-center gap-4">
             <a href="/admin"
                 class="text-cookie-golden hover:text-cookie-brown bg-cookie-cream inline-flex items-center justify-center w-10 h-10 rounded-full border border-cookie-pink/40 hover:border-cookie-golden shadow-sm transition-all"
                 title="Volver">
@@ -14,50 +16,32 @@
                         d="M10 19l-7-7m0 0l7-7m-7 7h18" />
                 </svg>
             </a>
-            <h1 class="cv-h2 m-0 flex items-center gap-2">Órdenes</h1>
+            <h1 class="cv-h2 m-0">Órdenes</h1>
         </div>
 
-
-
-        <!-- Filters -->
-        <div x-data="{ currentFilter: '{{ current_status.value if current_status else 'all' }}' }"
-            class="flex flex-wrap gap-2 w-full md:w-auto mt-4 md:mt-0 justify-start md:justify-end">
-
-            <button @click="currentFilter = 'all'" hx-get="/admin/orders" hx-target="#orders-table-container"
-                class="px-4 py-1.5 text-xs rounded-full transition-all whitespace-nowrap border shadow-sm"
-                :class="currentFilter === 'all' ? 'bg-cookie-cream text-cookie-brown border-cookie-golden/50 ring-2 ring-cookie-golden/30 opacity-100 font-bold' : 'bg-white text-cookie-brown border-cookie-pink/40 hover:bg-cookie-cream/50 opacity-70 hover:opacity-100 font-medium'">
-                Todas
-            </button>
-            <button @click="currentFilter = 'pending'" hx-get="/admin/orders?status=pending"
-                hx-target="#orders-table-container"
-                class="px-4 py-1.5 text-xs rounded-full transition-all whitespace-nowrap border shadow-sm"
-                :class="currentFilter === 'pending' ? 'bg-amber-100 text-amber-800 border-amber-300 ring-2 ring-amber-300 opacity-100 font-bold' : 'bg-white text-cookie-brown border-cookie-pink/40 hover:bg-amber-50 opacity-70 hover:opacity-100 font-medium'">
-                Pendiente
-            </button>
-            <button @click="currentFilter = 'confirmed'" hx-get="/admin/orders?status=confirmed"
-                hx-target="#orders-table-container"
-                class="px-4 py-1.5 text-xs rounded-full transition-all whitespace-nowrap border shadow-sm"
-                :class="currentFilter === 'confirmed' ? 'bg-sky-100 text-sky-800 border-sky-300 ring-2 ring-sky-300 opacity-100 font-bold' : 'bg-white text-cookie-brown border-cookie-pink/40 hover:bg-sky-50 opacity-70 hover:opacity-100 font-medium'">
-                Confirmada
-            </button>
-            <button @click="currentFilter = 'paid'" hx-get="/admin/orders?status=paid"
-                hx-target="#orders-table-container"
-                class="px-4 py-1.5 text-xs rounded-full transition-all whitespace-nowrap border shadow-sm"
-                :class="currentFilter === 'paid' ? 'bg-emerald-100 text-emerald-800 border-emerald-300 ring-2 ring-emerald-300 opacity-100 font-bold' : 'bg-white text-cookie-brown border-cookie-pink/40 hover:bg-emerald-50 opacity-70 hover:opacity-100 font-medium'">
-                Pagada
-            </button>
-            <button @click="currentFilter = 'delivered'" hx-get="/admin/orders?status=delivered"
-                hx-target="#orders-table-container"
-                class="px-4 py-1.5 text-xs rounded-full transition-all whitespace-nowrap border shadow-sm"
-                :class="currentFilter === 'delivered' ? 'bg-purple-100 text-purple-800 border-purple-300 ring-2 ring-purple-300 opacity-100 font-bold' : 'bg-white text-cookie-brown border-cookie-pink/40 hover:bg-purple-50 opacity-70 hover:opacity-100 font-medium'">
-                Entregada
-            </button>
-            <button @click="currentFilter = 'rejected'" hx-get="/admin/orders?status=rejected"
-                hx-target="#orders-table-container"
-                class="px-4 py-1.5 text-xs rounded-full transition-all whitespace-nowrap border shadow-sm"
-                :class="currentFilter === 'rejected' ? 'bg-rose-100 text-rose-800 border-rose-300 ring-2 ring-rose-300 opacity-100 font-bold' : 'bg-white text-cookie-brown border-cookie-pink/40 hover:bg-rose-50 opacity-70 hover:opacity-100 font-medium'">
-                Rechazada
-            </button>
+        <div class="flex items-center gap-3">
+            {{ render_dropdown(
+                name="status",
+                options=[
+                    {"value": "", "label": "Todas"},
+                    {"value": "pending", "label": "Pendiente"},
+                    {"value": "confirmed", "label": "Confirmada"},
+                    {"value": "paid", "label": "Pagada"},
+                    {"value": "delivered", "label": "Entregada"},
+                    {"value": "rejected", "label": "Rechazada"},
+                ],
+                selected=current_status.value if current_status else "",
+                hx_get="/admin/orders",
+                hx_target="#orders-table-container",
+                class="text-sm w-40"
+            ) }}
+            <a href="/admin/orders/new"
+                class="cv-btn text-xs px-4 py-2 flex items-center gap-1.5 flex-shrink-0">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4" />
+                </svg>
+                Crear Orden
+            </a>
         </div>
     </div>
 
