@@ -17,7 +17,14 @@ class OrderService:
     def __init__(self, repository: OrderRepository) -> None:
         self.repository = repository
 
-    def create_order(self, data: OrderCreateRequest, photos: List[UploadFile]) -> Order:
+    def create_order(
+        self,
+        data: OrderCreateRequest,
+        photos: List[UploadFile],
+        status: OrderStatus = OrderStatus.PENDING,
+        amount_paid: int = 0,
+        created_by_admin: bool = False,
+    ) -> Order:
         items = [
             OrderItem(
                 product_id=i.product_id, quantity=i.quantity, unit_price=i.unit_price
@@ -25,14 +32,17 @@ class OrderService:
             for i in data.items
         ]
 
+        amount_paid = max(0, min(amount_paid, data.total_amount))
+
         order = Order(
             customer_instagram=data.customer_instagram,
             delivery_date=data.delivery_date,
             description=data.description,
             delivery_method=data.delivery_method,
             total_amount=data.total_amount,
-            amount_paid=0,
+            amount_paid=amount_paid,
             items=items,
+            status=status,
         )
 
         order = self.repository.save(order)
@@ -54,13 +64,17 @@ class OrderService:
                 [f"• {i.product_name} x {i.quantity}" for i in order.items]
             )
 
+            source = "📱 <i>(Creada por admin)</i>\n" if created_by_admin else ""
+
             notifier.send_message(
-                f"🛍️ <b>¡Nueva Orden (ID: {order.id})!</b>\n\n"
+                f"🛍️ <b>¡Nueva Orden (ID: {order.id})!</b>\n"
+                f"{source}\n"
                 f"👤 <b>Instagram:</b> @{order.customer_instagram}\n"
                 f"🗓️ <b>Fecha Entrega:</b> {order.delivery_date.strftime('%Y-%m-%d')}\n"
                 f"📦 <b>Método:</b> {'Retiro' if order.delivery_method.value == 'pickup' else 'Delivery'}\n"
                 f"📋 <b>Productos:</b>\n{items_str}\n"
-                f"💰 <b>Total:</b> ${order.total_amount:,.0f}"
+                f"💰 <b>Total:</b> ${order.total_amount:,.0f}\n"
+                f"💳 <b>Pagado:</b> ${order.amount_paid:,.0f}"
             )
         except Exception as e:
             logger.error("Failed to send Telegram notification: %s", e)
