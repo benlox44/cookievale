@@ -1,25 +1,22 @@
-from fastapi import FastAPI
+import logging
+import os
+
+from fastapi import FastAPI, HTTPException, Request, status
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import RedirectResponse, HTMLResponse, JSONResponse
-from fastapi import Request
-from fastapi import HTTPException
-from fastapi import status
 from slowapi import Limiter
-from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
+from slowapi.util import get_remote_address
 from sqlalchemy import text
 
-from app.modules.orders.client_router import router as client_router
-from app.modules.orders.admin_router import router as admin_router
+from app.core.database import engine
+from app.core.templates import templates
 from app.modules.auth.router import router as auth_router
+from app.modules.orders.admin_router import router as admin_router
+from app.modules.orders.client_router import router as client_router
 from app.modules.products.admin_router import router as products_admin_router
 from app.modules.products.client_router import router as products_client_router
 from app.modules.scheduling.admin_router import router as scheduling_admin_router
-from app.core.templates import templates
-from app.core.database import engine
-
-import os
-import logging
 
 logging.basicConfig(
     level=logging.INFO,
@@ -65,8 +62,11 @@ def health_check():
         with engine.connect() as conn:
             conn.execute(text("SELECT 1"))
         return {"status": "ok", "database": "connected"}
-    except Exception as e:
-        return {"status": "degraded", "database": str(e)}
+    except Exception:
+        return JSONResponse(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            content={"status": "degraded", "database": "unavailable"},
+        )
 
 
 @app.get("/", response_class=HTMLResponse)
