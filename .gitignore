@@ -4,3 +4,4 @@ __pycache__/
 *.sql
 docker-compose.override.yml
 .ruff_cache/
+backup.log
