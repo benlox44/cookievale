@@ -2,7 +2,7 @@
 
 A custom order management system for a boutique bakery. Built with FastAPI, HTMX, TailwindCSS, Alpine.js, and PostgreSQL using a Vertical Slicing and Domain-Driven Design (DDD) approach.
 
-## 🚀 Quick Start
+## Quick Start
 
 1. **Clone & Setup:**
    ```bash
@@ -23,35 +23,38 @@ A custom order management system for a boutique bakery. Built with FastAPI, HTMX
     http://localhost:8000
     ```
 
-## 🛠️ Development Commands
+## Development Commands
 
 We rely on a `Makefile` to encapsulate Docker operations.
 
-*   `make build` : Rebuild docker images.
-*   `make up` : Spin up the entire stack in the background.
-*   `make down` : Tear down the stack.
-*   `make restart` : Restart the web container.
-*   `make logs` : Attach to the backend logs.
-*   `make shell` : Open a continuous bash session inside the web container.
-*   `make lint` : Run Ruff to check code quality.
-*   `make format` : Run Ruff to auto-format code.
-*   `make migrate` : Apply all pending Alembic migrations (`alembic upgrade head`).
-*   `make reset-db` : Drop the database volume, recreate it, and apply all migrations (seed data).
-*   `make backup` : Dump the database and sync media to `BACKUP_DEST` (requires Docker running).
+| Command | Description |
+|---------|-------------|
+| `make build` | Rebuild docker images |
+| `make up` | Spin up the entire stack in the background |
+| `make down` | Tear down the stack |
+| `make restart` | Restart the web container |
+| `make logs` | Attach to the backend logs |
+| `make shell` | Open a continuous bash session inside the web container |
+| `make lint` | Run Ruff to check code quality |
+| `make format` | Run Ruff to auto-format code |
+| `make migrate` | Apply all pending Alembic migrations (`alembic upgrade head`) |
+| `make reset-db` | Drop the database volume, recreate it, and apply all migrations |
+| `make backup` | Dump the database and sync media to `BACKUP_DEST` (see `.env`) |
+| `make css` | Compile `public/styles.css` with `--minify` (run before git push) |
 
-## ⚙️ Stack
+## Stack
 
 - **Backend:** FastAPI (Async, Type-Safe)
 - **Database:** PostgreSQL (with SQLAlchemy ORM & Alembic for migrations)
 - **Data Validation:** Pydantic (DTOs / Schemas) & Python Dataclasses
 - **Frontend:** HTMX + Alpine.js + Jinja2 Templates + TailwindCSS (Lightweight reactivity)
 
-## 🏗️ Architecture
+## Architecture
 
 The app is built upon **Vertical Slices**.
 Instead of grouping files by technical concern (e.g. all models together, all routers together), everything related to a specific business feature (e.g., `orders`, `products`, `auth`) lives in its respective folder inside `app/modules/`.
 
-## 🗺️ Client & Admin Routes
+## Client & Admin Routes
 
 *   **Client:**
     *   `GET /orders/new` - Interactive client form to select products and place orders.
