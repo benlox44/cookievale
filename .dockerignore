@@ -1,0 +1,16 @@
+.env
+.git/
+.gitignore
+__pycache__/
+*.pyc
+*.pyo
+.ruff_cache/
+backup.log
+backup.py
+docker-compose.override.yml
+docker-compose.yml
+docker-compose.tailscale.yml
+Makefile
+README.md
+*.md
+media/
