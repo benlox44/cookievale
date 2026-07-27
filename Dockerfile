@@ -6,8 +6,12 @@ ENV PYTHONUNBUFFERED=1
 WORKDIR /app
 
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends gcc libpq-dev make \
+    && apt-get install -y --no-install-recommends gcc libpq-dev make curl \
     && rm -rf /var/lib/apt/lists/*
+
+RUN curl -sLO https://github.com/tailwindlabs/tailwindcss/releases/download/v3.4.17/tailwindcss-linux-x64 \
+    && mv tailwindcss-linux-x64 /usr/local/bin/tailwindcss \
+    && chmod +x /usr/local/bin/tailwindcss
 
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt

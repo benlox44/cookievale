@@ -1,4 +1,4 @@
-.PHONY: up down build shell logs restart lint format migrate reset-db backup
+.PHONY: up down build shell logs restart lint format migrate reset-db backup css
 
 DC := docker-compose
 APP := web
@@ -49,3 +49,6 @@ reset-db:
 
 backup:
 	@$(PYTHON) backup.py
+
+css:
+	$(DC) exec $(APP) tailwindcss -i public/tailwind.css -o public/styles.css --minify
