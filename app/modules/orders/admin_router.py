@@ -1,22 +1,34 @@
+import json
+from datetime import datetime
+
 from fastapi import (
-    APIRouter, Depends, Request, Query, Form, UploadFile, File, HTTPException,
-    status, Response,
+    APIRouter,
+    Depends,
+    File,
+    Form,
+    HTTPException,
+    Query,
+    Request,
+    Response,
+    UploadFile,
+    status,
 )
 from fastapi.responses import HTMLResponse, RedirectResponse
-from typing import List, Optional
-from datetime import datetime
-import json
 
-from app.core.templates import templates
 from app.core.dependencies import (
     get_order_service,
     get_product_service,
     get_scheduling_service,
 )
 from app.core.security import get_current_admin
+from app.core.templates import templates
+from app.modules.orders.domain import DeliveryMethod, OrderStatus
+from app.modules.orders.schemas import (
+    OrderCreateRequest,
+    OrderItemCreate,
+    OrderUpdateRequest,
+)
 from app.modules.orders.service import OrderService
-from app.modules.orders.schemas import OrderCreateRequest, OrderItemCreate, OrderUpdateRequest
-from app.modules.orders.domain import OrderStatus, DeliveryMethod
 from app.modules.products.service import ProductService
 from app.modules.scheduling.service import SchedulingService
 
@@ -33,7 +45,7 @@ def _error_toast(message: str) -> Response:
 @router.get("", response_class=HTMLResponse)
 def admin_dashboard(
     request: Request,
-    status_filter: Optional[OrderStatus] = Query(None, alias="status"),
+    status_filter: OrderStatus | None = Query(None, alias="status"),
     page: int = Query(1, ge=1),
     service: OrderService = Depends(get_order_service),
     admin: str = Depends(get_current_admin),
@@ -92,7 +104,7 @@ def create_order(
     description: str = Form(...),
     order_status: OrderStatus = Form(OrderStatus.PENDING),
     amount_paid: int = Form(0),
-    photos: Optional[List[UploadFile]] = File(None),
+    photos: list[UploadFile] | None = File(None),
     order_service: OrderService = Depends(get_order_service),
     product_service: ProductService = Depends(get_product_service),
     scheduling_service: SchedulingService = Depends(get_scheduling_service),

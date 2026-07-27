@@ -1,10 +1,12 @@
-from fastapi import APIRouter, Depends, Request, Form
+from datetime import date
+
+from fastapi import APIRouter, Depends, Form, Request
 from fastapi.responses import HTMLResponse, JSONResponse
+
+from app.core.dependencies import get_scheduling_service
 from app.core.security import get_current_admin
 from app.core.templates import templates
-from app.core.dependencies import get_scheduling_service
 from app.modules.scheduling.service import SchedulingService
-from datetime import date
 
 router = APIRouter(
     prefix="/admin/dates",

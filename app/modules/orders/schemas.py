@@ -1,7 +1,8 @@
-from pydantic import BaseModel, ConfigDict, Field, field_validator
-from typing import List
 from datetime import datetime
-from app.modules.orders.domain import OrderStatus, DeliveryMethod
+
+from pydantic import BaseModel, ConfigDict, Field, field_validator
+
+from app.modules.orders.domain import DeliveryMethod, OrderStatus
 
 
 class OrderItemCreate(BaseModel):
@@ -15,7 +16,7 @@ class OrderCreateRequest(BaseModel):
     delivery_date: datetime
     description: str = Field(max_length=2000)
     delivery_method: DeliveryMethod
-    items: List[OrderItemCreate] = Field(min_length=1)
+    items: list[OrderItemCreate] = Field(min_length=1)
     total_amount: int = Field(gt=0)
 
     @field_validator("customer_instagram")

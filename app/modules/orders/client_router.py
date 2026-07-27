@@ -1,18 +1,18 @@
-from fastapi import APIRouter, Depends, Request, Form, UploadFile, File, Response
-from fastapi.responses import HTMLResponse
-from typing import List, Optional
-from datetime import datetime, date
 import json
+from datetime import date, datetime
 
-from app.core.templates import templates
+from fastapi import APIRouter, Depends, File, Form, Request, Response, UploadFile
+from fastapi.responses import HTMLResponse
+
 from app.core.dependencies import (
     get_order_service,
     get_product_service,
     get_scheduling_service,
 )
+from app.core.templates import templates
 from app.modules.orders.domain import DeliveryMethod
-from app.modules.orders.service import OrderService
 from app.modules.orders.schemas import OrderCreateRequest, OrderItemCreate
+from app.modules.orders.service import OrderService
 from app.modules.products.service import ProductService
 from app.modules.scheduling.service import SchedulingService
 
@@ -53,7 +53,7 @@ def submit_order(
     delivery_date: datetime = Form(...),
     delivery_method: DeliveryMethod = Form(...),
     description: str = Form(...),
-    photos: Optional[List[UploadFile]] = File(None),
+    photos: list[UploadFile] | None = File(None),
     order_service: OrderService = Depends(get_order_service),
     product_service: ProductService = Depends(get_product_service),
     scheduling_service: SchedulingService = Depends(get_scheduling_service),

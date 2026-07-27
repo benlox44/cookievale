@@ -1,15 +1,17 @@
-from typing import Protocol, List, Optional
 from datetime import date
+from typing import Protocol
+
+from sqlalchemy import exc, select
 from sqlalchemy.orm import Session
-from sqlalchemy import select, exc
-from app.modules.scheduling.models import AvailableDateModel
+
 from app.modules.scheduling.domain import AvailableDate
+from app.modules.scheduling.models import AvailableDateModel
 
 
 class AvailableDateRepositoryProtocol(Protocol):
-    def get_all(self, limit: int = 100, offset: int = 0) -> List[AvailableDate]: ...
-    def get_by_date(self, target_date: date) -> Optional[AvailableDate]: ...
-    def get_by_id(self, id: int) -> Optional[AvailableDate]: ...
+    def get_all(self, limit: int = 100, offset: int = 0) -> list[AvailableDate]: ...
+    def get_by_date(self, target_date: date) -> AvailableDate | None: ...
+    def get_by_id(self, id: int) -> AvailableDate | None: ...
     def create(self, target_date: date) -> AvailableDate: ...
     def delete(self, id: int) -> None: ...
 
@@ -18,7 +20,7 @@ class AvailableDateRepository:
     def __init__(self, db: Session):
         self.db = db
 
-    def get_all(self, limit: int = 100, offset: int = 0) -> List[AvailableDate]:
+    def get_all(self, limit: int = 100, offset: int = 0) -> list[AvailableDate]:
         results = self.db.execute(
             select(AvailableDateModel)
             .order_by(AvailableDateModel.date.asc())
@@ -28,7 +30,7 @@ class AvailableDateRepository:
         models = results.scalars().all()
         return [AvailableDate(id=m.id, date=m.date) for m in models]
 
-    def get_by_date(self, target_date: date) -> Optional[AvailableDate]:
+    def get_by_date(self, target_date: date) -> AvailableDate | None:
         result = self.db.execute(
             select(AvailableDateModel).where(AvailableDateModel.date == target_date)
         )
@@ -37,7 +39,7 @@ class AvailableDateRepository:
             return AvailableDate(id=m.id, date=m.date)
         return None
 
-    def get_by_id(self, id: int) -> Optional[AvailableDate]:
+    def get_by_id(self, id: int) -> AvailableDate | None:
         result = self.db.execute(
             select(AvailableDateModel).where(AvailableDateModel.id == id)
         )

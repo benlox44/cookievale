@@ -1,12 +1,12 @@
+import logging
 import os
 import shutil
-import logging
-from typing import List, Optional
+
 from fastapi import UploadFile
 
 from app.core.telegram import TelegramNotifier
 from app.core.uploads import save_uploads
-from app.modules.orders.domain import Order, OrderStatus, OrderItem
+from app.modules.orders.domain import Order, OrderItem, OrderStatus
 from app.modules.orders.repository import OrderRepository
 from app.modules.orders.schemas import OrderCreateRequest, OrderUpdateRequest
 
@@ -20,7 +20,7 @@ class OrderService:
     def create_order(
         self,
         data: OrderCreateRequest,
-        photos: List[UploadFile],
+        photos: list[UploadFile],
         status: OrderStatus = OrderStatus.PENDING,
         amount_paid: int = 0,
         created_by_admin: bool = False,
@@ -81,18 +81,18 @@ class OrderService:
 
         return order
 
-    def get_order(self, order_id: int) -> Optional[Order]:
+    def get_order(self, order_id: int) -> Order | None:
         return self.repository.get_by_id(order_id)
 
     def list_orders(
         self,
-        status: Optional[OrderStatus] = None,
+        status: OrderStatus | None = None,
         limit: int = 100,
         offset: int = 0,
-    ) -> List[Order]:
+    ) -> list[Order]:
         return self.repository.list_all(status=status, limit=limit, offset=offset)
 
-    def update_order(self, order_id: int, data: OrderUpdateRequest) -> Optional[Order]:
+    def update_order(self, order_id: int, data: OrderUpdateRequest) -> Order | None:
         order = self.repository.get_by_id(order_id)
         if not order:
             return None
@@ -103,7 +103,7 @@ class OrderService:
         order.amount_paid = data.amount_paid
         return self.repository.save(order)
 
-    def change_status(self, order_id: int, new_status: OrderStatus) -> Optional[Order]:
+    def change_status(self, order_id: int, new_status: OrderStatus) -> Order | None:
         order = self.repository.get_by_id(order_id)
         if not order:
             return None

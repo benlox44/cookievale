@@ -1,7 +1,6 @@
-from enum import Enum
 from dataclasses import dataclass, field
-from typing import List, Optional
 from datetime import datetime
+from enum import Enum
 
 
 class OrderStatus(str, Enum):
@@ -22,9 +21,9 @@ class OrderItem:
     product_id: int
     quantity: int
     unit_price: int
-    product_name: Optional[str] = None
-    id: Optional[int] = None
-    order_id: Optional[int] = None
+    product_name: str | None = None
+    id: int | None = None
+    order_id: int | None = None
 
 
 @dataclass
@@ -33,10 +32,10 @@ class Order:
     delivery_date: datetime
     description: str
     delivery_method: DeliveryMethod
-    items: List[OrderItem] = field(default_factory=list)
+    items: list[OrderItem] = field(default_factory=list)
     total_amount: int = 0
     amount_paid: int = 0
-    id: Optional[int] = None
-    reference_photos: Optional[List[str]] = None
+    id: int | None = None
+    reference_photos: list[str] | None = None
     status: OrderStatus = OrderStatus.PENDING
-    created_at: Optional[datetime] = None
+    created_at: datetime | None = None

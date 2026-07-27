@@ -1,10 +1,10 @@
-from typing import Union
-from sqlalchemy.dialects import postgresql
-from alembic import op
+
 import sqlalchemy as sa
+from alembic import op
+from sqlalchemy.dialects import postgresql
 
 revision: str = "7b6efd74dbec"
-down_revision: Union[str, None] = "fc50303b4ff8"
+down_revision: str | None = "fc50303b4ff8"
 branch_labels = None
 depends_on = None
 

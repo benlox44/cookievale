@@ -1,5 +1,5 @@
-from sqlalchemy.orm import Session
 from fastapi import Depends
+from sqlalchemy.orm import Session
 
 from app.core.database import get_db
 from app.modules.orders.repository import SQLAlchemyOrderRepository

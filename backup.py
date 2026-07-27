@@ -97,8 +97,16 @@ def main() -> None:
     try:
         result = subprocess.run(
             [
-                "docker", "compose", "exec", "-T", "db",
-                "pg_dump", "-U", db_user, "-d", db_name,
+                "docker",
+                "compose",
+                "exec",
+                "-T",
+                "db",
+                "pg_dump",
+                "-U",
+                db_user,
+                "-d",
+                db_name,
             ],
             capture_output=True,
             timeout=300,
@@ -176,7 +184,9 @@ def main() -> None:
     remaining = min(len(backup_dirs), BACKUP_RETENTION)
     log.info(
         "=== Backup Completed Successfully === (%s, %d/%d backups stored)",
-        total_size, remaining, BACKUP_RETENTION,
+        total_size,
+        remaining,
+        BACKUP_RETENTION,
     )
 
 

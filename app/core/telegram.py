@@ -1,8 +1,8 @@
-import os
 import json
 import logging
-import urllib.request
+import os
 import urllib.error
+import urllib.request
 
 logger = logging.getLogger(__name__)
 

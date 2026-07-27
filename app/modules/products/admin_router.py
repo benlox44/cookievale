@@ -1,27 +1,27 @@
-from fastapi import (
-    APIRouter,
-    Depends,
-    Request,
-    Form,
-    UploadFile,
-    File,
-    HTTPException,
-    status,
-)
-from fastapi.responses import HTMLResponse, RedirectResponse
-from typing import List, Optional
 import logging
 import re
 
-from app.core.templates import templates
-from app.core.security import get_current_admin
+from fastapi import (
+    APIRouter,
+    Depends,
+    File,
+    Form,
+    HTTPException,
+    Request,
+    UploadFile,
+    status,
+)
+from fastapi.responses import HTMLResponse, RedirectResponse
+
 from app.core.dependencies import get_product_service
-from app.modules.products.service import ProductService
+from app.core.security import get_current_admin
+from app.core.templates import templates
 from app.modules.products.schemas import (
     ProductCreate,
-    ProductUpdate,
     ProductReorderRequest,
+    ProductUpdate,
 )
+from app.modules.products.service import ProductService
 
 logger = logging.getLogger(__name__)
 
@@ -30,7 +30,7 @@ router = APIRouter(prefix="/admin/products", tags=["AdminProducts"])
 MEDIA_URL_PATTERN = re.compile(r"^/media/products/\d+/[a-f0-9]+\.\w+$")
 
 
-def _validate_existing_images(urls: List[str]) -> List[str]:
+def _validate_existing_images(urls: list[str]) -> list[str]:
     return [url for url in urls if MEDIA_URL_PATTERN.match(url)]
 
 
@@ -61,7 +61,7 @@ def create_product(
     price: int = Form(...),
     description: str = Form(...),
     is_active: bool = Form(False),
-    photos: Optional[List[UploadFile]] = File(None),
+    photos: list[UploadFile] | None = File(None),
     service: ProductService = Depends(get_product_service),
     admin: str = Depends(get_current_admin),
 ):
@@ -110,8 +110,8 @@ def update_product(
     price: int = Form(...),
     description: str = Form(...),
     is_active: bool = Form(False),
-    existing_images: List[str] = Form([]),
-    photos: Optional[List[UploadFile]] = File(None),
+    existing_images: list[str] = Form([]),
+    photos: list[UploadFile] | None = File(None),
     service: ProductService = Depends(get_product_service),
     admin: str = Depends(get_current_admin),
 ):

@@ -1,13 +1,12 @@
 from dataclasses import dataclass
-from typing import List, Optional
 
 
 @dataclass
 class Product:
-    id: Optional[int]
+    id: int | None
     name: str
     price: int
-    description: Optional[str] = None
+    description: str | None = None
     is_active: bool = True
-    image_urls: Optional[List[str]] = None
+    image_urls: list[str] | None = None
     display_order: int = 0

@@ -1,8 +1,8 @@
-from typing import List
 from datetime import date
-from app.modules.scheduling.repository import AvailableDateRepository
-from app.modules.scheduling.domain import AvailableDate
+
 from app.modules.orders.repository import OrderRepository
+from app.modules.scheduling.domain import AvailableDate
+from app.modules.scheduling.repository import AvailableDateRepository
 
 
 class SchedulingService:
@@ -13,7 +13,7 @@ class SchedulingService:
     def _get_occupied_dates(self) -> set[date]:
         return self.order_repo.get_occupied_dates()
 
-    def get_all_dates(self) -> List[AvailableDate]:
+    def get_all_dates(self) -> list[AvailableDate]:
         all_dates = self.repo.get_all()
         occupied_dates = self._get_occupied_dates()
         for d in all_dates:
@@ -21,7 +21,7 @@ class SchedulingService:
                 d.is_occupied = True
         return all_dates
 
-    def get_available_dates(self) -> List[AvailableDate]:
+    def get_available_dates(self) -> list[AvailableDate]:
         all_dates = self.repo.get_all()
         occupied_dates = self._get_occupied_dates()
         return [d for d in all_dates if d.date not in occupied_dates]

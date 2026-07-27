@@ -1,24 +1,26 @@
-from typing import Protocol, List, Optional
+from typing import Protocol
+
 from sqlalchemy import select
 from sqlalchemy.orm import Session
-from app.modules.products.models import ProductModel
+
 from app.modules.products.domain import Product
+from app.modules.products.models import ProductModel
 from app.modules.products.schemas import ProductCreate, ProductUpdate
 
 
 class ProductRepositoryProtocol(Protocol):
-    def list_all(self, only_active: bool = False) -> List[Product]: ...
-    def get_by_id(self, product_id: int) -> Optional[Product]: ...
+    def list_all(self, only_active: bool = False) -> list[Product]: ...
+    def get_by_id(self, product_id: int) -> Product | None: ...
     def create(
-        self, data: ProductCreate, image_urls: Optional[List[str]] = None
+        self, data: ProductCreate, image_urls: list[str] | None = None
     ) -> Product: ...
     def update(
         self,
         product_id: int,
         data: ProductUpdate,
-        image_urls: Optional[List[str]] = None,
-    ) -> Optional[Product]: ...
-    def reorder(self, ordered_ids: List[int]) -> bool: ...
+        image_urls: list[str] | None = None,
+    ) -> Product | None: ...
+    def reorder(self, ordered_ids: list[int]) -> bool: ...
     def delete(self, product_id: int) -> bool: ...
 
 
@@ -26,7 +28,7 @@ class ProductRepository:
     def __init__(self, db: Session) -> None:
         self.db = db
 
-    def list_all(self, only_active: bool = False) -> List[Product]:
+    def list_all(self, only_active: bool = False) -> list[Product]:
         stmt = select(ProductModel)
         if only_active:
             stmt = stmt.where(ProductModel.is_active)
@@ -34,7 +36,7 @@ class ProductRepository:
         models = self.db.execute(stmt).scalars().all()
         return [self._to_domain(m) for m in models]
 
-    def get_by_id(self, product_id: int) -> Optional[Product]:
+    def get_by_id(self, product_id: int) -> Product | None:
         stmt = select(ProductModel).where(ProductModel.id == product_id)
         model = self.db.execute(stmt).scalar_one_or_none()
         if model is None:
@@ -42,7 +44,7 @@ class ProductRepository:
         return self._to_domain(model)
 
     def create(
-        self, data: ProductCreate, image_urls: Optional[List[str]] = None
+        self, data: ProductCreate, image_urls: list[str] | None = None
     ) -> Product:
         db_product = ProductModel(
             name=data.name,
@@ -60,8 +62,8 @@ class ProductRepository:
         self,
         product_id: int,
         data: ProductUpdate,
-        image_urls: Optional[List[str]] = None,
-    ) -> Optional[Product]:
+        image_urls: list[str] | None = None,
+    ) -> Product | None:
         stmt = select(ProductModel).where(ProductModel.id == product_id)
         db_product = self.db.execute(stmt).scalar_one_or_none()
         if not db_product:
@@ -78,7 +80,7 @@ class ProductRepository:
         self.db.refresh(db_product)
         return self._to_domain(db_product)
 
-    def reorder(self, ordered_ids: List[int]) -> bool:
+    def reorder(self, ordered_ids: list[int]) -> bool:
         for index, prod_id in enumerate(ordered_ids):
             stmt = select(ProductModel).where(ProductModel.id == prod_id)
             db_product = self.db.execute(stmt).scalar_one_or_none()

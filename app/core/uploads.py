@@ -1,8 +1,7 @@
-import os
 import logging
-import uuid
+import os
 import shutil
-from typing import List
+import uuid
 
 from fastapi import UploadFile
 
@@ -59,10 +58,10 @@ def get_safe_extension(file: UploadFile) -> str:
 
 
 def save_uploads(
-    files: List[UploadFile], target_dir: str, url_prefix: str
-) -> List[str]:
+    files: list[UploadFile], target_dir: str, url_prefix: str
+) -> list[str]:
     os.makedirs(target_dir, exist_ok=True)
-    saved_urls: List[str] = []
+    saved_urls: list[str] = []
 
     for file in files:
         if not validate_upload(file):

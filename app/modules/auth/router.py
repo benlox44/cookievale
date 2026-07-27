@@ -1,10 +1,10 @@
-from fastapi import APIRouter, Request, Form, status
+from fastapi import APIRouter, Form, Request, status
 from fastapi.responses import HTMLResponse, RedirectResponse
 from slowapi import Limiter
 from slowapi.util import get_remote_address
 
-from app.core.templates import templates
 from app.core.security import ADMIN_PASSWORD, create_admin_token, get_current_admin
+from app.core.templates import templates
 
 limiter = Limiter(key_func=get_remote_address)
 

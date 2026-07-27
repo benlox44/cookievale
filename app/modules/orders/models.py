@@ -1,16 +1,19 @@
 from sqlalchemy import (
+    ARRAY,
     Column,
+    DateTime,
+    ForeignKey,
     Integer,
     String,
-    DateTime,
+)
+from sqlalchemy import (
     Enum as SAEnum,
-    ARRAY,
-    ForeignKey,
 )
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
+
 from app.core.database import Base
-from app.modules.orders.domain import OrderStatus, DeliveryMethod
+from app.modules.orders.domain import DeliveryMethod, OrderStatus
 
 
 class OrderModel(Base):
