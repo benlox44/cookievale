@@ -57,4 +57,4 @@ New routers must be registered in `app/main.py` via `app.include_router()`.
 - Auth is HMAC-based cookie sessions (no JWT or third-party auth library).
 - PostgreSQL connection uses synchronous SQLAlchemy (not async).
 - `alembic.ini` uses `render_as_batch=True` for SQLite compatibility (even though this project uses Postgres).
-- Backup scripts: `backup.bat` (Windows) and `backup.sh` (Linux/macOS). Uses manual `.env` parser to handle special characters in `SECRET_KEY`. Database dump is compressed with `gzip` and integrity-verified. Keeps last 7 timestamped backups.
+- Backup script: single `backup.py` (Python stdlib only) with custom `.env` parser to handle special characters in `SECRET_KEY`. Database dump is compressed with `gzip` and integrity-verified. Keeps last 7 timestamped backups. Works identically on Windows and Linux.
