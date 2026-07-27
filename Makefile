@@ -5,10 +5,10 @@ APP := web
 
 ifeq ($(OS),Windows_NT)
     SLEEP := timeout /t 5 /nobreak > NUL
-    BACKUP_CMD := cmd /c "backup.bat"
+    PYTHON := python
 else
     SLEEP := sleep 5
-    BACKUP_CMD := bash backup.sh
+    PYTHON := python3
 endif
 
 up:
@@ -48,4 +48,4 @@ reset-db:
 	@echo "Database reset complete."
 
 backup:
-	@$(BACKUP_CMD)
+	@$(PYTHON) backup.py
