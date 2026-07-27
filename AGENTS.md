@@ -12,6 +12,7 @@ Everything runs inside Docker. Never run Python commands locally — use `make` 
 - `make migrate` — `alembic upgrade head` (inside container)
 - `make reset-db` — drop volume, recreate, run all migrations
 - `make shell` — bash into the web container
+- `make backup` — export database + sync media files to `$BACKUP_DEST` (see `.env`)
 - No test suite exists currently
 
 ## Architecture — Vertical Slicing
@@ -56,4 +57,4 @@ New routers must be registered in `app/main.py` via `app.include_router()`.
 - Auth is HMAC-based cookie sessions (no JWT or third-party auth library).
 - PostgreSQL connection uses synchronous SQLAlchemy (not async).
 - `alembic.ini` uses `render_as_batch=True` for SQLite compatibility (even though this project uses Postgres).
-- Backup target (`make backup`) calls a Windows-only `backup.bat` — not portable.
+- Backup scripts: `backup.bat` (Windows) and `backup.sh` (Linux/macOS). Uses manual `.env` parser to handle special characters in `SECRET_KEY`. Database dump is compressed with `gzip` and integrity-verified. Keeps last 7 timestamped backups.
