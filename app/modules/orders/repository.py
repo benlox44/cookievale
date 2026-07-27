@@ -1,16 +1,18 @@
-from typing import Protocol, List, Optional
+from typing import Protocol
+
 from sqlalchemy import select
 from sqlalchemy.orm import Session, selectinload
-from app.modules.orders.domain import Order, OrderStatus, OrderItem
-from app.modules.orders.models import OrderModel, OrderItemModel
+
+from app.modules.orders.domain import Order, OrderItem, OrderStatus
+from app.modules.orders.models import OrderItemModel, OrderModel
 
 
 class OrderRepository(Protocol):
     def save(self, order: Order) -> Order: ...
-    def get_by_id(self, order_id: int) -> Optional[Order]: ...
+    def get_by_id(self, order_id: int) -> Order | None: ...
     def list_all(
-        self, status: Optional[OrderStatus] = None, limit: int = 100, offset: int = 0
-    ) -> List[Order]: ...
+        self, status: OrderStatus | None = None, limit: int = 100, offset: int = 0
+    ) -> list[Order]: ...
     def delete(self, order_id: int) -> None: ...
     def get_occupied_dates(self) -> set: ...
 
@@ -57,11 +59,13 @@ class SQLAlchemyOrderRepository:
 
         return self._to_domain(db_order)
 
-    def get_by_id(self, order_id: int) -> Optional[Order]:
+    def get_by_id(self, order_id: int) -> Order | None:
         stmt = (
             select(OrderModel)
             .where(OrderModel.id == order_id)
-            .options(selectinload(OrderModel.items))
+            .options(
+                selectinload(OrderModel.items).selectinload(OrderItemModel.product)
+            )
         )
         db_order = self.db.execute(stmt).scalar_one_or_none()
         if not db_order:
@@ -70,11 +74,13 @@ class SQLAlchemyOrderRepository:
 
     def list_all(
         self,
-        status: Optional[OrderStatus] = None,
+        status: OrderStatus | None = None,
         limit: int = 100,
         offset: int = 0,
-    ) -> List[Order]:
-        stmt = select(OrderModel).options(selectinload(OrderModel.items))
+    ) -> list[Order]:
+        stmt = select(OrderModel).options(
+            selectinload(OrderModel.items).selectinload(OrderItemModel.product)
+        )
         if status is not None:
             stmt = stmt.where(OrderModel.status == status)
         stmt = stmt.order_by(OrderModel.created_at.desc()).limit(limit).offset(offset)
