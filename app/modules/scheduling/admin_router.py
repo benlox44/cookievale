@@ -1,8 +1,9 @@
-from datetime import date
+from datetime import date, datetime
 
 from fastapi import APIRouter, Depends, Form, Request
 from fastapi.responses import HTMLResponse, JSONResponse
 
+from app.core.config import TZ
 from app.core.dependencies import get_scheduling_service
 from app.core.security import get_current_admin
 from app.core.templates import templates
@@ -20,7 +21,7 @@ def dates_dashboard(
     request: Request, service: SchedulingService = Depends(get_scheduling_service)
 ):
     dates = service.get_all_dates()
-    today = date.today().strftime("%Y-%m-%d")
+    today = datetime.now(tz=TZ).date().strftime("%Y-%m-%d")
     return templates.TemplateResponse(
         request=request,
         name="admin/dates_dashboard.html",

@@ -4,7 +4,7 @@ import logging
 import shutil
 import subprocess
 import sys
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 
 SCRIPT_DIR = Path(__file__).resolve().parent
@@ -48,7 +48,7 @@ def _is_timestamp_dir(name: str) -> bool:
     if len(name) != 19 or "_" not in name:
         return False
     try:
-        datetime.strptime(name, "%Y-%m-%d_%H%M%S")
+        datetime.strptime(name, "%Y-%m-%d_%H%M%S").replace(tzinfo=timezone.utc)
         return True
     except ValueError:
         return False
@@ -79,7 +79,7 @@ def main() -> None:
     dest = Path(backup_dest)
     dest.mkdir(parents=True, exist_ok=True)
 
-    timestamp = datetime.now().strftime("%Y-%m-%d_%H%M%S")
+    timestamp = datetime.now(tz=timezone.utc).strftime("%Y-%m-%d_%H%M%S")
     backup_dir = dest / timestamp
     config_dir = backup_dir / "config"
     media_dir = backup_dir / "media"
@@ -111,6 +111,7 @@ def main() -> None:
             capture_output=True,
             timeout=300,
             cwd=str(SCRIPT_DIR),
+            check=False,
         )
         if result.returncode != 0:
             stderr = result.stderr.decode("utf-8", errors="replace").strip()
