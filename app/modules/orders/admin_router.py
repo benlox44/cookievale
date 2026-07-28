@@ -119,7 +119,7 @@ def create_order(
 
     try:
         cart_items_raw = json.loads(cart_items_json)
-    except Exception:
+    except json.JSONDecodeError:
         return _error_toast("Formato de carrito inválido.")
 
     if not cart_items_raw:

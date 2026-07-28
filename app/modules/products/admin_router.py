@@ -134,7 +134,7 @@ def delete_product(
 ):
     try:
         service.delete_product(product_id)
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001 — catch-all redirect on failure
         logger.error("Failed to delete product %d: %s", product_id, e)
     return RedirectResponse(
         url="/admin/products", status_code=status.HTTP_303_SEE_OTHER

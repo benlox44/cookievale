@@ -1,9 +1,10 @@
 import json
-from datetime import date, datetime
+from datetime import datetime
 
 from fastapi import APIRouter, Depends, File, Form, Request, Response, UploadFile
 from fastapi.responses import HTMLResponse
 
+from app.core.config import TZ
 from app.core.dependencies import (
     get_order_service,
     get_product_service,
@@ -40,7 +41,7 @@ def get_new_order_form(
         context={
             "products": products,
             "available_dates": available_dates,
-            "today": date.today().strftime("%Y-%m-%d"),
+            "today": datetime.now(tz=TZ).date().strftime("%Y-%m-%d"),
         },
     )
 
@@ -69,7 +70,7 @@ def submit_order(
 
     try:
         cart_items_raw = json.loads(cart_items_json)
-    except Exception:
+    except json.JSONDecodeError:
         return _error_toast("Formato de carrito inválido.")
 
     if not cart_items_raw:

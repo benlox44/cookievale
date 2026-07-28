@@ -76,7 +76,7 @@ class OrderService:
                 f"💰 <b>Total:</b> ${order.total_amount:,.0f}\n"
                 f"💳 <b>Pagado:</b> ${order.amount_paid:,.0f}"
             )
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001 — Telegram is non-critical
             logger.error("Failed to send Telegram notification: %s", e)
 
         return order
