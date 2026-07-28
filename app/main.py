@@ -8,6 +8,8 @@ from slowapi import Limiter
 from slowapi.errors import RateLimitExceeded
 from slowapi.util import get_remote_address
 from sqlalchemy import text
+from sqlalchemy.exc import SQLAlchemyError
+from starlette.middleware.base import BaseHTTPMiddleware
 
 from app.core.database import engine
 from app.core.templates import templates
@@ -24,6 +26,21 @@ logging.basicConfig(
 )
 
 app = FastAPI(title="CookieVale API")
+
+DEBUG = os.environ.get("DEBUG", "").lower() == "true"
+
+
+class HttpsRedirectMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        if not DEBUG:
+            proto = request.headers.get("x-forwarded-proto", "")
+            if proto and proto != "https":
+                url = request.url.replace(scheme="https")
+                return RedirectResponse(url=str(url), status_code=301)
+        return await call_next(request)
+
+
+app.add_middleware(HttpsRedirectMiddleware)
 
 limiter = Limiter(key_func=get_remote_address)
 app.state.limiter = limiter
@@ -62,7 +79,7 @@ def health_check():
         with engine.connect() as conn:
             conn.execute(text("SELECT 1"))
         return {"status": "ok", "database": "connected"}
-    except Exception:
+    except SQLAlchemyError:
         return JSONResponse(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             content={"status": "degraded", "database": "unavailable"},

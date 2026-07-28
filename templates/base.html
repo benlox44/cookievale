@@ -10,7 +10,8 @@
     <meta property="og:description"
         content="Galletas artesanales personalizadas para tus momentos especiales en La Serena y Coquimbo. Haz tu pedido en CookieVale.">
     <meta property="og:image" content="/public/favicons/cookie.png">
-    <meta property="og:url" content="https://cookievale.cl">
+    <meta property="og:url" content="{{ base_url }}{{ request.url.path }}">
+    <link rel="canonical" href="{{ base_url }}{{ request.url.path }}">
     <title>{% block title %}CookieVale{% endblock %}</title>
 
     <!-- Favicons -->

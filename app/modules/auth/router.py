@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Form, Request, status
+from fastapi import APIRouter, Form, HTTPException, Request, status
 from fastapi.responses import HTMLResponse, RedirectResponse
 from slowapi import Limiter
 from slowapi.util import get_remote_address
@@ -12,14 +12,13 @@ router = APIRouter(prefix="/admin", tags=["Auth"])
 
 
 @router.get("", response_class=HTMLResponse)
-@router.get("/", response_class=HTMLResponse)
 def get_admin_panel(request: Request):
     try:
         admin = get_current_admin(request)
         return templates.TemplateResponse(
             request=request, name="admin/panel.html", context={"admin_user": admin}
         )
-    except Exception:
+    except HTTPException:
         return RedirectResponse(
             url="/admin/login", status_code=status.HTTP_303_SEE_OTHER
         )
