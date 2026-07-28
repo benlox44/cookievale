@@ -6,7 +6,7 @@ A custom order management system for a boutique bakery. Built with FastAPI, HTMX
 
 1. **Clone & Setup:**
    ```bash
-   git clone <repo-url>
+    git clone https://github.com/benlox44/cookievale.git
    cd cookievale
    ```
 
