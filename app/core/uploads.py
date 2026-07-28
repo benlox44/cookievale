@@ -36,10 +36,7 @@ def validate_upload(file: UploadFile) -> bool:
     size = file.file.tell()
     file.file.seek(0)
 
-    if size > MAX_FILE_SIZE:
-        return False
-
-    return True
+    return not size > MAX_FILE_SIZE
 
 
 def get_safe_extension(file: UploadFile) -> str:
