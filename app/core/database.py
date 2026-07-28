@@ -1,7 +1,8 @@
 import os
 
-from sqlalchemy import create_engine
+from sqlalchemy import Column, DateTime, create_engine
 from sqlalchemy.orm import DeclarativeBase, sessionmaker
+from sqlalchemy.sql import func
 
 DATABASE_URL = os.environ["DATABASE_URL"]
 
@@ -9,12 +10,20 @@ engine = create_engine(DATABASE_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 
-class Base(DeclarativeBase):
-    """
-    Base class for all SQLAlchemy ORM models.
-    Every model will inherit from this class.
-    """
+class TimestampMixin:
+    created_at = Column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    updated_at = Column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        onupdate=func.now(),
+        nullable=False,
+    )
 
+
+class Base(DeclarativeBase):
+    pass
 
 
 def get_db():

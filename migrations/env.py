@@ -5,7 +5,7 @@ from sqlalchemy import engine_from_config, pool
 
 # Import our Base and the models so Alembic can read them
 from app.core.database import DATABASE_URL, Base
-from app.modules.orders.models import OrderModel  # noqa
+from app.modules.orders.models import OrderItemModel, OrderModel  # noqa
 from app.modules.products.models import ProductModel  # noqa
 from app.modules.scheduling.models import AvailableDateModel  # noqa
 

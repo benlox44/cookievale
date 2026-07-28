@@ -1,9 +1,9 @@
 from sqlalchemy import ARRAY, Boolean, Column, Integer, String, Text
 
-from app.core.database import Base
+from app.core.database import Base, TimestampMixin
 
 
-class ProductModel(Base):
+class ProductModel(Base, TimestampMixin):
     __tablename__ = "products"
 
     id = Column(Integer, primary_key=True, index=True)

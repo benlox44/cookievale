@@ -1,9 +1,9 @@
 from sqlalchemy import Column, Date, Integer
 
-from app.core.database import Base
+from app.core.database import Base, TimestampMixin
 
 
-class AvailableDateModel(Base):
+class AvailableDateModel(Base, TimestampMixin):
     __tablename__ = "available_dates"
 
     id = Column(Integer, primary_key=True, index=True)

@@ -10,13 +10,12 @@ from sqlalchemy import (
     Enum as SAEnum,
 )
 from sqlalchemy.orm import relationship
-from sqlalchemy.sql import func
 
-from app.core.database import Base
+from app.core.database import Base, TimestampMixin
 from app.modules.orders.domain import DeliveryMethod, OrderStatus
 
 
-class OrderModel(Base):
+class OrderModel(Base, TimestampMixin):
     __tablename__ = "orders"
 
     id = Column(Integer, primary_key=True, index=True)
@@ -33,14 +32,13 @@ class OrderModel(Base):
     reference_photos = Column(ARRAY(String), nullable=True)
 
     status = Column(SAEnum(OrderStatus), default=OrderStatus.PENDING, nullable=False)
-    created_at = Column(DateTime, server_default=func.now(), nullable=False)
 
     items = relationship(
         "OrderItemModel", back_populates="order", cascade="all, delete-orphan"
     )
 
 
-class OrderItemModel(Base):
+class OrderItemModel(Base, TimestampMixin):
     __tablename__ = "order_items"
 
     id = Column(Integer, primary_key=True, index=True)
