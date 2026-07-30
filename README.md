@@ -1,6 +1,9 @@
-# CookieVale - Order Management System
-
-A custom order management system for a boutique bakery. Built with FastAPI, HTMX, TailwindCSS, Alpine.js, and PostgreSQL using a Vertical Slicing and Domain-Driven Design (DDD) approach.
+<div align="center">
+	<img src="public/icons/icon.png" alt="CookieVale" width="200">
+	<br/>
+	<h1>CookieVale — Order Management System</h1>
+	<p>A custom order management system for a boutique bakery.</p>
+</div>
 
 ## Quick Start
 
