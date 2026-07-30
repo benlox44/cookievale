@@ -69,12 +69,12 @@ class ProductRepository:
         if not db_product:
             return None
 
-        db_product.name = data.name
-        db_product.description = data.description
-        db_product.price = data.price
-        db_product.is_active = data.is_active
+        db_product.name = data.name  # type: ignore[assignment]
+        db_product.description = data.description  # type: ignore[assignment]
+        db_product.price = data.price  # type: ignore[assignment]
+        db_product.is_active = data.is_active  # type: ignore[assignment]
         if image_urls is not None:
-            db_product.image_urls = image_urls
+            db_product.image_urls = image_urls  # type: ignore[assignment]
 
         self.db.commit()
         self.db.refresh(db_product)
@@ -85,7 +85,7 @@ class ProductRepository:
             stmt = select(ProductModel).where(ProductModel.id == prod_id)
             db_product = self.db.execute(stmt).scalar_one_or_none()
             if db_product:
-                db_product.display_order = index
+                db_product.display_order = index  # type: ignore[assignment]
         self.db.commit()
         return True
 
@@ -103,12 +103,19 @@ class ProductRepository:
             raise
 
     def _to_domain(self, model: ProductModel) -> Product:
+        pid: int | None = model.id  # type: ignore[assignment]
+        pname: str = model.name  # type: ignore[assignment]
+        pprice: int = model.price  # type: ignore[assignment]
+        pdesc: str | None = model.description  # type: ignore[assignment]
+        pactive: bool = model.is_active  # type: ignore[assignment]
+        pimgs: list[str] | None = model.image_urls  # type: ignore[assignment]
+        porder: int = model.display_order  # type: ignore[assignment]
         return Product(
-            id=model.id,
-            name=model.name,
-            price=model.price,
-            description=model.description,
-            is_active=model.is_active,
-            image_urls=model.image_urls,
-            display_order=model.display_order,
+            id=pid,
+            name=pname,
+            price=pprice,
+            description=pdesc,
+            is_active=pactive,
+            image_urls=pimgs,
+            display_order=porder,
         )

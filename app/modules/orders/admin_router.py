@@ -49,7 +49,7 @@ def admin_dashboard(
     page: int = Query(1, ge=1),
     service: OrderService = Depends(get_order_service),
     admin: str = Depends(get_current_admin),
-):
+) -> HTMLResponse:
     page_size = 50
     orders = service.list_orders(
         status=status_filter, limit=page_size, offset=(page - 1) * page_size
@@ -79,7 +79,7 @@ def new_order_form(
     product_service: ProductService = Depends(get_product_service),
     scheduling_service: SchedulingService = Depends(get_scheduling_service),
     admin: str = Depends(get_current_admin),
-):
+) -> HTMLResponse:
     products = product_service.list_products(only_active=True)
     available_dates = scheduling_service.get_available_dates()
     return templates.TemplateResponse(
@@ -109,7 +109,7 @@ def create_order(
     product_service: ProductService = Depends(get_product_service),
     scheduling_service: SchedulingService = Depends(get_scheduling_service),
     admin: str = Depends(get_current_admin),
-):
+) -> Response:
     if photos is None:
         photos = []
 
@@ -175,7 +175,7 @@ def get_order_detail(
     order_id: int,
     service: OrderService = Depends(get_order_service),
     admin: str = Depends(get_current_admin),
-):
+) -> HTMLResponse:
     order = service.get_order(order_id)
     if not order:
         raise HTTPException(status_code=404, detail="Pedido no encontrado")
@@ -197,7 +197,7 @@ def update_order_status(
     status: OrderStatus = Form(...),
     service: OrderService = Depends(get_order_service),
     admin: str = Depends(get_current_admin),
-):
+) -> RedirectResponse:
     service.change_status(order_id, status)
 
     return RedirectResponse(url=f"/admin/orders/{order_id}", status_code=303)
@@ -213,7 +213,7 @@ def update_order_details(
     status: OrderStatus = Form(...),
     service: OrderService = Depends(get_order_service),
     admin: str = Depends(get_current_admin),
-):
+) -> RedirectResponse:
     dt = datetime.fromisoformat(delivery_date)
 
     order = service.get_order(order_id)
@@ -239,6 +239,6 @@ def delete_order(
     request: Request,
     service: OrderService = Depends(get_order_service),
     admin: str = Depends(get_current_admin),
-):
+) -> RedirectResponse:
     service.delete_order(order_id)
     return RedirectResponse(url="/admin/orders", status_code=status.HTTP_303_SEE_OTHER)

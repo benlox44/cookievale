@@ -10,7 +10,7 @@ router = APIRouter(prefix="/products", tags=["ClientProducts"])
 @router.get("", response_class=HTMLResponse)
 def list_client_products(
     request: Request, service: ProductService = Depends(get_product_service)
-):
+) -> HTMLResponse:
     products = service.list_products(only_active=True)
 
     if not products:

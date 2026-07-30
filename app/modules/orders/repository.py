@@ -1,9 +1,10 @@
+from datetime import date, datetime
 from typing import Protocol
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session, selectinload
 
-from app.modules.orders.domain import Order, OrderItem, OrderStatus
+from app.modules.orders.domain import DeliveryMethod, Order, OrderItem, OrderStatus
 from app.modules.orders.models import OrderItemModel, OrderModel
 
 
@@ -14,7 +15,7 @@ class OrderRepository(Protocol):
         self, status: OrderStatus | None = None, limit: int = 100, offset: int = 0
     ) -> list[Order]: ...
     def delete(self, order_id: int) -> None: ...
-    def get_occupied_dates(self) -> set: ...
+    def get_occupied_dates(self) -> set[date]: ...
 
 
 class SQLAlchemyOrderRepository:
@@ -95,7 +96,7 @@ class SQLAlchemyOrderRepository:
             self.db.delete(db_order)
             self.db.commit()
 
-    def get_occupied_dates(self) -> set:
+    def get_occupied_dates(self) -> set[date]:
         stmt = select(OrderModel.delivery_date, OrderModel.status).where(
             OrderModel.status != OrderStatus.REJECTED
         )
@@ -121,16 +122,27 @@ class SQLAlchemyOrderRepository:
                 )
             )
 
+        oid: int | None = db_model.id  # type: ignore[assignment]
+        cig: str = db_model.customer_instagram  # type: ignore[assignment]
+        dd: datetime = db_model.delivery_date  # type: ignore[assignment]
+        desc: str = db_model.description  # type: ignore[assignment]
+        dm: DeliveryMethod = db_model.delivery_method  # type: ignore[assignment]
+        rp: list[str] | None = db_model.reference_photos  # type: ignore[assignment]
+        ost: OrderStatus = db_model.status  # type: ignore[assignment]
+        ap: int = db_model.amount_paid  # type: ignore[assignment]
+        ta: int = db_model.total_amount  # type: ignore[assignment]
+        ca: datetime | None = db_model.created_at  # type: ignore[assignment]
+
         return Order(
-            id=db_model.id,
-            customer_instagram=db_model.customer_instagram,
-            delivery_date=db_model.delivery_date,
-            description=db_model.description,
-            delivery_method=db_model.delivery_method,
-            reference_photos=db_model.reference_photos,
-            status=db_model.status,
-            amount_paid=db_model.amount_paid,
-            total_amount=db_model.total_amount,
-            created_at=db_model.created_at,
+            id=oid,
+            customer_instagram=cig,
+            delivery_date=dd,
+            description=desc,
+            delivery_method=dm,
+            reference_photos=rp,
+            status=ost,
+            amount_paid=ap,
+            total_amount=ta,
+            created_at=ca,
             items=domain_items,
         )

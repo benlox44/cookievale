@@ -31,7 +31,7 @@ class SchedulingService:
             raise ValueError("La fecha ya está registrada.")
         return self.repo.create(new_date)
 
-    def remove_date(self, date_id: int):
+    def remove_date(self, date_id: int) -> None:
         target = self.repo.get_by_id(date_id)
         if not target:
             raise ValueError("Fecha no encontrada.")

@@ -32,7 +32,7 @@ def get_new_order_form(
     request: Request,
     product_service: ProductService = Depends(get_product_service),
     scheduling_service: SchedulingService = Depends(get_scheduling_service),
-):
+) -> HTMLResponse:
     products = product_service.list_products(only_active=True)
     available_dates = scheduling_service.get_available_dates()
     return templates.TemplateResponse(
@@ -58,7 +58,7 @@ def submit_order(
     order_service: OrderService = Depends(get_order_service),
     product_service: ProductService = Depends(get_product_service),
     scheduling_service: SchedulingService = Depends(get_scheduling_service),
-):
+) -> Response:
     if photos is None:
         photos = []
 

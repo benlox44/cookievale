@@ -19,7 +19,7 @@ router = APIRouter(
 @router.get("", response_class=HTMLResponse)
 def dates_dashboard(
     request: Request, service: SchedulingService = Depends(get_scheduling_service)
-):
+) -> HTMLResponse:
     dates = service.get_all_dates()
     today = datetime.now(tz=TZ).date().strftime("%Y-%m-%d")
     return templates.TemplateResponse(
@@ -29,11 +29,11 @@ def dates_dashboard(
     )
 
 
-@router.post("")
+@router.post("", response_model=None)
 def add_date(
     selected_date: date = Form(...),
     service: SchedulingService = Depends(get_scheduling_service),
-):
+) -> dict[str, str | int] | JSONResponse:
     try:
         new_date = service.add_date(selected_date)
     except ValueError as e:
@@ -41,11 +41,11 @@ def add_date(
     return {"status": "ok", "id": new_date.id}
 
 
-@router.delete("/{date_id}")
+@router.delete("/{date_id}", response_model=None)
 def delete_date(
     date_id: int,
     service: SchedulingService = Depends(get_scheduling_service),
-):
+) -> dict[str, str] | JSONResponse:
     try:
         service.remove_date(date_id)
     except ValueError as e:

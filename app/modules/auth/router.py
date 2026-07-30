@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Form, HTTPException, Request, status
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, RedirectResponse, Response
 from slowapi import Limiter
 from slowapi.util import get_remote_address
 
@@ -12,7 +12,7 @@ router = APIRouter(prefix="/admin", tags=["Auth"])
 
 
 @router.get("", response_class=HTMLResponse)
-def get_admin_panel(request: Request):
+def get_admin_panel(request: Request) -> Response:
     try:
         admin = get_current_admin(request)
         return templates.TemplateResponse(
@@ -25,13 +25,13 @@ def get_admin_panel(request: Request):
 
 
 @router.get("/login", response_class=HTMLResponse)
-def get_login(request: Request):
+def get_login(request: Request) -> HTMLResponse:
     return templates.TemplateResponse(request=request, name="admin/login.html")
 
 
 @router.post("/login")
 @limiter.limit("5/minute")
-def post_login(request: Request, password: str = Form(...)):
+def post_login(request: Request, password: str = Form(...)) -> Response:
     if password == ADMIN_PASSWORD:
         token = create_admin_token()
 
@@ -54,7 +54,7 @@ def post_login(request: Request, password: str = Form(...)):
 
 
 @router.post("/logout")
-def post_logout():
+def post_logout() -> RedirectResponse:
     response = RedirectResponse(
         url="/admin/login", status_code=status.HTTP_303_SEE_OTHER
     )

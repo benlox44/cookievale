@@ -45,7 +45,7 @@ New routers must be registered in `app/main.py` via `app.include_router()`.
 ## Conventions
 
 - **Language**: Backend code (Python vars, functions, classes, comments) in English. Frontend templates (HTML/UI text) in Spanish.
-- **Typing**: Strict type hints mandatory on all functions (`->`, `:`).
+- **Typing**: Strict type hints mandatory on all functions (`->`, `:`). When fixing mypy/linter errors, never relax the config strictness (e.g. `disallow_untyped_defs`, `warn_return_any`). Fix the code, not the rules.
 - **Env vars**: Use `os.environ["KEY"]` (fail-fast), never `os.getenv("KEY", "default")`.
 - **Comments**: Explain WHY, not WHAT. Only comment complex business logic or edge cases.
 - **HTMX**: Return HTML partials, not JSON. Use `TemplateResponse` with templates in `templates/partials/`.

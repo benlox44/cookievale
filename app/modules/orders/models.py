@@ -24,14 +24,14 @@ class OrderModel(Base, TimestampMixin):
     description = Column(String, nullable=False)
     delivery_method = Column(
         SAEnum(DeliveryMethod), default=DeliveryMethod.PICKUP, nullable=False
-    )
+    )  # type: ignore[var-annotated]
 
     amount_paid = Column(Integer, default=0, nullable=False)
     total_amount = Column(Integer, default=0, nullable=False)
 
-    reference_photos = Column(ARRAY(String), nullable=True)
+    reference_photos = Column(ARRAY(String), nullable=True)  # type: ignore[var-annotated]
 
-    status = Column(SAEnum(OrderStatus), default=OrderStatus.PENDING, nullable=False)
+    status = Column(SAEnum(OrderStatus), default=OrderStatus.PENDING, nullable=False)  # type: ignore[var-annotated]
 
     items = relationship(
         "OrderItemModel", back_populates="order", cascade="all, delete-orphan"

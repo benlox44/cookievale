@@ -39,7 +39,7 @@ def list_products(
     request: Request,
     service: ProductService = Depends(get_product_service),
     admin: str = Depends(get_current_admin),
-):
+) -> HTMLResponse:
     products = service.list_products()
     return templates.TemplateResponse(
         request=request,
@@ -49,7 +49,9 @@ def list_products(
 
 
 @router.get("/new", response_class=HTMLResponse)
-def new_product_form(request: Request, admin: str = Depends(get_current_admin)):
+def new_product_form(
+    request: Request, admin: str = Depends(get_current_admin)
+) -> HTMLResponse:
     return templates.TemplateResponse(
         request=request, name="admin/product_form.html", context={"admin_user": admin}
     )
@@ -64,7 +66,7 @@ def create_product(
     photos: list[UploadFile] | None = File(None),
     service: ProductService = Depends(get_product_service),
     admin: str = Depends(get_current_admin),
-):
+) -> RedirectResponse:
     if photos is None:
         photos = []
     dto = ProductCreate(
@@ -81,7 +83,7 @@ def reorder_products(
     request: ProductReorderRequest,
     service: ProductService = Depends(get_product_service),
     admin: str = Depends(get_current_admin),
-):
+) -> dict[str, str]:
     service.reorder_products(request.ordered_ids)
     return {"status": "success"}
 
@@ -92,7 +94,7 @@ def edit_product_form(
     request: Request,
     service: ProductService = Depends(get_product_service),
     admin: str = Depends(get_current_admin),
-):
+) -> HTMLResponse:
     product = service.get_product(product_id)
     if not product:
         raise HTTPException(status_code=404, detail="Product not found")
@@ -114,7 +116,7 @@ def update_product(
     photos: list[UploadFile] | None = File(None),
     service: ProductService = Depends(get_product_service),
     admin: str = Depends(get_current_admin),
-):
+) -> RedirectResponse:
     validated_images = _validate_existing_images(existing_images)
     dto = ProductUpdate(
         name=name, price=price, description=description, is_active=is_active
@@ -131,7 +133,7 @@ def delete_product(
     request: Request,
     service: ProductService = Depends(get_product_service),
     admin: str = Depends(get_current_admin),
-):
+) -> RedirectResponse:
     try:
         service.delete_product(product_id)
     except Exception as e:  # noqa: BLE001 — catch-all redirect on failure

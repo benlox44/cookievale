@@ -28,7 +28,7 @@ class AvailableDateRepository:
             .offset(offset)
         )
         models = results.scalars().all()
-        return [AvailableDate(id=m.id, date=m.date) for m in models]
+        return [self._to_domain(m) for m in models]
 
     def get_by_date(self, target_date: date) -> AvailableDate | None:
         result = self.db.execute(
@@ -36,7 +36,7 @@ class AvailableDateRepository:
         )
         m = result.scalars().first()
         if m:
-            return AvailableDate(id=m.id, date=m.date)
+            return self._to_domain(m)
         return None
 
     def get_by_id(self, id: int) -> AvailableDate | None:
@@ -45,7 +45,7 @@ class AvailableDateRepository:
         )
         m = result.scalars().first()
         if m:
-            return AvailableDate(id=m.id, date=m.date)
+            return self._to_domain(m)
         return None
 
     def create(self, target_date: date) -> AvailableDate:
@@ -57,7 +57,12 @@ class AvailableDateRepository:
         except exc.IntegrityError:
             self.db.rollback()
             raise ValueError("La fecha ya existe.")
-        return AvailableDate(id=model.id, date=model.date)
+        return self._to_domain(model)
+
+    def _to_domain(self, model: AvailableDateModel) -> AvailableDate:
+        mid: int = model.id  # type: ignore[assignment]
+        mdate: date = model.date  # type: ignore[assignment]
+        return AvailableDate(id=mid, date=mdate)
 
     def delete(self, id: int) -> None:
         model = self.db.get(AvailableDateModel, id)

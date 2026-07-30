@@ -3,3 +3,11 @@ ignore = ["B008"]
 
 [tool.ruff.lint.per-file-ignores]
 "backup.py" = ["EXE001"]
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+
+[[tool.mypy.overrides]]
+module = ["slowapi.*", "uvicorn.*"]
+ignore_missing_imports = true

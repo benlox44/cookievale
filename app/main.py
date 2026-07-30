@@ -1,8 +1,9 @@
 import logging
 import os
+from collections.abc import Awaitable, Callable
 
 from fastapi import FastAPI, HTTPException, Request, status
-from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, Response
 from fastapi.staticfiles import StaticFiles
 from slowapi import Limiter
 from slowapi.errors import RateLimitExceeded
@@ -31,7 +32,11 @@ DEBUG = os.environ.get("DEBUG", "").lower() == "true"
 
 
 class HttpsRedirectMiddleware(BaseHTTPMiddleware):
-    async def dispatch(self, request: Request, call_next):
+    async def dispatch(
+        self,
+        request: Request,
+        call_next: Callable[[Request], Awaitable[Response]],
+    ) -> Response:
         if not DEBUG:
             proto = request.headers.get("x-forwarded-proto", "")
             if proto and proto != "https":
@@ -47,7 +52,7 @@ app.state.limiter = limiter
 
 
 @app.exception_handler(RateLimitExceeded)
-async def rate_limit_handler(request: Request, exc: RateLimitExceeded):
+async def rate_limit_handler(request: Request, exc: RateLimitExceeded) -> JSONResponse:
     return JSONResponse(
         status_code=429,
         content={"detail": "Demasiados intentos. Intenta de nuevo en un minuto."},
@@ -61,7 +66,9 @@ app.mount(
 
 
 @app.exception_handler(status.HTTP_401_UNAUTHORIZED)
-async def unauthorized_exception_handler(request: Request, exc: HTTPException):
+async def unauthorized_exception_handler(
+    request: Request, exc: HTTPException
+) -> RedirectResponse:
     return RedirectResponse(url="/admin/login", status_code=status.HTTP_303_SEE_OTHER)
 
 
@@ -73,8 +80,8 @@ app.include_router(products_client_router)
 app.include_router(scheduling_admin_router)
 
 
-@app.get("/health")
-def health_check():
+@app.get("/health", response_model=None)
+def health_check() -> dict[str, str] | JSONResponse:
     try:
         with engine.connect() as conn:
             conn.execute(text("SELECT 1"))
@@ -87,5 +94,5 @@ def health_check():
 
 
 @app.get("/", response_class=HTMLResponse)
-def index(request: Request):
+def index(request: Request) -> HTMLResponse:
     return templates.TemplateResponse(request=request, name="client/index.html")

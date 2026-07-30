@@ -27,11 +27,19 @@ class ProductService:
     ) -> Product:
         product = self.repository.create(data, None)
 
-        if photos:
+        if product.id is not None and photos:
             valid_photos = [p for p in photos if p.filename][:10]
             if valid_photos:
                 image_urls = self._save_photos(product.id, valid_photos)
-                product = self.repository.update(product.id, data, image_urls)
+                update_data = ProductUpdate(
+                    name=data.name,
+                    price=data.price,
+                    description=data.description,
+                    is_active=data.is_active,
+                )
+                updated = self.repository.update(product.id, update_data, image_urls)
+                if updated is not None:
+                    product = updated
 
         return product
 
