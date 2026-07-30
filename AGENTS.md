@@ -13,7 +13,8 @@ Everything runs inside Docker. Never run Python commands locally — use `make` 
 - `make reset-db` — drop volume, recreate, run all migrations
 - `make shell` — bash into the web container
 - `make backup` — export database + sync media files to `$BACKUP_DEST` (see `.env`)
-- `make css` — compile `public/styles.css` with `--minify` (run before git push)
+- `make css` — compile `public/styles.css` with `--minify`. Required every time you change `public/tailwind.css`, `tailwind.config.js`, or templates (new Tailwind classes). Must be run before `git push`.
+- `make build` — rebuild Docker images. Only needed when `Dockerfile`, `requirements.txt`, or system dependencies change. Not needed for template/CSS/Python-only changes (volumes sync automatically, uvicorn `--reload` picks up Python changes).
 - No test suite exists currently
 
 ## Architecture — Vertical Slicing

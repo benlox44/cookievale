@@ -29,7 +29,7 @@ We rely on a `Makefile` to encapsulate Docker operations.
 
 | Command | Description |
 |---------|-------------|
-| `make build` | Rebuild docker images |
+| `make build` | Rebuild docker images. Only needed when `Dockerfile`, `requirements.txt`, or system dependencies change. |
 | `make up` | Spin up the entire stack in the background |
 | `make down` | Tear down the stack |
 | `make restart` | Restart the web container |
@@ -40,7 +40,7 @@ We rely on a `Makefile` to encapsulate Docker operations.
 | `make migrate` | Apply all pending Alembic migrations (`alembic upgrade head`) |
 | `make reset-db` | Drop the database volume, recreate it, and apply all migrations |
 | `make backup` | Dump the database and sync media to `BACKUP_DEST` (see `.env`) |
-| `make css` | Compile `public/styles.css` with `--minify` (run before git push) |
+| `make css` | Compile `public/styles.css` with `--minify`. Required when changing `public/tailwind.css`, `tailwind.config.js`, or templates (new Tailwind classes). Run before `git push`. |
 
 ## Stack
 
