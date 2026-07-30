@@ -66,9 +66,18 @@ jobs:
           ./tailwindcss-linux-x64 -i public/tailwind.css -o public/styles.css --minify
           git diff --exit-code public/styles.css || (echo "public/styles.css is stale. Run 'make css' and commit." && exit 1)
 
+  markdown-lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - run: npx markdownlint-cli2 "**/*.md"
+
   docker-build:
     runs-on: ubuntu-latest
-    needs: [lint, format, mypy, css-check]
+    needs: [lint, format, mypy, css-check, markdown-lint]
     steps:
       - uses: actions/checkout@v4
       - run: docker build -t cookievale .

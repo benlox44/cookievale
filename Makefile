@@ -1,4 +1,4 @@
-.PHONY: up down build shell logs restart lint format migrate reset-db backup css
+.PHONY: up down build shell logs restart lint format migrate reset-db backup css check-md
 
 DC := docker-compose
 APP := web
@@ -52,3 +52,6 @@ backup:
 
 css:
 	$(DC) exec $(APP) tailwindcss -i public/tailwind.css -o public/styles.css --minify
+
+check-md:
+	docker run --rm -v "$${PWD}:/work" -w /work node:20-alpine npx markdownlint-cli2 "**/*.md"
