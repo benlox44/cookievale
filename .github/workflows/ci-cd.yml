@@ -76,27 +76,10 @@ jobs:
           oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
           tags: tag:ci
       - name: Deploy to VPS
-        uses: appleboy/ssh-action@v1
+        uses: appleboy/ssh-action@v1.2.2
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_KEY }}
           port: ${{ secrets.SSH_PORT }}
-          script: |
-            set -e
-            echo "==> cd to ${{ secrets.PROJECT_PATH }}"
-            cd ${{ secrets.PROJECT_PATH }}
-            echo "==> pwd: $(pwd)"
-            echo "==> git pull"
-            git pull
-            echo "==> alembic upgrade"
-            docker compose exec -T web alembic upgrade head
-            echo "==> docker compose up"
-            docker compose up -d --build
-            echo "==> health check"
-            for i in 1 2 3; do
-              curl -sf http://localhost:8000/health && break
-              echo "Health check attempt $i failed, retrying in 10s..."
-              sleep 10
-            done
-            echo "==> deploy complete"
+          script: echo "connected"
