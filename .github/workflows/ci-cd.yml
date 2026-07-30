@@ -82,4 +82,10 @@ jobs:
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_KEY }}
           port: ${{ secrets.SSH_PORT }}
-          script: echo "connected"
+          script_stop: true
+          script: |
+            cd /d ${{ secrets.PROJECT_PATH }}
+            git pull
+            docker compose exec -T web alembic upgrade head
+            docker compose up -d --build
+            curl -sf http://localhost:8000/health || curl -sf http://localhost:8000/health || curl -sf http://localhost:8000/health
