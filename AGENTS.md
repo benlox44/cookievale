@@ -15,6 +15,7 @@ Everything runs inside Docker. Never run Python commands locally — use `make` 
 - `make backup` — export database + sync media files to `$BACKUP_DEST` (see `.env`)
 - `make css` — compile `public/styles.css` with `--minify`. Required every time you change `public/tailwind.css`, `tailwind.config.js`, or templates (new Tailwind classes). Must be run before `git push`.
 - `make build` — rebuild Docker images. Only needed when `Dockerfile`, `requirements.txt`, or system dependencies change. Not needed for template/CSS/Python-only changes (volumes sync automatically, uvicorn `--reload` picks up Python changes).
+- `make check-md` — run markdownlint-cli2 on all `.md` files
 - No test suite exists currently
 
 ## Architecture — Vertical Slicing
@@ -22,7 +23,7 @@ Everything runs inside Docker. Never run Python commands locally — use `make` 
 Modules live in `app/modules/<context>/`. Each module has a fixed internal layout:
 
 | File | Role |
-|---|---|
+| --- | --- |
 | `domain.py` | Pure dataclasses + enums. No infra imports. |
 | `models.py` | SQLAlchemy ORM models. |
 | `repository.py` | `Protocol` interface + SQLAlchemy implementation. |

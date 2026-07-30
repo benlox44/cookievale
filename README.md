@@ -1,37 +1,40 @@
 <div align="center">
-	<img src="public/icons/icon.png" alt="CookieVale" width="200">
-	<br/>
-	<h1>CookieVale — Order Management System</h1>
-	<p>A custom order management system for a boutique bakery.</p>
+  <img src="public/icons/icon.png" alt="CookieVale" width="200">
+  <br/>
+  <h1>CookieVale — Order Management System</h1>
+  <p>A custom order management system for a boutique bakery.</p>
 </div>
 
 ## Quick Start
 
 1. **Clone & Setup:**
+
    ```bash
-    git clone https://github.com/benlox44/cookievale.git
+   git clone https://github.com/benlox44/cookievale.git
    cd cookievale
    ```
 
 2. **Environment handling:**
-   *Set up your `.env` variables if overriding default docker settings.*
+   Set up your `.env` variables if overriding default Docker settings.
 
 3. **Start the Application:**
-    ```bash
-    make up
-    ```
+
+   ```bash
+   make up
+   ```
 
 4. **Open in Browser:**
-    ```
-    http://localhost:8000
-    ```
+
+   ```text
+   http://localhost:8000
+   ```
 
 ## Development Commands
 
 We rely on a `Makefile` to encapsulate Docker operations.
 
 | Command | Description |
-|---------|-------------|
+| --- | --- |
 | `make build` | Rebuild docker images. Only needed when `Dockerfile`, `requirements.txt`, or system dependencies change. |
 | `make up` | Spin up the entire stack in the background |
 | `make down` | Tear down the stack |
@@ -43,6 +46,7 @@ We rely on a `Makefile` to encapsulate Docker operations.
 | `make migrate` | Apply all pending Alembic migrations (`alembic upgrade head`) |
 | `make reset-db` | Drop the database volume, recreate it, and apply all migrations |
 | `make backup` | Dump the database and sync media to `BACKUP_DEST` (see `.env`) |
+| `make check-md` | Run markdownlint-cli2 on all `.md` files |
 | `make css` | Compile `public/styles.css` with `--minify`. Required when changing `public/tailwind.css`, `tailwind.config.js`, or templates (new Tailwind classes). Run before `git push`. |
 
 ## Stack
@@ -59,10 +63,10 @@ Instead of grouping files by technical concern (e.g. all models together, all ro
 
 ## Client & Admin Routes
 
-*   **Client:**
-    *   `GET /orders/new` - Interactive client form to select products and place orders.
-*   **Admin:**
-    *   `GET /admin/login` - Admin authentication page.
-    *   `GET /admin/products` - Products management dashboard.
-    *   `GET /admin/orders` - Main dashboard with HTMX real-time updates and search.
-    *   `GET /admin/orders/{id}` - Detail view, editing, and status flow control.
+- **Client:**
+  - `GET /orders/new` — Interactive client form to select products and place orders.
+- **Admin:**
+  - `GET /admin/login` — Admin authentication page.
+  - `GET /admin/products` — Products management dashboard.
+  - `GET /admin/orders` — Main dashboard with HTMX real-time updates and search.
+  - `GET /admin/orders/{id}` — Detail view, editing, and status flow control.
