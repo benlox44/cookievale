@@ -54,7 +54,7 @@ New routers must be registered in `app/main.py` via `app.include_router()`.
 ## Quirks
 
 - `docker-compose.override.yml` is gitignored — provides dev `--reload` flag via uvicorn and a `tailwind` service that watches templates and recompiles CSS automatically.
-- TailwindCSS: CSS is compiled locally via the standalone CLI (`tailwindcss`). Source config in `tailwind.config.js`, input in `public/tailwind.css`, output in `public/styles.css`. Run `make css` before pushing to keep the compiled CSS up to date.
+- TailwindCSS: CSS is compiled locally via the standalone CLI (`tailwindcss`). Source config in `tailwind.config.js`, input in `public/tailwind.css` (also contains `@layer components` with custom shared classes like `.cv-input`, `.cv-btn`), output in `public/styles.css`. Run `make css` before pushing to keep the compiled CSS up to date.
 - Media files: host volume `MEDIA_ROOT` mounted as `CONTAINER_MEDIA_PATH` in container. Photos written to `/media/orders/<id>/`.
 - Auth is HMAC-based cookie sessions (no JWT or third-party auth library).
 - PostgreSQL connection uses synchronous SQLAlchemy (not async).
