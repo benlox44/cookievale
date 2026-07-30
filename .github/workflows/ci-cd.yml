@@ -89,70 +89,56 @@ jobs:
           oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
           tags: tag:ci
       - name: Deploy to VPS
-        uses: appleboy/ssh-action@v1.2.2
-        with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USER }}
-          key: ${{ secrets.SSH_KEY }}
-          port: ${{ secrets.SSH_PORT }}
-          script: |
-            echo === Starting deploy ===
-            cd /d ${{ secrets.PROJECT_PATH }}
-            if errorlevel 1 (
-              echo ERROR: cd failed - check PROJECT_PATH secret
-              exit /b 1
-            )
-            echo Current directory: %CD%
-            dir
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+          SSH_KEY: ${{ secrets.SSH_KEY }}
+          SSH_PORT: ${{ secrets.SSH_PORT }}
+        run: |
+          mkdir -p ~/.ssh
+          echo "$SSH_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
 
-            echo === Git fetch ===
-            git fetch origin master
-            if errorlevel 1 (
-              echo ERROR: git fetch failed
-              exit /b 1
-            )
+          ssh -o StrictHostKeyChecking=no -o ConnectTimeout=30 -p "$SSH_PORT" -i ~/.ssh/deploy_key "$SSH_USER@$SSH_HOST" powershell -NoProfile -ExecutionPolicy Bypass -Command - <<'PSEOF'
+          Write-Host "=== Starting deploy ==="
+          Set-Location "${{ secrets.PROJECT_PATH }}" -ErrorAction Stop
+          Write-Host "Current directory: $(Get-Location)"
+          Get-ChildItem
 
-            echo === Git reset ===
-            git reset --hard origin/master
-            if errorlevel 1 (
-              echo ERROR: git reset failed
-              exit /b 1
-            )
-            git status
+          Write-Host "=== Git fetch ==="
+          git fetch origin master
+          if ($LASTEXITCODE -ne 0) { throw "git fetch failed" }
 
-            echo === Docker build ===
-            docker compose build
-            if errorlevel 1 (
-              echo ERROR: docker compose build failed
-              exit /b 1
-            )
+          Write-Host "=== Git reset ==="
+          git reset --hard origin/master
+          if ($LASTEXITCODE -ne 0) { throw "git reset failed" }
+          git status
 
-            echo === Docker migrate ===
-            docker compose run --rm web alembic upgrade head
-            if errorlevel 1 (
-              echo ERROR: alembic upgrade failed
-              exit /b 1
-            )
+          Write-Host "=== Docker build ==="
+          docker compose build
+          if ($LASTEXITCODE -ne 0) { throw "docker compose build failed" }
 
-            echo === Docker up ===
-            docker compose up -d --force-recreate
-            if errorlevel 1 (
-              echo ERROR: docker compose up failed
-              exit /b 1
-            )
+          Write-Host "=== Docker migrate ==="
+          docker compose run --rm web alembic upgrade head
+          if ($LASTEXITCODE -ne 0) { throw "alembic upgrade failed" }
 
-            echo === Health check ===
-            set RETRIES=0
-            :retry
-            curl -sf http://localhost:8000/health && goto :ok
-            set /a RETRIES+=1
-            if %RETRIES% LSS 5 (
-              echo Health check attempt %RETRIES% failed, retrying in 5s...
-              timeout /t 5 /nobreak
-              goto :retry
-            )
-            echo ERROR: Health check failed after 5 attempts
-            exit /b 1
-            :ok
+          Write-Host "=== Docker up ==="
+          docker compose up -d --force-recreate
+          if ($LASTEXITCODE -ne 0) { throw "docker compose up failed" }
 
-            echo === Deploy complete ===
+          Write-Host "=== Health check ==="
+          $retries = 0
+          while ($retries -lt 5) {
+            try {
+              $ProgressPreference = 'SilentlyContinue'
+              $null = Invoke-WebRequest -Uri http://localhost:8000/health -UseBasicParsing -TimeoutSec 5
+              Write-Host "=== Deploy complete ==="
+              exit 0
+            } catch {
+              $retries++
+              Write-Host "Health check attempt $retries failed, retrying in 5s..."
+              Start-Sleep -Seconds 5
+            }
+          }
+          throw "Health check failed after 5 attempts"
+          PSEOF
