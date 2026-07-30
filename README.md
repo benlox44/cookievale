@@ -64,9 +64,14 @@ Instead of grouping files by technical concern (e.g. all models together, all ro
 ## Client & Admin Routes
 
 - **Client:**
+  - `GET /` — Landing page with products and order CTA.
   - `GET /orders/new` — Interactive client form to select products and place orders.
 - **Admin:**
+  - `GET /admin` — Admin panel homepage (redirects to login if unauthenticated).
   - `GET /admin/login` — Admin authentication page.
-  - `GET /admin/products` — Products management dashboard.
   - `GET /admin/orders` — Main dashboard with HTMX real-time updates and search.
+  - `GET /admin/orders/new` — Admin order creation form.
   - `GET /admin/orders/{id}` — Detail view, editing, and status flow control.
+  - `GET /admin/products` — Products management dashboard.
+  - `GET /admin/products/new` — Product creation form.
+  - `GET /admin/dates` — Delivery dates calendar and scheduling.
