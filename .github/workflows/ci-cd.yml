@@ -82,7 +82,6 @@ jobs:
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_KEY }}
           port: ${{ secrets.SSH_PORT }}
-          script_stop: true
           script: |
             cd /d ${{ secrets.PROJECT_PATH }}
             git pull
