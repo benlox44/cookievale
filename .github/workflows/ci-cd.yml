@@ -96,16 +96,63 @@ jobs:
           key: ${{ secrets.SSH_KEY }}
           port: ${{ secrets.SSH_PORT }}
           script: |
+            echo === Starting deploy ===
             cd /d ${{ secrets.PROJECT_PATH }}
+            if errorlevel 1 (
+              echo ERROR: cd failed - check PROJECT_PATH secret
+              exit /b 1
+            )
+            echo Current directory: %CD%
+            dir
+
+            echo === Git fetch ===
             git fetch origin master
+            if errorlevel 1 (
+              echo ERROR: git fetch failed
+              exit /b 1
+            )
+
+            echo === Git reset ===
             git reset --hard origin/master
+            if errorlevel 1 (
+              echo ERROR: git reset failed
+              exit /b 1
+            )
+            git status
+
+            echo === Docker build ===
             docker compose build
+            if errorlevel 1 (
+              echo ERROR: docker compose build failed
+              exit /b 1
+            )
+
+            echo === Docker migrate ===
             docker compose run --rm web alembic upgrade head
+            if errorlevel 1 (
+              echo ERROR: alembic upgrade failed
+              exit /b 1
+            )
+
+            echo === Docker up ===
             docker compose up -d --force-recreate
+            if errorlevel 1 (
+              echo ERROR: docker compose up failed
+              exit /b 1
+            )
+
+            echo === Health check ===
             set RETRIES=0
             :retry
             curl -sf http://localhost:8000/health && goto :ok
             set /a RETRIES+=1
-            if %RETRIES% LSS 5 (timeout /t 5 /nobreak & goto :retry)
+            if %RETRIES% LSS 5 (
+              echo Health check attempt %RETRIES% failed, retrying in 5s...
+              timeout /t 5 /nobreak
+              goto :retry
+            )
+            echo ERROR: Health check failed after 5 attempts
             exit /b 1
             :ok
+
+            echo === Deploy complete ===
