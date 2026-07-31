@@ -25,7 +25,8 @@ log = logging.getLogger(__name__)
 
 
 def _is_timestamp_dir(name: str) -> bool:
-    if len(name) != 19 or "_" not in name:
+    # "%Y-%m-%d_%H%M%S" is 17 chars (4+1+2+1+2+1+6)
+    if len(name) != 17 or "_" not in name:
         return False
     try:
         datetime.strptime(name, "%Y-%m-%d_%H%M%S").replace(tzinfo=timezone.utc)
