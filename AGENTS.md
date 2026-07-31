@@ -16,6 +16,7 @@ Everything runs inside Docker. Never run Python commands locally — use `make` 
 - `make css` — compile `public/styles.css` with `--minify`. Required every time you change `public/tailwind.css`, `tailwind.config.js`, or templates (new Tailwind classes). Must be run before `git push`.
 - `make build` — rebuild Docker images. Only needed when `Dockerfile`, `requirements.txt`, or system dependencies change. Not needed for template/CSS/Python-only changes (volumes sync automatically, uvicorn `--reload` picks up Python changes).
 - `make check-md` — run markdownlint-cli2 on all `.md` files
+- `make check` — run everything the CI checks locally (ruff lint, ruff format check, mypy, compiled-CSS diff, markdown lint). Use before pushing instead of waiting for the pipeline.
 - No test suite exists currently
 
 ## Architecture — Vertical Slicing

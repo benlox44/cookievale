@@ -53,3 +53,13 @@ css:
 
 check-md:
 	docker run --rm -v "$${PWD}:/work" -w /work node:${NODE_VERSION}-alpine npx markdownlint-cli2 "**/*.md"
+
+check:
+	$(DC) exec $(APP) ruff check .
+	$(DC) exec $(APP) ruff format --check .
+	$(DC) exec $(APP) mypy app/
+	@echo "Verifying compiled CSS matches the committed file..."
+	$(DC) exec $(APP) sh -c 'tailwindcss -i public/tailwind.css -o /tmp/styles.css --minify && cmp -s public/styles.css /tmp/styles.css || { echo "public/styles.css is stale. Run make css and commit."; exit 1; }'
+	@echo "Checking markdown..."
+	docker run --rm -v "$${PWD}:/work" -w /work node:${NODE_VERSION}-alpine npx markdownlint-cli2 "**/*.md"
+	@echo "All checks passed."
