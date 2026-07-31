@@ -49,6 +49,7 @@ New routers must be registered in `app/main.py` via `app.include_router()`.
 - **Language**: Backend code (Python vars, functions, classes, comments) in English. Frontend templates (HTML/UI text) in Spanish.
 - **Typing**: Strict type hints mandatory on all functions (`->`, `:`). When fixing mypy/linter errors, never relax the config strictness (e.g. `disallow_untyped_defs`, `warn_return_any`). Fix the code, not the rules.
 - **Env vars**: Use `os.environ["KEY"]` (fail-fast), never `os.getenv("KEY", "default")`.
+- **Versions**: `versions.env` is the single source of truth for Python/PostgreSQL/Tailwind/Node versions. Never hardcode a version anywhere else (workflows, Dockerfile, docker-compose, configs). Documented exceptions only: the literal fallbacks in `Dockerfile`/`docker-compose.yml` (so standalone `docker build`/`docker compose` keep working) and `python_version` in `pyproject.toml` (kept in sync with the comment there).
 - **Comments**: Explain WHY, not WHAT. Only comment complex business logic or edge cases.
 - **HTMX**: Return HTML partials, not JSON. Use `TemplateResponse` with templates in `templates/partials/`.
 - **Domain layer**: Pure `dataclass` or Pydantic models, enums, value objects. No infra dependencies.
@@ -56,6 +57,7 @@ New routers must be registered in `app/main.py` via `app.include_router()`.
 ## Quirks
 
 - `docker-compose.override.yml` is gitignored — provides dev `--reload` flag via uvicorn and a `tailwind` service that watches templates and recompiles CSS automatically.
+- Versions (Python, PostgreSQL, Tailwind, Node) have a single source of truth: `versions.env`. The Makefile `include`s it, the Dockerfile reads it at build time, and every CI workflow sources it (see the "Load versions" step in each job). When bumping a version, edit `versions.env` only (literal fallbacks in `Dockerfile`/`docker-compose.yml` exist solely so standalone `docker build`/`docker compose` keep working).
 - TailwindCSS: CSS is compiled locally via the standalone CLI (`tailwindcss`). Source config in `tailwind.config.js`, input in `public/tailwind.css` (also contains `@layer components` with custom shared classes like `.cv-input`, `.cv-btn`), output in `public/styles.css`. Run `make css` before pushing to keep the compiled CSS up to date.
 - Media files: host volume `MEDIA_ROOT` mounted as `CONTAINER_MEDIA_PATH` in container. Photos written to `/media/orders/<id>/`.
 - Auth is HMAC-based cookie sessions (no JWT or third-party auth library).

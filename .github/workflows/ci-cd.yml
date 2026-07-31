@@ -18,9 +18,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Load versions
+        run: . versions.env && echo "PYTHON_VERSION=$PYTHON_VERSION" >> "$GITHUB_ENV"
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
+          python-version: ${{ env.PYTHON_VERSION }}
           cache: pip
       - run: pip install ruff
       - run: ruff check .
@@ -29,9 +31,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Load versions
+        run: . versions.env && echo "PYTHON_VERSION=$PYTHON_VERSION" >> "$GITHUB_ENV"
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
+          python-version: ${{ env.PYTHON_VERSION }}
           cache: pip
       - run: pip install ruff
       - run: ruff format --check .
@@ -40,9 +44,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Load versions
+        run: . versions.env && echo "PYTHON_VERSION=$PYTHON_VERSION" >> "$GITHUB_ENV"
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
+          python-version: ${{ env.PYTHON_VERSION }}
           cache: pip
       - run: pip install -r requirements.txt
       - run: mypy app/
@@ -51,15 +57,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Load versions
+        run: . versions.env && echo "TAILWIND_VERSION=$TAILWIND_VERSION" >> "$GITHUB_ENV"
       - uses: actions/cache@v4
         id: cache-tailwind
         with:
           path: tailwindcss-linux-x64
-          key: tailwindcss-${{ runner.os }}-3.4.17
+          key: tailwindcss-${{ runner.os }}-${{ env.TAILWIND_VERSION }}
       - name: Download TailwindCSS CLI
         if: steps.cache-tailwind.outputs.cache-hit != 'true'
         run: |
-          curl -sLO https://github.com/tailwindlabs/tailwindcss/releases/download/v3.4.17/tailwindcss-linux-x64
+          curl -sLO "https://github.com/tailwindlabs/tailwindcss/releases/download/v${TAILWIND_VERSION}/tailwindcss-linux-x64"
           chmod +x tailwindcss-linux-x64
       - name: Compile and verify no diff
         run: |
@@ -70,9 +78,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Load versions
+        run: . versions.env && echo "NODE_VERSION=$NODE_VERSION" >> "$GITHUB_ENV"
       - uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: ${{ env.NODE_VERSION }}
       - run: npx markdownlint-cli2 "**/*.md"
 
   docker-build:
@@ -80,7 +90,10 @@ jobs:
     needs: [lint, format, mypy, css-check, markdown-lint]
     steps:
       - uses: actions/checkout@v4
-      - run: docker build -t cookievale .
+      - name: Build image
+        run: |
+          . versions.env
+          docker build --build-arg PYTHON_VERSION="$PYTHON_VERSION" -t cookievale .
 
   deploy:
     runs-on: ubuntu-latest
@@ -111,8 +124,16 @@ jobs:
           ssh -o StrictHostKeyChecking=no -o ConnectTimeout=30 -p "$SSH_PORT" -i ~/.ssh/deploy_key "$SSH_USER@$SSH_HOST" powershell -NoProfile -ExecutionPolicy Bypass -Command - <<'PSEOF'
           Write-Host "=== Starting deploy ==="
           Set-Location "${{ secrets.PROJECT_PATH }}" -ErrorAction Stop
-          Write-Host "Current directory: $(Get-Location)"
+          Write-Host "=== Current directory: $(Get-Location) ==="
           Get-ChildItem
+
+          # Load versions.env into the process environment so docker compose
+          # substitutes the same versions used in development and CI.
+          Get-Content versions.env | ForEach-Object {
+            if ($_ -match '^([A-Z_]+)=(.*)$') {
+              [Environment]::SetEnvironmentVariable($matches[1], $matches[2])
+            }
+          }
 
           Write-Host "=== Git fetch ==="
           git fetch origin master
