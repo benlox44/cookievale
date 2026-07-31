@@ -94,7 +94,9 @@ def main() -> None:
         shutil.rmtree(backup_dir, ignore_errors=True)
         sys.exit(1)
     except FileNotFoundError:
-        log.error("[ERROR] pg_dump not found — is postgresql-client installed in the web container?")
+        log.error(
+            "[ERROR] pg_dump not found — is postgresql-client installed in the web container?"
+        )
         shutil.rmtree(backup_dir, ignore_errors=True)
         sys.exit(1)
 
@@ -121,7 +123,9 @@ def main() -> None:
     # ---- Media sync ----
     media_src = Path(media_root)
     if not media_src.exists():
-        log.warning("[WARNING] CONTAINER_MEDIA_PATH (%s) does not exist, skipping", media_src)
+        log.warning(
+            "[WARNING] CONTAINER_MEDIA_PATH (%s) does not exist, skipping", media_src
+        )
     else:
         log.info("[*] Syncing media from %s...", media_src)
         if media_dir.exists():
