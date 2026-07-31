@@ -63,5 +63,5 @@ New routers must be registered in `app/main.py` via `app.include_router()`.
 - Media files: host volume `MEDIA_ROOT` mounted as `CONTAINER_MEDIA_PATH` in container. Photos written to `/media/orders/<id>/`.
 - Auth is HMAC-based cookie sessions (no JWT or third-party auth library).
 - PostgreSQL connection uses synchronous SQLAlchemy (not async).
-- `alembic.ini` uses `render_as_batch=True` for SQLite compatibility (even though this project uses Postgres).
+- Migrations use standard Alembic operations (`op.add_column`, `op.drop_column`, `op.create_index`, ...). This project runs Postgres, which supports native `ALTER TABLE`, so the SQLite-oriented `op.batch_alter_table` pattern is deliberately not used (and `render_as_batch=True` is not set in `env.py`/`alembic.ini`).
 - Backup script: single `backup.py` (Python stdlib only), run via `make backup` inside the web container. Reads env vars fail-fast via `os.environ["KEY"]` (injected by compose `env_file`/`environment`); no fallbacks. Dumps the DB with `pg_dump -h db` (password via `PGPASSWORD`), writes to `CONTAINER_BACKUP_PATH` (`/app_backup`, mounted from `$BACKUP_DEST`), and syncs media from `CONTAINER_MEDIA_PATH`. Database dump is compressed with `gzip` and integrity-verified. Keeps last 7 timestamped backups.
