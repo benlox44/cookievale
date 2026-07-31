@@ -3,14 +3,6 @@
 DC := docker-compose
 APP := web
 
-ifeq ($(OS),Windows_NT)
-    SLEEP := timeout /t 5 /nobreak > NUL
-    PYTHON := python
-else
-    SLEEP := sleep 5
-    PYTHON := python3
-endif
-
 up:
 	$(DC) up -d
 
@@ -39,11 +31,14 @@ migrate:
 	$(DC) exec $(APP) alembic upgrade head
 
 reset-db:
+	@echo "WARNING: this will DELETE all data in the database."
+	@test -f docker-compose.override.yml || (echo "ERROR: reset-db is disabled: docker-compose.override.yml not found. This target only runs in development. Aborting." && exit 1)
 	@echo "Resetting database..."
 	$(DC) down -v
-	$(DC) up -d
+	$(DC) up -d db
 	@echo "Waiting for database to be ready..."
-	@$(SLEEP)
+	@until $(DC) exec -T db sh -c 'pg_isready -U "$$POSTGRES_USER" -d "$$POSTGRES_DB"' >/dev/null 2>&1; do sleep 1; done
+	$(DC) up -d
 	$(DC) exec $(APP) alembic upgrade head
 	@echo "Database reset complete."
 
