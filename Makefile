@@ -48,7 +48,7 @@ reset-db:
 	@echo "Database reset complete."
 
 backup:
-	@$(PYTHON) backup.py
+	$(DC) exec -T $(APP) python backup.py
 
 css:
 	$(DC) exec $(APP) tailwindcss -i public/tailwind.css -o public/styles.css --minify

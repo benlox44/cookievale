@@ -4,12 +4,14 @@ services:
     volumes:
       - .:/app
       - ${MEDIA_ROOT}:/app_media
+      - ${BACKUP_DEST}:/app_backup
     ports:
       - "8000:8000"
     env_file:
       - .env
     environment:
       - CONTAINER_MEDIA_PATH=/app_media
+      - CONTAINER_BACKUP_PATH=/app_backup
     depends_on:
       db:
         condition: service_healthy

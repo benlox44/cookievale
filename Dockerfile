@@ -6,7 +6,7 @@ ENV PYTHONUNBUFFERED=1
 WORKDIR /app
 
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends gcc libpq-dev make curl \
+    && apt-get install -y --no-install-recommends gcc libpq-dev postgresql-client make curl \
     && rm -rf /var/lib/apt/lists/*
 
 RUN curl -sLO https://github.com/tailwindlabs/tailwindcss/releases/download/v3.4.17/tailwindcss-linux-x64 \

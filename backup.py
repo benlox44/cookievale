@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import gzip
 import logging
+import os
 import shutil
 import subprocess
 import sys
@@ -21,27 +22,6 @@ logging.basicConfig(
     ],
 )
 log = logging.getLogger(__name__)
-
-
-def load_env(env_file: Path) -> dict[str, str]:
-    """Parse .env line by line to avoid shell interpretation of special chars."""
-    env: dict[str, str] = {}
-    if not env_file.exists():
-        log.error("[ERROR] .env file not found: %s", env_file)
-        sys.exit(1)
-    for line in env_file.read_text(encoding="utf-8").splitlines():
-        stripped = line.strip()
-        if not stripped or stripped.startswith("#"):
-            continue
-        if "=" not in stripped:
-            continue
-        key, _, value = stripped.partition("=")
-        key = key.strip()
-        value = value.strip()
-        if len(value) >= 2 and value[0] == value[-1] and value[0] in ('"', "'"):
-            value = value[1:-1]
-        env[key] = value
-    return env
 
 
 def _is_timestamp_dir(name: str) -> bool:
@@ -69,14 +49,12 @@ def _dir_size(path: Path) -> int:
 def main() -> None:
     log.info("=== CookieVale Backup Started ===")
 
-    env = load_env(SCRIPT_DIR / ".env")
+    db_user = os.environ["POSTGRES_USER"]
+    db_name = os.environ["POSTGRES_DB"]
+    db_password = os.environ["POSTGRES_PASSWORD"]
+    dest = Path(os.environ["CONTAINER_BACKUP_PATH"])
+    media_root = os.environ["CONTAINER_MEDIA_PATH"]
 
-    backup_dest = env.get("BACKUP_DEST", "").strip()
-    if not backup_dest:
-        log.error("[ERROR] BACKUP_DEST missing in .env")
-        sys.exit(1)
-
-    dest = Path(backup_dest)
     dest.mkdir(parents=True, exist_ok=True)
 
     timestamp = datetime.now(tz=timezone.utc).strftime("%Y-%m-%d_%H%M%S")
@@ -90,27 +68,14 @@ def main() -> None:
 
     # ---- Database dump (compressed) ----
     log.info("[*] Exporting database...")
-    db_user = env.get("POSTGRES_USER", "cookie_user")
-    db_name = env.get("POSTGRES_DB", "cookievale")
     dump_path = config_dir / "cookievale_db_dump.sql.gz"
 
     try:
         result = subprocess.run(
-            [
-                "docker",
-                "compose",
-                "exec",
-                "-T",
-                "db",
-                "pg_dump",
-                "-U",
-                db_user,
-                "-d",
-                db_name,
-            ],
+            ["pg_dump", "-h", "db", "-U", db_user, "-d", db_name],
+            env={**os.environ, "PGPASSWORD": db_password},
             capture_output=True,
             timeout=300,
-            cwd=str(SCRIPT_DIR),
             check=False,
         )
         if result.returncode != 0:
@@ -129,7 +94,7 @@ def main() -> None:
         shutil.rmtree(backup_dir, ignore_errors=True)
         sys.exit(1)
     except FileNotFoundError:
-        log.error("[ERROR] docker not found — is Docker installed?")
+        log.error("[ERROR] pg_dump not found — is postgresql-client installed in the web container?")
         shutil.rmtree(backup_dir, ignore_errors=True)
         sys.exit(1)
 
@@ -154,20 +119,16 @@ def main() -> None:
     shutil.copy2(SCRIPT_DIR / ".env", config_dir / ".env")
 
     # ---- Media sync ----
-    media_root = env.get("MEDIA_ROOT", "").strip()
-    if not media_root:
-        log.warning("[WARNING] MEDIA_ROOT not declared, skipping media files")
+    media_src = Path(media_root)
+    if not media_src.exists():
+        log.warning("[WARNING] CONTAINER_MEDIA_PATH (%s) does not exist, skipping", media_src)
     else:
-        media_src = Path(media_root)
-        if not media_src.exists():
-            log.warning("[WARNING] MEDIA_ROOT (%s) does not exist, skipping", media_src)
-        else:
-            log.info("[*] Syncing media from %s...", media_src)
-            if media_dir.exists():
-                shutil.rmtree(media_dir, ignore_errors=True)
-            shutil.copytree(media_src, media_dir, symlinks=True)
-            media_size = _format_size(_dir_size(media_dir))
-            log.info("[OK] Media synced: %s", media_size)
+        log.info("[*] Syncing media from %s...", media_src)
+        if media_dir.exists():
+            shutil.rmtree(media_dir, ignore_errors=True)
+        shutil.copytree(media_src, media_dir, symlinks=True)
+        media_size = _format_size(_dir_size(media_dir))
+        log.info("[OK] Media synced: %s", media_size)
 
     # ---- Rotate old backups ----
     log.info("[*] Cleaning old backups (keeping last %d)...", BACKUP_RETENTION)
