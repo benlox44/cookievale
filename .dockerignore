@@ -11,6 +11,5 @@ docker-compose.override.yml
 docker-compose.yml
 docker-compose.tailscale.yml
 Makefile
-README.md
 *.md
 media/
