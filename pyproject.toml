@@ -1,10 +1,12 @@
-[tool.ruff.lint]
-ignore = ["B008"]
-
 [tool.ruff.lint.per-file-ignores]
+"app/modules/**/admin_router.py" = ["B008"]
+"app/modules/**/client_router.py" = ["B008"]
+"app/modules/**/router.py" = ["B008"]
+"app/core/dependencies.py" = ["B008"]
 "backup.py" = ["EXE001"]
 
 [tool.mypy]
+# Must match PYTHON_VERSION in versions.env
 python_version = "3.11"
 strict = true
 
