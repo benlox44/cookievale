@@ -46,7 +46,12 @@ reset-db:
 	@echo "Database reset complete."
 
 backup:
-	$(DC) exec -T $(APP) python backup.py
+	@BD=$$(grep '^BACKUP_DEST=' .env | head -1 | cut -d= -f2-); \
+	if [ -z "$$BD" ] || [ ! -d "$$BD" ]; then \
+		echo "ERROR: Backup destination (BACKUP_DEST) is not available. No backup was created."; \
+		exit 1; \
+	fi; \
+	$(DC) run --rm --no-deps -v "$$BD:/app_backup" $(APP) python backup.py
 
 css:
 	$(DC) exec $(APP) tailwindcss -i public/tailwind.css -o public/styles.css --minify

@@ -54,7 +54,7 @@ We rely on a `Makefile` to encapsulate Docker operations.
 | `make format` | Run Ruff to auto-format code |
 | `make migrate` | Apply all pending Alembic migrations (`alembic upgrade head`) |
 | `make reset-db` | Drop the database volume, recreate it, and apply all migrations. **Development only**: refuses to run when `docker-compose.override.yml` is missing (i.e. on production checkouts). |
-| `make backup` | Run `backup.py` inside the web container (requires the stack to be up). Exports the database and syncs media to `BACKUP_DEST`. |
+| `make backup` | Run `backup.py` in a throwaway web container that mounts `BACKUP_DEST` only for the backup. The app never depends on it. Fails with a clear message if unavailable. |
 | `make check-md` | Run markdownlint-cli2 on all `.md` files |
 | `make css` | Compile `public/styles.css` with `--minify`. Required when changing `public/tailwind.css`, `tailwind.config.js`, or templates (new Tailwind classes). Run before `git push`. |
 | `make check` | Run every check the CI runs locally: ruff lint, ruff format check, mypy, compiled-CSS diff and markdown lint. |

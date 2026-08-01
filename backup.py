@@ -47,6 +47,31 @@ def _dir_size(path: Path) -> int:
     return sum(f.stat().st_size for f in path.rglob("*") if f.is_file())
 
 
+def _verify_backup_destination(dest: Path) -> bool:
+    if not os.path.ismount(dest):
+        log.error(
+            "[ERROR] Backup destination %s is not mounted. "
+            "Check that BACKUP_DEST points to an available folder. "
+            "No backup was created.",
+            dest,
+        )
+        return False
+
+    probe = dest / ".backup_probe"
+    try:
+        probe.write_text("ok")
+        probe.unlink()
+    except OSError as exc:
+        log.error(
+            "[ERROR] Backup destination %s is not writable: %s. No backup was created.",
+            dest,
+            exc,
+        )
+        return False
+
+    return True
+
+
 def main() -> None:
     log.info("=== CookieVale Backup Started ===")
 
@@ -56,6 +81,8 @@ def main() -> None:
     dest = Path(os.environ["CONTAINER_BACKUP_PATH"])
     media_root = os.environ["CONTAINER_MEDIA_PATH"]
 
+    if not _verify_backup_destination(dest):
+        sys.exit(1)
     dest.mkdir(parents=True, exist_ok=True)
 
     timestamp = datetime.now(tz=timezone.utc).strftime("%Y-%m-%d_%H%M%S")
