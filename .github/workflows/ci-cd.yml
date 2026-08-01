@@ -121,7 +121,7 @@ jobs:
           echo "$SSH_KEY" > ~/.ssh/deploy_key
           chmod 600 ~/.ssh/deploy_key
 
-          ssh -o StrictHostKeyChecking=no -o ConnectTimeout=30 -p "$SSH_PORT" -i ~/.ssh/deploy_key "$SSH_USER@$SSH_HOST" powershell -NoProfile -ExecutionPolicy Bypass -Command - <<'PSEOF'
+          SCRIPT="$(cat <<'PSEOF'
           Write-Host "=== Starting deploy ==="
           Set-Location "${{ secrets.PROJECT_PATH }}" -ErrorAction Stop
           Write-Host "=== Current directory: $(Get-Location) ==="
@@ -145,8 +145,13 @@ jobs:
           git status
 
           Write-Host "=== Docker build ==="
-          docker compose build
-          if ($LASTEXITCODE -ne 0) { throw "docker compose build failed" }
+          $infraChanged = git diff --name-only "HEAD^" HEAD | Select-String -Pattern '^(Dockerfile|requirements\.txt|versions\.env|docker-compose\.yml|\.dockerignore)$'
+          if ($infraChanged) {
+            docker compose build
+            if ($LASTEXITCODE -ne 0) { throw "docker compose build failed" }
+          } else {
+            Write-Host "No image-affecting changes, skipping build"
+          }
 
           Write-Host "=== Docker migrate ==="
           docker compose run --rm web alembic upgrade head
@@ -155,6 +160,11 @@ jobs:
           Write-Host "=== Docker up ==="
           docker compose up -d --force-recreate
           if ($LASTEXITCODE -ne 0) { throw "docker compose up failed" }
+
+          Write-Host "=== Verify services ==="
+          docker compose ps
+          if ($LASTEXITCODE -ne 0) { throw "docker compose ps failed" }
+          if ((docker compose ps) -match 'Exit') { throw "a service is not running" }
 
           Write-Host "=== Health check ==="
           $retries = 0
@@ -172,3 +182,8 @@ jobs:
           }
           throw "Health check failed after 5 attempts"
           PSEOF
+          )"
+
+          B64="$(printf '%s' "$SCRIPT" | iconv -f UTF-8 -t UTF-16LE | base64 -w0)"
+
+          ssh -o StrictHostKeyChecking=no -o ConnectTimeout=30 -p "$SSH_PORT" -i ~/.ssh/deploy_key "$SSH_USER@$SSH_HOST" "powershell -NoProfile -ExecutionPolicy Bypass -EncodedCommand $B64"
