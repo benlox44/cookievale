@@ -9,7 +9,9 @@ from app.modules.scheduling.models import AvailableDateModel
 
 
 class AvailableDateRepositoryProtocol(Protocol):
-    def get_all(self, limit: int = 100, offset: int = 0) -> list[AvailableDate]: ...
+    def get_all(
+        self, limit: int | None = None, offset: int = 0
+    ) -> list[AvailableDate]: ...
     def get_by_date(self, target_date: date) -> AvailableDate | None: ...
     def get_by_id(self, id: int) -> AvailableDate | None: ...
     def create(self, target_date: date) -> AvailableDate: ...
@@ -20,13 +22,11 @@ class AvailableDateRepository:
     def __init__(self, db: Session):
         self.db = db
 
-    def get_all(self, limit: int = 100, offset: int = 0) -> list[AvailableDate]:
-        results = self.db.execute(
-            select(AvailableDateModel)
-            .order_by(AvailableDateModel.date.asc())
-            .limit(limit)
-            .offset(offset)
-        )
+    def get_all(self, limit: int | None = None, offset: int = 0) -> list[AvailableDate]:
+        stmt = select(AvailableDateModel).order_by(AvailableDateModel.date.asc())
+        if limit is not None:
+            stmt = stmt.limit(limit)
+        results = self.db.execute(stmt.offset(offset))
         models = results.scalars().all()
         return [self._to_domain(m) for m in models]
 

@@ -97,6 +97,9 @@ class SQLAlchemyOrderRepository:
             self.db.commit()
 
     def get_occupied_dates(self) -> set[date]:
+        # Only REJECTED orders free a delivery slot; every other status holds
+        # the date even if the order is not confirmed yet. When adding new
+        # statuses, decide here whether they should block a date.
         stmt = select(OrderModel.delivery_date, OrderModel.status).where(
             OrderModel.status != OrderStatus.REJECTED
         )

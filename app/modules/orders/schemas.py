@@ -7,8 +7,8 @@ from app.modules.orders.domain import DeliveryMethod, OrderStatus
 
 class OrderItemCreate(BaseModel):
     product_id: int = Field(gt=0)
-    quantity: int = Field(gt=0)
-    unit_price: int = Field(gt=0)
+    quantity: int = Field(gt=0, lt=1_000_000_000)
+    unit_price: int = Field(gt=0, lt=1_000_000_000)
 
 
 class OrderCreateRequest(BaseModel):
@@ -17,7 +17,7 @@ class OrderCreateRequest(BaseModel):
     description: str = Field(max_length=2000)
     delivery_method: DeliveryMethod
     items: list[OrderItemCreate] = Field(min_length=1)
-    total_amount: int = Field(gt=0)
+    total_amount: int = Field(gt=0, lt=1_000_000_000)
 
     @field_validator("customer_instagram")
     @classmethod
@@ -32,7 +32,7 @@ class OrderUpdateRequest(BaseModel):
     delivery_date: datetime
     description: str = Field(max_length=2000)
     delivery_method: DeliveryMethod
-    amount_paid: int = Field(ge=0)
+    amount_paid: int = Field(ge=0, lt=1_000_000_000)
 
 
 class OrderResponse(OrderCreateRequest):

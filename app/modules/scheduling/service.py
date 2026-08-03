@@ -28,6 +28,9 @@ class SchedulingService:
         return [d for d in all_dates if d.date not in occupied_dates]
 
     def add_date(self, new_date: date) -> AvailableDate:
+        today = datetime.now(tz=TZ).date()
+        if new_date < today:
+            raise ValueError("No se pueden registrar fechas pasadas.")
         if self.repo.get_by_date(new_date):
             raise ValueError("La fecha ya está registrada.")
         return self.repo.create(new_date)
