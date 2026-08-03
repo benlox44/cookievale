@@ -91,14 +91,18 @@
                     const ordered_ids = cards.map(el => parseInt(el.dataset.productId));
 
                     try {
-                        await fetch('/admin/products/reorder', {
+                        const res = await fetch('/admin/products/reorder', {
                             method: 'POST',
                             headers: {
                                 'Content-Type': 'application/json'
                             },
                             body: JSON.stringify({ ordered_ids })
                         });
-                        window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: 'Orden guardado correctamente' } }));
+                        if (res.ok) {
+                            window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: 'Orden guardado correctamente' } }));
+                        } else {
+                            window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: 'Error guardando el orden', type: 'error' } }));
+                        }
                     } catch (e) {
                         console.error("Error saving order", e);
                         window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: 'Error guardando el orden', type: 'error' } }));

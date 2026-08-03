@@ -3,6 +3,7 @@ from typing import Protocol
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app.modules.orders.models import OrderItemModel
 from app.modules.products.domain import Product
 from app.modules.products.models import ProductModel
 from app.modules.products.schemas import ProductCreate, ProductUpdate
@@ -21,6 +22,7 @@ class ProductRepositoryProtocol(Protocol):
         image_urls: list[str] | None = None,
     ) -> Product | None: ...
     def reorder(self, ordered_ids: list[int]) -> bool: ...
+    def has_orders(self, product_id: int) -> bool: ...
     def delete(self, product_id: int) -> bool: ...
 
 
@@ -88,6 +90,14 @@ class ProductRepository:
                 db_product.display_order = index  # type: ignore[assignment]
         self.db.commit()
         return True
+
+    def has_orders(self, product_id: int) -> bool:
+        stmt = (
+            select(OrderItemModel.id)
+            .where(OrderItemModel.product_id == product_id)
+            .limit(1)
+        )
+        return self.db.execute(stmt).scalars().first() is not None
 
     def delete(self, product_id: int) -> bool:
         stmt = select(ProductModel).where(ProductModel.id == product_id)

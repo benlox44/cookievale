@@ -17,7 +17,7 @@
             {% if product %}Editar producto{% else %}Nuevo producto{% endif %}
         </h1>
     </div>
-    <div class="cv-card p-0 overflow-hidden shadow-[0_4px_20px_rgba(212,149,106,0.1)]" x-data="productForm()">
+    <div class="cv-card p-0 overflow-hidden shadow-[0_4px_20px_rgba(212,149,106,0.1)]" x-data="productForm()" @existing-image-removed.window="fileChanged = true">
         <form action="{% if product %}/admin/products/{{ product.id }}{% else %}/admin/products{% endif %}"
             method="POST" enctype="multipart/form-data" class="p-6 space-y-5" @change="fileChanged = true">
             <div>
