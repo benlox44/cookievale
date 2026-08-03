@@ -2,4 +2,4 @@
 <p class="text-xs text-cookie-brown/50 line-clamp-2 mb-2 leading-relaxed">
     {{ product.description or 'Sin descripción' }}
 </p>
-<p class="text-lg font-bold text-cookie-golden mb-4">${{ '{:,.0f}'.format(product.price) }}</p>
+<p class="text-lg font-bold text-cookie-golden mb-4">{{ product.price | clp }}</p>

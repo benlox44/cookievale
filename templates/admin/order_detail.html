@@ -28,27 +28,27 @@
                     <button type="button" @click="formData.status = 'pending'"
                         class="px-3 py-1.5 text-xs font-bold rounded-full transition-all border shadow-sm"
                         :class="formData.status === 'pending' ? 'bg-amber-100 text-amber-800 border-amber-300 ring-2 ring-amber-300' : 'bg-white text-cookie-brown border-cookie-pink/40 hover:bg-amber-50 opacity-70 hover:opacity-100'">
-                        Pendiente
+                        {{ 'pending' | status_label }}
                     </button>
                     <button type="button" @click="formData.status = 'confirmed'"
                         class="px-3 py-1.5 text-xs font-bold rounded-full transition-all border shadow-sm"
                         :class="formData.status === 'confirmed' ? 'bg-sky-100 text-sky-800 border-sky-300 ring-2 ring-sky-300' : 'bg-white text-cookie-brown border-cookie-pink/40 hover:bg-sky-50 opacity-70 hover:opacity-100'">
-                        Confirmada
+                        {{ 'confirmed' | status_label }}
                     </button>
                     <button type="button" @click="formData.status = 'paid'"
                         class="px-3 py-1.5 text-xs font-bold rounded-full transition-all border shadow-sm"
                         :class="formData.status === 'paid' ? 'bg-emerald-100 text-emerald-800 border-emerald-300 ring-2 ring-emerald-300' : 'bg-white text-cookie-brown border-cookie-pink/40 hover:bg-emerald-50 opacity-70 hover:opacity-100'">
-                        Pagada
+                        {{ 'paid' | status_label }}
                     </button>
                     <button type="button" @click="formData.status = 'delivered'"
                         class="px-3 py-1.5 text-xs font-bold rounded-full transition-all border shadow-sm"
                         :class="formData.status === 'delivered' ? 'bg-purple-100 text-purple-800 border-purple-300 ring-2 ring-purple-300' : 'bg-white text-cookie-brown border-cookie-pink/40 hover:bg-purple-50 opacity-70 hover:opacity-100'">
-                        Entregada
+                        {{ 'delivered' | status_label }}
                     </button>
                     <button type="button" @click="formData.status = 'rejected'"
                         class="px-3 py-1.5 text-xs font-bold rounded-full transition-all border shadow-sm"
                         :class="formData.status === 'rejected' ? 'bg-rose-100 text-rose-800 border-rose-300 ring-2 ring-rose-300' : 'bg-white text-cookie-brown border-cookie-pink/40 hover:bg-rose-50 opacity-70 hover:opacity-100'">
-                        Rechazada
+                        {{ 'rejected' | status_label }}
                     </button>
                 </div>
             </div>
@@ -83,15 +83,13 @@
                         {% for item in order.items %}
                         <li class="flex justify-between text-sm">
                             <span class="text-cookie-brown">{{ item.quantity }}× {{ item.product_name }}</span>
-                            <span class="text-cookie-brown/60">${{ '{:,.0f}'.format(item.unit_price * item.quantity)
-                                }}</span>
+                            <span class="text-cookie-brown/60">{{ (item.unit_price * item.quantity) | clp }}</span>
                         </li>
                         {% endfor %}
                     </ul>
                     <div class="border-t border-cookie-pink/30 pt-3 flex justify-between">
                         <span class="cv-label">Total</span>
-                        <span class="font-bold text-cookie-golden">${{ '{:,.0f}'.format(order.total_amount)
-                            }}</span>
+                        <span class="font-bold text-cookie-golden">{{ order.total_amount | clp }}</span>
                     </div>
                 </div>
 
@@ -104,8 +102,7 @@
                     </div>
                     <div class="flex flex-col justify-end">
                         <span class="cv-label">Saldo Restante</span>
-                        <span class="text-lg font-bold text-red-500 mt-1">${{ '{:,.0f}'.format(order.total_amount -
-                            order.amount_paid) }}</span>
+                        <span class="text-lg font-bold text-red-500 mt-1">{{ (order.total_amount - order.amount_paid) | clp }}</span>
                     </div>
                 </div>
 
@@ -119,8 +116,8 @@
                         <label class="cv-label block mb-1.5">Método de Entrega</label>
                         <select name="delivery_method" x-model="formData.delivery_method" class="cv-input relative z-20"
                             required>
-                            <option value="pickup">Retiro</option>
-                            <option value="delivery">Delivery</option>
+                            <option value="pickup">{{ 'pickup' | delivery_label }}</option>
+                            <option value="delivery">{{ 'delivery' | delivery_label }}</option>
                         </select>
                     </div>
                 </div>

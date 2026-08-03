@@ -198,12 +198,7 @@
                     <select name="order_status" required class="cv-input">
                         {% for s in OrderStatuses %}
                         <option value="{{ s.value }}" {% if s.value == 'pending' %}selected{% endif %}>
-                            {% if s.value == 'pending' %}Pendiente
-                            {% elif s.value == 'confirmed' %}Confirmada
-                            {% elif s.value == 'paid' %}Pagada
-                            {% elif s.value == 'delivered' %}Entregada
-                            {% elif s.value == 'rejected' %}Rechazada
-                            {% endif %}
+                            {{ s | status_label }}
                         </option>
                         {% endfor %}
                     </select>

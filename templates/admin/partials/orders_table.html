@@ -38,17 +38,12 @@
                         {% elif order.status.value == 'paid' %} bg-emerald-100 text-emerald-800 border border-emerald-200
                         {% elif order.status.value == 'delivered' %} bg-purple-100 text-purple-800 border border-purple-200
                         {% else %} bg-rose-100 text-rose-800 border border-rose-200 {% endif %}">
-                        {{ {'pending': 'Pendiente', 'confirmed': 'Confirmada', 'paid': 'Pagada', 'delivered':
-                        'Entregada'}.get(order.status.value, order.status.value) }}
+                        {{ order.status | status_label }}
                     </span>
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap">
                     <span class="text-sm font-medium text-cookie-brown">
-                        {% if order.delivery_method.value == 'pickup' %}
-                        Retiro
-                        {% else %}
-                        Delivery
-                        {% endif %}
+                        {{ order.delivery_method | delivery_label }}
                     </span>
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-cookie-brown/80">
