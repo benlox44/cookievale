@@ -31,7 +31,7 @@
                 <label for="password" class="cv-label block mb-1.5">Contraseña</label>
                 <input id="password" name="password" type="password" required class="cv-input" placeholder="••••••••">
             </div>
-            <button type="submit" class="cv-btn w-full mt-2">
+            <button type="submit" class="cv-btn w-full mt-2" {% if rate_limited %}disabled{% endif %}>
                 Ingresar al Panel
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7" />

@@ -12,6 +12,7 @@
     --bg-card: #FFFFFF;
     --accent: #D4956A;
     --accent-hover: #C07A52;
+    --accent-disabled: #B8A79C;
   }
 
   body {
@@ -101,7 +102,8 @@
   }
 
   .cv-btn:disabled {
-    opacity: 0.45;
+    background-color: var(--accent-disabled);
+    color: white;
     cursor: not-allowed;
     transform: none;
     box-shadow: none;

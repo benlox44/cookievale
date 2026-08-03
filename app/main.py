@@ -1,24 +1,26 @@
 import logging
-import os
 from collections.abc import Awaitable, Callable
+from urllib.parse import quote
 
 from fastapi import FastAPI, HTTPException, Request, status
+from fastapi.exceptions import RequestValidationError
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, Response
 from fastapi.staticfiles import StaticFiles
-from slowapi import Limiter
+from pydantic import ValidationError
 from slowapi.errors import RateLimitExceeded
-from slowapi.util import get_remote_address
 from sqlalchemy import text
 from sqlalchemy.exc import SQLAlchemyError
 from starlette.middleware.base import BaseHTTPMiddleware
+from uvicorn.middleware.proxy_headers import ProxyHeadersMiddleware
 
+from app.core.config import CONTAINER_MEDIA_PATH, DEBUG, TRUSTED_PROXY_HOSTS
 from app.core.database import engine
+from app.core.rate_limit import limiter
 from app.core.templates import templates
 from app.modules.auth.router import router as auth_router
 from app.modules.orders.admin_router import router as admin_router
 from app.modules.orders.client_router import router as client_router
 from app.modules.products.admin_router import router as products_admin_router
-from app.modules.products.client_router import router as products_client_router
 from app.modules.scheduling.admin_router import router as scheduling_admin_router
 
 logging.basicConfig(
@@ -27,8 +29,6 @@ logging.basicConfig(
 )
 
 app = FastAPI(title="CookieVale API")
-
-DEBUG = os.environ.get("DEBUG", "").lower() == "true"
 
 
 class HttpsRedirectMiddleware(BaseHTTPMiddleware):
@@ -46,23 +46,25 @@ class HttpsRedirectMiddleware(BaseHTTPMiddleware):
 
 
 app.add_middleware(HttpsRedirectMiddleware)
+app.add_middleware(ProxyHeadersMiddleware, trusted_hosts=TRUSTED_PROXY_HOSTS)
 
-limiter = Limiter(key_func=get_remote_address)
 app.state.limiter = limiter
 
 
 @app.exception_handler(RateLimitExceeded)
-async def rate_limit_handler(request: Request, exc: RateLimitExceeded) -> JSONResponse:
-    return JSONResponse(
-        status_code=429,
-        content={"detail": "Demasiados intentos. Intenta de nuevo en un minuto."},
+async def rate_limit_handler(request: Request, exc: RateLimitExceeded) -> Response:
+    return templates.TemplateResponse(
+        request=request,
+        name="admin/login.html",
+        context={
+            "error": "Contraseña incorrecta. Intenta de nuevo.",
+            "rate_limited": True,
+        },
     )
 
 
 app.mount("/public", StaticFiles(directory="public"), name="public")
-app.mount(
-    "/media", StaticFiles(directory=os.environ["CONTAINER_MEDIA_PATH"]), name="media"
-)
+app.mount("/media", StaticFiles(directory=CONTAINER_MEDIA_PATH), name="media")
 
 
 @app.exception_handler(status.HTTP_401_UNAUTHORIZED)
@@ -72,11 +74,28 @@ async def unauthorized_exception_handler(
     return RedirectResponse(url="/admin/login", status_code=status.HTTP_303_SEE_OTHER)
 
 
+def _validation_error_response(request: Request, exc: Exception) -> Response:
+    is_json = (request.headers.get("content-type") or "").startswith("application/json")
+    if request.url.path.startswith("/admin") and not is_json:
+        message = "Datos inválidos en el formulario. Revisa los campos."
+        referer = request.headers.get("referer") or "/admin"
+        base = referer.split("?")[0]
+        return RedirectResponse(
+            url=f"{base}?error={quote(message)}",
+            status_code=status.HTTP_303_SEE_OTHER,
+        )
+    errors: list[object] = getattr(exc, "errors", list)()
+    return JSONResponse(status_code=422, content={"detail": errors})
+
+
+app.add_exception_handler(RequestValidationError, _validation_error_response)
+app.add_exception_handler(ValidationError, _validation_error_response)
+
+
 app.include_router(client_router)
 app.include_router(auth_router)
 app.include_router(admin_router)
 app.include_router(products_admin_router)
-app.include_router(products_client_router)
 app.include_router(scheduling_admin_router)
 
 

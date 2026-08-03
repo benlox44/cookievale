@@ -1,27 +1,19 @@
-from fastapi import APIRouter, Form, HTTPException, Request, status
+import hmac
+
+from fastapi import APIRouter, Depends, Form, Request, status
 from fastapi.responses import HTMLResponse, RedirectResponse, Response
-from slowapi import Limiter
-from slowapi.util import get_remote_address
 
-from app.core.security import ADMIN_PASSWORD, create_admin_token, get_current_admin
+from app.core.config import ADMIN_PASSWORD
+from app.core.rate_limit import limiter
+from app.core.security import SESSION_TTL_SECONDS, create_admin_token, require_admin
 from app.core.templates import templates
-
-limiter = Limiter(key_func=get_remote_address)
 
 router = APIRouter(prefix="/admin", tags=["Auth"])
 
 
-@router.get("", response_class=HTMLResponse)
+@router.get("", response_class=HTMLResponse, dependencies=[Depends(require_admin)])
 def get_admin_panel(request: Request) -> Response:
-    try:
-        admin = get_current_admin(request)
-        return templates.TemplateResponse(
-            request=request, name="admin/panel.html", context={"admin_user": admin}
-        )
-    except HTTPException:
-        return RedirectResponse(
-            url="/admin/login", status_code=status.HTTP_303_SEE_OTHER
-        )
+    return templates.TemplateResponse(request=request, name="admin/panel.html")
 
 
 @router.get("/login", response_class=HTMLResponse)
@@ -30,9 +22,9 @@ def get_login(request: Request) -> HTMLResponse:
 
 
 @router.post("/login")
-@limiter.limit("5/minute")
+@limiter.limit("5/hour")
 def post_login(request: Request, password: str = Form(...)) -> Response:
-    if password == ADMIN_PASSWORD:
+    if hmac.compare_digest(password.encode(), ADMIN_PASSWORD.encode()):
         token = create_admin_token()
 
         response = RedirectResponse(url="/admin", status_code=status.HTTP_303_SEE_OTHER)
@@ -42,7 +34,7 @@ def post_login(request: Request, password: str = Form(...)) -> Response:
             httponly=True,
             secure=True,
             samesite="lax",
-            max_age=8 * 60 * 60,
+            max_age=SESSION_TTL_SECONDS,
         )
         return response
 

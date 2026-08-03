@@ -20,7 +20,7 @@ from app.core.dependencies import (
     get_product_service,
     get_scheduling_service,
 )
-from app.core.security import get_current_admin
+from app.core.security import require_admin
 from app.core.templates import templates
 from app.modules.orders.domain import DeliveryMethod, OrderStatus
 from app.modules.orders.schemas import (
@@ -32,7 +32,11 @@ from app.modules.orders.service import OrderService
 from app.modules.products.service import ProductService
 from app.modules.scheduling.service import SchedulingService
 
-router = APIRouter(prefix="/admin/orders", tags=["AdminOrders"])
+router = APIRouter(
+    prefix="/admin/orders",
+    tags=["AdminOrders"],
+    dependencies=[Depends(require_admin)],
+)
 
 
 def _error_toast(message: str) -> Response:
@@ -48,7 +52,6 @@ def admin_dashboard(
     status_filter: OrderStatus | None = Query(None, alias="status"),
     page: int = Query(1, ge=1),
     service: OrderService = Depends(get_order_service),
-    admin: str = Depends(get_current_admin),
 ) -> HTMLResponse:
     page_size = 50
     orders = service.list_orders(
@@ -67,7 +70,6 @@ def admin_dashboard(
         name="admin/orders_dashboard.html",
         context={
             "orders": orders,
-            "admin_user": admin,
             "current_status": status_filter,
         },
     )
@@ -78,7 +80,6 @@ def new_order_form(
     request: Request,
     product_service: ProductService = Depends(get_product_service),
     scheduling_service: SchedulingService = Depends(get_scheduling_service),
-    admin: str = Depends(get_current_admin),
 ) -> HTMLResponse:
     products = product_service.list_products(only_active=True)
     available_dates = scheduling_service.get_available_dates()
@@ -88,7 +89,6 @@ def new_order_form(
         context={
             "products": products,
             "available_dates": available_dates,
-            "admin_user": admin,
             "OrderStatuses": list(OrderStatus),
         },
     )
@@ -108,7 +108,6 @@ def create_order(
     order_service: OrderService = Depends(get_order_service),
     product_service: ProductService = Depends(get_product_service),
     scheduling_service: SchedulingService = Depends(get_scheduling_service),
-    admin: str = Depends(get_current_admin),
 ) -> Response:
     if photos is None:
         photos = []
@@ -174,7 +173,6 @@ def get_order_detail(
     request: Request,
     order_id: int,
     service: OrderService = Depends(get_order_service),
-    admin: str = Depends(get_current_admin),
 ) -> HTMLResponse:
     order = service.get_order(order_id)
     if not order:
@@ -185,7 +183,6 @@ def get_order_detail(
         name="admin/order_detail.html",
         context={
             "order": order,
-            "admin_user": admin,
             "OrderStatuses": [e.value for e in OrderStatus],
         },
     )
@@ -196,7 +193,6 @@ def update_order_status(
     order_id: int,
     status: OrderStatus = Form(...),
     service: OrderService = Depends(get_order_service),
-    admin: str = Depends(get_current_admin),
 ) -> RedirectResponse:
     service.change_status(order_id, status)
 
@@ -212,7 +208,6 @@ def update_order_details(
     amount_paid: int = Form(0),
     status: OrderStatus = Form(...),
     service: OrderService = Depends(get_order_service),
-    admin: str = Depends(get_current_admin),
 ) -> RedirectResponse:
     dt = datetime.fromisoformat(delivery_date)
 
@@ -238,7 +233,6 @@ def delete_order(
     order_id: int,
     request: Request,
     service: OrderService = Depends(get_order_service),
-    admin: str = Depends(get_current_admin),
 ) -> RedirectResponse:
     service.delete_order(order_id)
     return RedirectResponse(url="/admin/orders", status_code=status.HTTP_303_SEE_OTHER)

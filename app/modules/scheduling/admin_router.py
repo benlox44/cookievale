@@ -5,14 +5,14 @@ from fastapi.responses import HTMLResponse, JSONResponse
 
 from app.core.config import TZ
 from app.core.dependencies import get_scheduling_service
-from app.core.security import get_current_admin
+from app.core.security import require_admin
 from app.core.templates import templates
 from app.modules.scheduling.service import SchedulingService
 
 router = APIRouter(
     prefix="/admin/dates",
     tags=["admin-dates"],
-    dependencies=[Depends(get_current_admin)],
+    dependencies=[Depends(require_admin)],
 )
 
 

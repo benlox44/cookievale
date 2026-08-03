@@ -1,12 +1,10 @@
 import hashlib
 import hmac
-import os
 import time
 
 from fastapi import HTTPException, Request, status
 
-SECRET_KEY = os.environ["SECRET_KEY"]
-ADMIN_PASSWORD = os.environ["ADMIN_PASSWORD"]
+from app.core.config import SECRET_KEY
 
 SESSION_TTL_SECONDS = 8 * 60 * 60
 
@@ -33,10 +31,9 @@ def verify_admin_token(token: str) -> bool:
     return hmac.compare_digest(signature, expected)
 
 
-def get_current_admin(request: Request) -> str:
+def require_admin(request: Request) -> None:
     token = request.cookies.get("admin_session")
     if not token or not verify_admin_token(token):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authenticated"
         )
-    return "Valentina"

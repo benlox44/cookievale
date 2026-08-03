@@ -22,7 +22,9 @@
    cp .env.example .env
    ```
 
-   Then fill in **every** value: the PostgreSQL credentials, `SECRET_KEY`, `ADMIN_PASSWORD`, `BASE_URL`, `MEDIA_ROOT`, `BACKUP_DEST` and the Telegram bot token. The app is fail-fast: if any variable is missing it will refuse to start, so don't skip any.
+   Then fill in **every** value: the PostgreSQL credentials, `SECRET_KEY`, `ADMIN_PASSWORD`, `BASE_URL`, `TZ`, `MEDIA_ROOT`, `BACKUP_DEST` and the Telegram bot token. The app is fail-fast: if any variable is missing it will refuse to start, so don't skip any.
+
+   `TRUSTED_PROXY_HOSTS` is a comma-separated list of IPs or CIDRs of the reverse proxy (or Cloudflare Tunnel) that sits in front of the app. Client IPs for rate limiting and HTTPS detection come from the `X-Forwarded-For`/`X-Forwarded-Proto` headers, which are only trusted when the request comes directly from one of these addresses. The example value `127.0.0.1,172.16.0.0/12` covers a proxy running on the same machine and forwarding to `localhost:8000` (e.g. `cloudflared` on the host): the container sees those connections from the Docker bridge gateway, which is why the `172.16.0.0/12` range is included alongside loopback. If the proxy is not listed, every visitor is seen as a single IP and the login rate limit is shared across all of them. Change it on the server's `.env` and restart the stack — do not commit the real `.env`.
 
 3. **Start the stack:**
 
