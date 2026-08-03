@@ -1,6 +1,15 @@
 {% extends "base.html" %}
 {% block title %}{% if product %}Editar{% else %}Nuevo{% endif %} Producto - CookieVale{% endblock %}
 {% block content %}
+{% if request.query_params.get('error') %}
+<script>
+    window.addEventListener('DOMContentLoaded', function () {
+        window.dispatchEvent(new CustomEvent('show-toast', {
+            detail: { message: {{ request.query_params.get('error') | tojson }}, type: 'error' }
+        }));
+    });
+</script>
+{% endif %}
 <div class="w-full max-w-2xl mx-auto mt-8">
     <div class="cv-card mb-6 flex items-center justify-start gap-4 py-4 px-6 md:px-8">
         <a href="/admin/products" class="cv-btn text-xs px-4 py-2">← Volver</a>

@@ -4,6 +4,15 @@
 
 {% block content %}
 {% from "partials/dropdown.html" import render_dropdown %}
+{% if request.query_params.get('error') %}
+<script>
+    window.addEventListener('DOMContentLoaded', function () {
+        window.dispatchEvent(new CustomEvent('show-toast', {
+            detail: { message: {{ request.query_params.get('error') | tojson }}, type: 'error' }
+        }));
+    });
+</script>
+{% endif %}
 <div class="w-full max-w-6xl mx-auto" x-data="cookieCart()">
     <!-- Header -->
     <div class="cv-card mb-6 flex items-center gap-4 py-4 px-6 md:px-8">
