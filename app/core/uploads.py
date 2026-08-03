@@ -24,12 +24,35 @@ MIME_TO_EXT = {
 MAX_FILE_SIZE = 10 * 1024 * 1024
 
 
+def _detect_image_type(file: UploadFile) -> str | None:
+    header = file.file.read(12)
+    file.file.seek(0)
+
+    if len(header) < 12:
+        return None
+
+    if header.startswith(b"\xff\xd8\xff"):
+        return "image/jpeg"
+    if header.startswith(b"\x89PNG\r\n\x1a\n"):
+        return "image/png"
+    if header.startswith((b"GIF87a", b"GIF89a")):
+        return "image/gif"
+    if header[:4] == b"RIFF" and header[8:12] == b"WEBP":
+        return "image/webp"
+
+    return None
+
+
 def validate_upload(file: UploadFile) -> bool:
     if not file.filename:
         return False
 
     content_type = file.content_type
     if content_type not in ALLOWED_MIME_TYPES:
+        return False
+
+    detected = _detect_image_type(file)
+    if detected is None or detected != content_type:
         return False
 
     file.file.seek(0, 2)
@@ -40,8 +63,12 @@ def validate_upload(file: UploadFile) -> bool:
 
 
 def get_safe_extension(file: UploadFile) -> str:
+    detected = _detect_image_type(file)
+    if detected in MIME_TO_EXT:
+        return MIME_TO_EXT[detected]
+
     content_type = file.content_type or ""
-    if content_type in MIME_TO_EXT:
+    if content_type in MIME_TO_EXT and content_type == detected:
         return MIME_TO_EXT[content_type]
 
     if file.filename:
