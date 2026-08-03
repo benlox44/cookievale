@@ -80,7 +80,6 @@ Instead of grouping files by technical concern (e.g. all models together, all ro
 | Method | Path | Description |
 | --- | --- | --- |
 | `GET` | `/` | Landing page with products and order CTA. |
-| `GET` | `/products` | Client products listing. |
 | `GET` | `/orders/new` | Interactive client form to select products and place orders. |
 | `POST` | `/orders` | Submit a new order. |
 
