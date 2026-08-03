@@ -1,5 +1,6 @@
-from datetime import date
+from datetime import date, datetime
 
+from app.core.config import TZ
 from app.modules.orders.repository import OrderRepository
 from app.modules.scheduling.domain import AvailableDate
 from app.modules.scheduling.repository import AvailableDateRepository

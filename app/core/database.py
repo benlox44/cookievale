@@ -1,11 +1,10 @@
-import os
 from collections.abc import Generator
 
 from sqlalchemy import Column, DateTime, create_engine
 from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
 from sqlalchemy.sql import func
 
-DATABASE_URL = os.environ["DATABASE_URL"]
+from app.core.config import DATABASE_URL
 
 engine = create_engine(DATABASE_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)

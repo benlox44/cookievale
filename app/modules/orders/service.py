@@ -4,6 +4,7 @@ import shutil
 
 from fastapi import UploadFile
 
+from app.core.config import CONTAINER_MEDIA_PATH
 from app.core.telegram import TelegramNotifier
 from app.core.uploads import save_uploads
 from app.modules.orders.domain import Order, OrderItem, OrderStatus
@@ -48,9 +49,7 @@ class OrderService:
         order = self.repository.save(order)
 
         if photos and photos[0].filename:
-            order_dir = os.path.join(
-                os.environ["CONTAINER_MEDIA_PATH"], f"orders/{order.id}"
-            )
+            order_dir = os.path.join(CONTAINER_MEDIA_PATH, f"orders/{order.id}")
             url_prefix = f"/media/orders/{order.id}"
             saved_paths = save_uploads(photos[:8], order_dir, url_prefix)
 
@@ -114,8 +113,6 @@ class OrderService:
     def delete_order(self, order_id: int) -> None:
         self.repository.delete(order_id)
 
-        order_dir = os.path.join(
-            os.environ["CONTAINER_MEDIA_PATH"], f"orders/{order_id}"
-        )
+        order_dir = os.path.join(CONTAINER_MEDIA_PATH, f"orders/{order_id}")
         if os.path.exists(order_dir):
             shutil.rmtree(order_dir)

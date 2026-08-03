@@ -1,16 +1,17 @@
 import json
 import logging
-import os
 import urllib.error
 import urllib.request
+
+from app.core.config import TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID
 
 logger = logging.getLogger(__name__)
 
 
 class TelegramNotifier:
     def __init__(self) -> None:
-        self.bot_token = os.environ["TELEGRAM_BOT_TOKEN"]
-        self.chat_id = os.environ["TELEGRAM_CHAT_ID"]
+        self.bot_token = TELEGRAM_BOT_TOKEN
+        self.chat_id = TELEGRAM_CHAT_ID
 
     def send_message(self, text: str) -> None:
         url = f"https://api.telegram.org/bot{self.bot_token}/sendMessage"
