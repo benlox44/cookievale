@@ -30,7 +30,7 @@
         rel="stylesheet">
 
     <!-- Tailwind CSS -->
-    <link rel="stylesheet" href="/public/styles.css">
+    <link rel="stylesheet" href="/public/styles.css?v={{ css_version() }}">
 
     <script src="https://unpkg.com/htmx.org@1.9.11"></script>
 
@@ -51,7 +51,7 @@
 
 </head>
 
-<body class="{% block body_class %}min-h-screen flex flex-col overflow-x-hidden{% endblock %}">
+<body class="{% block body_class %}min-h-screen flex flex-col overflow-x-clip{% endblock %}">
 
     {% set is_admin = request and '/admin' in request.url.path %}
     {% block header %}
