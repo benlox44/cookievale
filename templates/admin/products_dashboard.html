@@ -2,7 +2,7 @@
 {% block title %}Productos - CookieVale{% endblock %}
 
 {% block content %}
-{% from "partials/confirm_delete.html" import render_confirm_delete %}
+{% from "partials/confirm_modal.html" import render_confirm_modal %}
 
 {% if request.query_params.get('error') %}
 <script>
@@ -67,7 +67,7 @@
                             </svg>
                         </button>
 
-                        {{ render_confirm_delete("Eliminar Producto", "¿Estás seguro de eliminar este producto?") }}
+                        {{ render_confirm_modal("Eliminar Producto", "¿Estás seguro de eliminar este producto?") }}
                     </form>
                     <a href="/admin/products/{{ product.id }}"
                         class="text-xs px-3 py-1.5 rounded-full bg-cookie-cream border border-cookie-pink/40 text-cookie-brown hover:border-cookie-golden hover:bg-cookie-pink/10 transition-colors font-medium">

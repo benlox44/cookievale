@@ -1,17 +1,17 @@
-{% macro render_confirm_delete(title, message, onConfirm="") %}
+{% macro render_confirm_modal(title, message, confirm_text="Eliminar", confirm_class="bg-red-500 hover:bg-red-600 text-white border-red-500 shadow-red-200", onConfirm="", onCancel="") %}
 <template x-teleport="body">
     <div x-show="showConfirm" class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4"
         style="display: none;">
-        <div @click.away="showConfirm = false"
+        <div @click.away="showConfirm = false{% if onCancel %}; {{ onCancel }}{% endif %}"
             class="bg-white rounded-2xl p-6 max-w-sm w-full shadow-2xl transform transition-all text-left whitespace-normal">
             <h3 class="text-lg font-bold text-cookie-brown mb-2">{{ title }}</h3>
-            <p class="text-cookie-brown/70 text-sm mb-6">{{ message }}</p>
+            <p class="text-cookie-brown/70 text-sm mb-6">{{ message | safe }}</p>
             <div class="flex justify-end gap-3">
-                <button type="button" @click="showConfirm = false"
+                <button type="button" @click="showConfirm = false{% if onCancel %}; {{ onCancel }}{% endif %}"
                     class="cv-btn bg-cookie-cream text-cookie-brown border-cookie-pink/40 hover:bg-cookie-pink/10 hover:border-cookie-golden">Cancelar</button>
                 <button type="button"
                     @click="showConfirm = false; {% if onConfirm %}{{ onConfirm }}{% elif true %}if ($root.hasAttribute('hx-delete') || $root.hasAttribute('hx-post')) { htmx.trigger($root, 'submit') } else { $root.submit() }{% endif %}"
-                    class="cv-btn bg-red-500 hover:bg-red-600 text-white border-red-500 shadow-red-200">Eliminar</button>
+                    class="cv-btn {{ confirm_class }}">{{ confirm_text }}</button>
             </div>
         </div>
     </div>

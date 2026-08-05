@@ -1,4 +1,4 @@
-{% from "partials/confirm_delete.html" import render_confirm_delete %}
+{% from "partials/confirm_modal.html" import render_confirm_modal %}
 
 {% set _status_param = current_status.value if current_status else '' %}
 
@@ -104,7 +104,7 @@
                                 </svg>
                             </button>
 
-                            {{ render_confirm_delete("Eliminar Orden", "¿Estás seguro de eliminar esta orden?") }}
+                            {{ render_confirm_modal("Eliminar Orden", "¿Estás seguro de eliminar esta orden?") }}
                         </form>
                     </div>
                 </td>
