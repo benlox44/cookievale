@@ -1,6 +1,56 @@
+{% macro render_date_calendar(dates, initial_selected='', allow_future=False) %}
+<div class="cv-card p-4" x-data="dateCalendar(
+    [{% for d in dates %}'{{ d.date.strftime('%Y-%m-%d') }}'{% if not loop.last %},{% endif %}{% endfor %}],
+    { initialSelected: '{{ initial_selected }}', allowFuture: {{ 'true' if allow_future else 'false' }} }
+)" @date-created.window="addAvailableDate($event.detail.date)"
+    @date-created-cancelled.window="revertSelected()">
+    <input type="hidden" name="delivery_date" x-model="selected">
+
+    <div class="flex items-center justify-between mb-4">
+        <button type="button" @click="prevMonth()" :disabled="!canPrev()"
+            class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-cookie-pink/20 transition-colors disabled:opacity-30 disabled:cursor-not-allowed">
+            <svg class="w-4 h-4 text-cookie-brown" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7"/>
+            </svg>
+        </button>
+        <span class="font-serif font-bold text-cookie-brown capitalize" x-text="months[month] + ' ' + year"></span>
+        <button type="button" @click="nextMonth()" :disabled="!canNext()"
+            class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-cookie-pink/20 transition-colors disabled:opacity-30 disabled:cursor-not-allowed">
+            <svg class="w-4 h-4 text-cookie-brown" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/>
+            </svg>
+        </button>
+    </div>
+
+    <div class="grid grid-cols-7 gap-1 mb-2">
+        <template x-for="d in ['Lu','Ma','Mi','Ju','Vi','Sa','Do']" :key="d">
+            <div class="text-center text-xs font-semibold text-cookie-brown/50 py-1" x-text="d"></div>
+        </template>
+    </div>
+
+    <div class="grid grid-cols-7 gap-1">
+        <template x-for="day in days" :key="day.key">
+            <button type="button" @click="day.selectable && toggle(day.date, day.available)" :disabled="!day.selectable"
+                :class="{
+                    'bg-cookie-golden text-white shadow-md': day.date === selected,
+                    'hover:bg-cookie-pink/20 text-cookie-brown': day.available && day.date !== selected,
+                    'text-cookie-brown/20 hover:bg-cookie-pink/40 hover:text-cookie-brown/70': day.selectable && !day.available && day.date !== selected,
+                    'text-cookie-brown/20 cursor-not-allowed': !day.selectable
+                }"
+                class="h-9 w-full rounded-lg text-sm transition-colors flex items-center justify-center"
+                x-text="day.num || ''">
+            </button>
+        </template>
+    </div>
+
+    <p x-show="selected" class="text-center text-sm text-cookie-golden font-medium mt-3" x-text="fmt(selected)"></p>
+    <p x-show="!selected" class="text-center text-xs text-cookie-brown/40 mt-3">Elige una fecha</p>
+</div>
+{% endmacro %}
+
 <script>
 document.addEventListener('alpine:init', () => {
-    Alpine.data('dateCalendar', (availableDates) => {
+    Alpine.data('dateCalendar', (availableDates, options = {}) => {
         const now = new Date();
         now.setHours(0, 0, 0, 0);
         const pad = n => String(n).padStart(2, '0');
@@ -12,11 +62,14 @@ document.addEventListener('alpine:init', () => {
         const todayKey = now.getFullYear() + '-' + pad(now.getMonth() + 1);
         const minMonth = monthsWithDates.length ? monthsWithDates[0] : '';
         const maxMonth = monthsWithDates.length ? monthsWithDates[monthsWithDates.length - 1] : '';
+        // Admin mode can browse ahead to pick dates that still need to be created.
+        const futureKey = new Date(now.getFullYear(), now.getMonth() + 24, 1);
+        const maxFutureKey = futureKey.getFullYear() + '-' + pad(futureKey.getMonth() + 1);
 
         return {
             year: now.getFullYear(),
             month: now.getMonth(),
-            selected: '',
+            selected: options.initialSelected || '',
             days: [],
             months: MONTHS,
 
@@ -27,9 +80,27 @@ document.addEventListener('alpine:init', () => {
                 this.$watch('year', function () { self.build(); });
             },
 
-            toggle(date) {
+            toggle(date, available) {
+                this.previousSelected = this.selected;
                 this.selected = (this.selected === date) ? '' : date;
-                this.$el.dispatchEvent(new CustomEvent('date-selected', { detail: { date: this.selected }, bubbles: true }));
+                this.$el.dispatchEvent(new CustomEvent('date-selected', { detail: { date: this.selected, available: available }, bubbles: true }));
+            },
+
+            revertSelected() {
+                this.selected = this.previousSelected || '';
+                this.$el.dispatchEvent(new CustomEvent('date-selected', { detail: { date: this.selected, available: true }, bubbles: true }));
+            },
+
+            addAvailableDate(ds) {
+                if (!availableSet.has(ds)) {
+                    availableSet.add(ds);
+                    const monthKey = ds.substring(0, 7);
+                    if (!monthsWithDates.includes(monthKey)) {
+                        monthsWithDates.push(monthKey);
+                        monthsWithDates.sort();
+                    }
+                }
+                this.build();
             },
 
             fmt(date) {
@@ -44,10 +115,12 @@ document.addEventListener('alpine:init', () => {
 
             canPrev() {
                 const k = this.currentKey();
+                if (options.allowFuture) return k > todayKey;
                 return k > this.minMonth && k > todayKey;
             },
             canNext() {
                 const k = this.currentKey();
+                if (options.allowFuture) return k < maxFutureKey;
                 return k < this.maxMonth;
             },
 
@@ -69,14 +142,15 @@ document.addEventListener('alpine:init', () => {
                 const last = new Date(this.year, this.month + 1, 0);
                 const offset = (first.getDay() + 6) % 7;
                 const result = [];
-                for (let i = 0; i < offset; i++) result.push({ key: 'e' + i, num: '', available: false });
+                for (let i = 0; i < offset; i++) result.push({ key: 'e' + i, num: '', available: false, selectable: false });
 
                 for (let d = 1; d <= last.getDate(); d++) {
                     const ds = this.year + '-' + pad(this.month + 1) + '-' + pad(d);
                     const dt = new Date(this.year, this.month, d);
                     const available = availableSet.has(ds) && dt >= now;
+                    const selectable = options.allowFuture ? dt >= now : available;
                     const isToday = dt.getTime() === now.getTime();
-                    result.push({ key: ds, num: d, date: ds, available: available, isToday: isToday });
+                    result.push({ key: ds, num: d, date: ds, available: available, selectable: selectable, isToday: isToday });
                 }
                 this.days = result;
             }

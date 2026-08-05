@@ -29,6 +29,7 @@ from app.modules.orders.schemas import (
 )
 from app.modules.orders.service import OrderService
 from app.modules.products.service import ProductService
+from app.modules.scheduling.domain import AvailableDate
 from app.modules.scheduling.service import SchedulingService
 
 router = APIRouter(
@@ -169,6 +170,7 @@ def get_order_detail(
     request: Request,
     order_id: int,
     product_service: ProductService = Depends(get_product_service),
+    scheduling_service: SchedulingService = Depends(get_scheduling_service),
     service: OrderService = Depends(get_order_service),
 ) -> HTMLResponse:
     order = service.get_order(order_id)
@@ -176,12 +178,21 @@ def get_order_detail(
         raise HTTPException(status_code=404, detail="Pedido no encontrado")
 
     products = product_service.list_products(only_active=True)
+    available_dates = scheduling_service.get_available_dates()
+    # The order's own delivery date is occupied by this very order, so it is
+    # missing from the free slots above; keep it in the calendar as an
+    # already-created date so it does not look like a pending one.
+    existing_dates = {d.date for d in available_dates}
+    order_date = order.delivery_date.date()
+    if order_date not in existing_dates:
+        available_dates = [AvailableDate(id=0, date=order_date), *available_dates]
     return templates.TemplateResponse(
         request=request,
         name="admin/order_detail.html",
         context={
             "order": order,
             "products": products,
+            "available_dates": available_dates,
             "OrderStatuses": [e.value for e in OrderStatus],
         },
     )

@@ -1,0 +1,54 @@
+{% from "partials/confirm_modal.html" import render_confirm_modal %}
+
+{% macro render_date_creator() %}
+<div x-data="dateCreator()" @date-selected.window="onDateSelected($event.detail)">
+    {{ render_confirm_modal(
+        "Crear fecha",
+        'La fecha <span class="font-semibold text-cookie-golden" x-text="pendingDate"></span> no está agendada. ¿Quieres crearla?',
+        confirm_text="Crear fecha",
+        confirm_class="",
+        onConfirm="confirmCreate()",
+        onCancel="cancelCreate()"
+    ) }}
+</div>
+{% endmacro %}
+
+<script>
+document.addEventListener('alpine:init', () => {
+    Alpine.data('dateCreator', () => ({
+        showConfirm: false,
+        pendingDate: '',
+        onDateSelected(detail) {
+            if (!detail.date || detail.available) return;
+            this.pendingDate = detail.date;
+            this.showConfirm = true;
+        },
+        confirmCreate() {
+            const date = this.pendingDate;
+            this.showConfirm = false;
+            this.pendingDate = '';
+            const form = new FormData();
+            form.append('selected_date', date);
+
+            fetch('/admin/dates', { method: 'POST', body: form })
+                .then(r => {
+                    if (r.ok) return r.json();
+                    return r.json().catch(() => ({})).then(d => { throw new Error(typeof d.detail === 'string' ? d.detail : 'Error al crear la fecha'); });
+                })
+                .then(() => {
+                    window.dispatchEvent(new CustomEvent('date-created', { detail: { date } }));
+                })
+                .catch(err => {
+                    window.dispatchEvent(new CustomEvent('show-toast', {
+                        detail: { message: err.message, type: 'error' }
+                    }));
+                });
+        },
+        cancelCreate() {
+            this.showConfirm = false;
+            this.pendingDate = '';
+            window.dispatchEvent(new CustomEvent('date-created-cancelled'));
+        }
+    }));
+});
+</script>
