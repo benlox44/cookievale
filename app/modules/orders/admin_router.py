@@ -11,7 +11,6 @@ from fastapi import (
     Request,
     Response,
     UploadFile,
-    status,
 )
 from fastapi.responses import HTMLResponse, RedirectResponse
 
@@ -44,6 +43,10 @@ def _error_toast(message: str) -> Response:
         "HX-Trigger": json.dumps({"show-toast": {"message": message, "type": "error"}})
     }
     return Response(status_code=204, headers=headers)
+
+
+def _redirect(url: str) -> Response:
+    return Response(status_code=204, headers={"HX-Redirect": url})
 
 
 @router.get("", response_class=HTMLResponse)
@@ -138,9 +141,7 @@ def create_order(
         created_by_admin=True,
     )
 
-    return RedirectResponse(
-        url=f"/admin/orders/{order.id}", status_code=status.HTTP_303_SEE_OTHER
-    )
+    return _redirect("/admin/orders")
 
 
 @router.get("/{order_id}", response_class=HTMLResponse)
@@ -247,4 +248,4 @@ def delete_order(
     service: OrderService = Depends(get_order_service),
 ) -> RedirectResponse:
     service.delete_order(order_id)
-    return RedirectResponse(url="/admin/orders", status_code=status.HTTP_303_SEE_OTHER)
+    return RedirectResponse(url="/admin/orders", status_code=303)
