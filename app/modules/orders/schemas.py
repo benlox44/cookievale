@@ -22,7 +22,7 @@ class OrderCreateRequest(BaseModel):
     @field_validator("customer_instagram")
     @classmethod
     def sanitize_instagram(cls, v: str) -> str:
-        cleaned = v.strip().lstrip("@")
+        cleaned = v.strip().lstrip("@").lower()
         if not cleaned:
             raise ValueError("El usuario de Instagram no puede estar vacío.")
         return cleaned
