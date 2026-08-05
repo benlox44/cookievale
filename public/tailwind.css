@@ -109,6 +109,18 @@
     box-shadow: none;
   }
 
+  .cv-ig-link {
+    color: #EC4899;
+    font-weight: 600;
+    text-decoration: none;
+    transition: color 0.15s;
+  }
+
+  .cv-ig-link:hover {
+    color: #DB2777;
+    text-decoration: underline;
+  }
+
   .cv-btn-ghost {
     display: inline-flex;
     align-items: center;
