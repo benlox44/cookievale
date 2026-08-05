@@ -1,7 +1,7 @@
 from datetime import date
 from typing import Protocol
 
-from sqlalchemy import exc, select
+from sqlalchemy import delete, exc, select
 from sqlalchemy.orm import Session
 
 from app.modules.scheduling.domain import AvailableDate
@@ -16,6 +16,7 @@ class AvailableDateRepositoryProtocol(Protocol):
     def get_by_id(self, id: int) -> AvailableDate | None: ...
     def create(self, target_date: date) -> AvailableDate: ...
     def delete(self, id: int) -> None: ...
+    def delete_before(self, target: date) -> int: ...
 
 
 class AvailableDateRepository:
@@ -69,3 +70,11 @@ class AvailableDateRepository:
         if model:
             self.db.delete(model)
             self.db.commit()
+
+    def delete_before(self, target: date) -> int:
+        result = self.db.execute(
+            delete(AvailableDateModel).where(AvailableDateModel.date < target)
+        )
+        self.db.commit()
+        rowcount: int = result.rowcount  # type: ignore[attr-defined]
+        return rowcount

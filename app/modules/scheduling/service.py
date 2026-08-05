@@ -14,7 +14,16 @@ class SchedulingService:
     def _get_occupied_dates(self) -> set[date]:
         return self.order_repo.get_occupied_dates()
 
+    def _purge_past_dates(self) -> None:
+        # Past available-date rows are meaningless once the day has passed:
+        # the order forms never offered them again and any "occupied" state
+        # is derived from orders, whose history keeps the date. Lazily remove
+        # them on every read so the table self-cleans without a background job.
+        today = datetime.now(tz=TZ).date()
+        self.repo.delete_before(today)
+
     def get_all_dates(self) -> list[AvailableDate]:
+        self._purge_past_dates()
         all_dates = self.repo.get_all()
         occupied_dates = self._get_occupied_dates()
         for d in all_dates:
@@ -23,6 +32,7 @@ class SchedulingService:
         return all_dates
 
     def get_available_dates(self) -> list[AvailableDate]:
+        self._purge_past_dates()
         all_dates = self.repo.get_all()
         occupied_dates = self._get_occupied_dates()
         return [d for d in all_dates if d.date not in occupied_dates]
