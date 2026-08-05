@@ -1,0 +1,86 @@
+<script>
+document.addEventListener('alpine:init', () => {
+    Alpine.data('dateCalendar', (availableDates) => {
+        const now = new Date();
+        now.setHours(0, 0, 0, 0);
+        const pad = n => String(n).padStart(2, '0');
+        const MONTHS = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+        const SHORT = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+
+        const availableSet = new Set(availableDates);
+        const monthsWithDates = availableDates.map(d => d.substring(0, 7)).sort();
+        const todayKey = now.getFullYear() + '-' + pad(now.getMonth() + 1);
+        const minMonth = monthsWithDates.length ? monthsWithDates[0] : '';
+        const maxMonth = monthsWithDates.length ? monthsWithDates[monthsWithDates.length - 1] : '';
+
+        return {
+            year: now.getFullYear(),
+            month: now.getMonth(),
+            selected: '',
+            days: [],
+            months: MONTHS,
+
+            init() {
+                this.build();
+                const self = this;
+                this.$watch('month', function () { self.build(); });
+                this.$watch('year', function () { self.build(); });
+            },
+
+            toggle(date) {
+                this.selected = (this.selected === date) ? '' : date;
+                this.$el.dispatchEvent(new CustomEvent('date-selected', { detail: { date: this.selected }, bubbles: true }));
+            },
+
+            fmt(date) {
+                if (!date) return '';
+                const parts = date.split('-');
+                return parseInt(parts[2]) + ' de ' + SHORT[parseInt(parts[1]) - 1] + ' ' + parts[0];
+            },
+
+            currentKey() {
+                return this.year + '-' + pad(this.month + 1);
+            },
+
+            canPrev() {
+                const k = this.currentKey();
+                return k > this.minMonth && k > todayKey;
+            },
+            canNext() {
+                const k = this.currentKey();
+                return k < this.maxMonth;
+            },
+
+            prevMonth() {
+                if (this.canPrev()) {
+                    this.month--;
+                    if (this.month < 0) { this.month = 11; this.year--; }
+                }
+            },
+            nextMonth() {
+                if (this.canNext()) {
+                    this.month++;
+                    if (this.month > 11) { this.month = 0; this.year++; }
+                }
+            },
+
+            build() {
+                const first = new Date(this.year, this.month, 1);
+                const last = new Date(this.year, this.month + 1, 0);
+                const offset = (first.getDay() + 6) % 7;
+                const result = [];
+                for (let i = 0; i < offset; i++) result.push({ key: 'e' + i, num: '', available: false });
+
+                for (let d = 1; d <= last.getDate(); d++) {
+                    const ds = this.year + '-' + pad(this.month + 1) + '-' + pad(d);
+                    const dt = new Date(this.year, this.month, d);
+                    const available = availableSet.has(ds) && dt >= now;
+                    const isToday = dt.getTime() === now.getTime();
+                    result.push({ key: ds, num: d, date: ds, available: available, isToday: isToday });
+                }
+                this.days = result;
+            }
+        };
+    });
+});
+</script>
