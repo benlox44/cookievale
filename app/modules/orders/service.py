@@ -95,8 +95,16 @@ class OrderService:
         status: OrderStatus | None = None,
         limit: int = 100,
         offset: int = 0,
+        sort_by: str | None = None,
+        sort_dir: str = "desc",
     ) -> list[Order]:
-        return self.repository.list_all(status=status, limit=limit, offset=offset)
+        return self.repository.list_all(
+            status=status,
+            limit=limit,
+            offset=offset,
+            sort_by=sort_by,
+            sort_dir=sort_dir,
+        )
 
     def update_order(self, order_id: int, data: OrderUpdateRequest) -> Order | None:
         order = self.repository.get_by_id(order_id)

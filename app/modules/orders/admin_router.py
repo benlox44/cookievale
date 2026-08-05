@@ -54,18 +54,36 @@ def admin_dashboard(
     request: Request,
     status_filter: OrderStatus | None = Query(None, alias="status"),
     page: int = Query(1, ge=1),
+    sort_by: str | None = Query(None),
+    sort_dir: str = Query("desc"),
     service: OrderService = Depends(get_order_service),
 ) -> HTMLResponse:
+    if sort_by is None:
+        sort_by = "date"
+    if sort_by not in ("id", "date"):
+        sort_by = "date"
+    if sort_dir not in ("asc", "desc"):
+        sort_dir = "desc"
+
     page_size = 50
     orders = service.list_orders(
-        status=status_filter, limit=page_size, offset=(page - 1) * page_size
+        status=status_filter,
+        limit=page_size,
+        offset=(page - 1) * page_size,
+        sort_by=sort_by,
+        sort_dir=sort_dir,
     )
 
     if "hx-request" in request.headers:
         return templates.TemplateResponse(
             request=request,
             name="admin/partials/orders_table.html",
-            context={"orders": orders},
+            context={
+                "orders": orders,
+                "current_status": status_filter,
+                "current_sort_by": sort_by,
+                "current_sort_dir": sort_dir,
+            },
         )
 
     return templates.TemplateResponse(
@@ -74,6 +92,8 @@ def admin_dashboard(
         context={
             "orders": orders,
             "current_status": status_filter,
+            "current_sort_by": sort_by,
+            "current_sort_dir": sort_dir,
         },
     )
 

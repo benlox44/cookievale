@@ -12,7 +12,12 @@ class OrderRepository(Protocol):
     def save(self, order: Order) -> Order: ...
     def get_by_id(self, order_id: int) -> Order | None: ...
     def list_all(
-        self, status: OrderStatus | None = None, limit: int = 100, offset: int = 0
+        self,
+        status: OrderStatus | None = None,
+        limit: int = 100,
+        offset: int = 0,
+        sort_by: str | None = None,
+        sort_dir: str = "desc",
     ) -> list[Order]: ...
     def delete(self, order_id: int) -> None: ...
     def get_occupied_dates(self) -> set[date]: ...
@@ -85,13 +90,27 @@ class SQLAlchemyOrderRepository:
         status: OrderStatus | None = None,
         limit: int = 100,
         offset: int = 0,
+        sort_by: str | None = None,
+        sort_dir: str = "desc",
     ) -> list[Order]:
         stmt = select(OrderModel).options(
             selectinload(OrderModel.items).selectinload(OrderItemModel.product)
         )
         if status is not None:
             stmt = stmt.where(OrderModel.status == status)
-        stmt = stmt.order_by(OrderModel.created_at.desc()).limit(limit).offset(offset)
+
+        if sort_by == "date":
+            sort_col = OrderModel.delivery_date
+        elif sort_by == "id":
+            sort_col = OrderModel.id  # type: ignore[assignment]
+        else:
+            sort_col = OrderModel.created_at
+
+        stmt = (
+            stmt.order_by(sort_col.asc() if sort_dir == "asc" else sort_col.desc())
+            .limit(limit)
+            .offset(offset)
+        )
 
         db_orders = self.db.execute(stmt).scalars().all()
         return [self._to_domain(o) for o in db_orders]
