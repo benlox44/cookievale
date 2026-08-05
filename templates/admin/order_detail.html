@@ -3,7 +3,18 @@
 
 {% block content %}
 {% from "partials/product_picker.html" import render_product_picker %}
-<div x-data="orderDetail()">
+{% from "partials/calendar.html" import render_date_calendar %}
+{% from "partials/date_creator.html" import render_date_creator %}
+{% if request.query_params.get('error') %}
+<script>
+    window.addEventListener('DOMContentLoaded', function () {
+        window.dispatchEvent(new CustomEvent('show-toast', {
+            detail: { message: {{ request.query_params.get('error') | tojson }}, type: 'error' }
+        }));
+    });
+</script>
+{% endif %}
+<div x-data="orderDetail()" @date-selected.window="onDateSelected($event.detail)">
     <div class="cv-card p-0 overflow-hidden shadow-[0_4px_20px_rgba(212,149,106,0.1)] mb-8">
 
         <!-- Header -->
@@ -36,12 +47,12 @@
                         :class="formData.status === 'confirmed' ? 'bg-sky-100 text-sky-800 border-sky-300 ring-2 ring-sky-300' : 'bg-white text-cookie-brown border-cookie-pink/40 hover:bg-sky-50 opacity-70 hover:opacity-100'">
                         {{ 'confirmed' | status_label }}
                     </button>
-                    <button type="button" @click="requestStatus('paid')"
+                    <button type="button" @click="formData.status = 'paid'"
                         class="px-3 py-1.5 text-xs font-bold rounded-full transition-all border shadow-sm"
                         :class="formData.status === 'paid' ? 'bg-emerald-100 text-emerald-800 border-emerald-300 ring-2 ring-emerald-300' : 'bg-white text-cookie-brown border-cookie-pink/40 hover:bg-emerald-50 opacity-70 hover:opacity-100'">
                         {{ 'paid' | status_label }}
                     </button>
-                    <button type="button" @click="requestStatus('delivered')"
+                    <button type="button" @click="formData.status = 'delivered'"
                         class="px-3 py-1.5 text-xs font-bold rounded-full transition-all border shadow-sm"
                         :class="formData.status === 'delivered' ? 'bg-purple-100 text-purple-800 border-purple-300 ring-2 ring-purple-300' : 'bg-white text-cookie-brown border-cookie-pink/40 hover:bg-purple-50 opacity-70 hover:opacity-100'">
                         {{ 'delivered' | status_label }}
@@ -64,6 +75,7 @@
         <div>
             <h2 class="cv-h2 mb-5">Detalles y Edición</h2>
             <form id="order-form" action="/admin/orders/{{ order.id }}" method="POST" class="space-y-5">
+                <input type="hidden" name="cart_items_json" x-model="cartJson" :disabled="!carritoModificado">
 
                 <div>
                     <label class="cv-label block mb-1.5">Instagram</label>
@@ -117,11 +129,10 @@
                     </div>
                 </div>
 
-                <div class="grid grid-cols-2 gap-4 relative z-10">
+                <div class="space-y-4 relative z-10">
                     <div>
                         <label class="cv-label block mb-1.5">Fecha de Entrega</label>
-                        <input type="date" name="delivery_date" x-model="formData.delivery_date" class="cv-input"
-                            :min="getToday()">
+                        {{ render_date_calendar(available_dates, initial_selected=order.delivery_date.strftime('%Y-%m-%d'), allow_future=True) }}
                     </div>
                     <div>
                         <label class="cv-label block mb-1.5">Método de Entrega</label>
@@ -139,7 +150,7 @@
                         class="cv-input resize-none relative z-0" required></textarea>
                 </div>
 
-                <button type="submit" :disabled="!isModified"
+                <button type="button" @click="abrirConfirmacion()" :disabled="!isModified"
                     class="cv-btn w-full disabled:opacity-40 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-none">Guardar
                     Cambios</button>
             </form>
@@ -204,7 +215,7 @@
         x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0">
 
         <div class="relative w-full max-w-5xl max-h-[90vh] overflow-y-auto bg-white rounded-2xl shadow-2xl my-8"
-            @click.away="cartModal = false" x-data="cartEditor">
+            @click.away="cartModal = false">
 
             <div class="sticky top-0 bg-cookie-cream/80 backdrop-blur px-6 py-4 flex items-center justify-between border-b border-cookie-pink/30 rounded-t-2xl z-10">
                 <h2 class="cv-h2 mb-0">Editar productos</h2>
@@ -220,11 +231,7 @@
                 {% for item in order.items %}
                 { product_id: {{ item.product_id }}, name: '{{ item.product_name }}', price: {{ item.unit_price }}, quantity: {{ item.quantity }} }{% if not loop.last %},{% endif %}
                 {% endfor %}
-            ])">
-                <form hx-post="/admin/orders/{{ order.id }}/items" hx-encoding="multipart/form-data"
-                    @submit="prepSubmit">
-                    <input type="hidden" name="cart_items_json" x-model="cartJson">
-
+            ], (json) => setCart(json))">
                     {{ render_product_picker(products) }}
 
                 <div class="cv-card mb-6 border-cookie-pink/40 bg-cookie-cream/50">
@@ -256,42 +263,55 @@
                         </div>
                     </div>
                 </div>
-
-                <button type="submit" :disabled="cart.length === 0" @click="cartModal = false"
-                    class="cv-btn w-full py-4 text-base rounded-2xl disabled:opacity-40 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-none">
-                    Guardar cambios
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
-                    </svg>
-                </button>
-                </form>
             </div>
         </div>
     </div>
 
-    <!-- ═══ Payment Confirmation Modal ═══ -->
-    <div x-show="showPayConfirm" style="display: none;"
+    <!-- ═══ Save Changes Confirmation Modal ═══ -->
+    <div x-show="confirmarGuardadoModal" style="display: none;"
         class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4"
         x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0"
         x-transition:enter-end="opacity-100" x-transition:leave="transition ease-in duration-150"
         x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0">
 
-        <div class="bg-white rounded-2xl p-6 max-w-sm w-full shadow-2xl"
-            @click.away="cancelPayConfirm()">
-            <h3 class="text-lg font-bold text-cookie-brown mb-2">Confirmar abono</h3>
-            <p class="text-cookie-brown/70 text-sm mb-6" x-text="payConfirmMessage"></p>
+        <div class="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl"
+            @click.away="confirmarGuardadoModal = false">
+            <h3 class="text-lg font-bold text-cookie-brown mb-1">Confirmar cambios</h3>
+            <ul class="space-y-2.5 mb-6">
+                <template x-for="c in cambiosDetectados" :key="c.label">
+                    <li class="flex items-start justify-between gap-3 text-sm">
+                        <span class="font-semibold text-cookie-brown whitespace-nowrap" x-text="c.label"></span>
+                        <span class="text-right text-cookie-brown/70">
+                            <span x-show="c.from" class="text-cookie-brown/50" x-text="c.from + ' → '"></span>
+                            <span class="font-medium text-cookie-golden" x-text="c.to"></span>
+                        </span>
+                    </li>
+                </template>
+            </ul>
             <div class="flex justify-end gap-3">
-                <button type="button" @click="cancelPayConfirm()"
+                <button type="button" @click="confirmarGuardadoModal = false"
                     class="cv-btn bg-cookie-cream text-cookie-brown border-cookie-pink/40 hover:bg-cookie-pink/10 hover:border-cookie-golden">Cancelar</button>
-                <button type="button" @click="confirmPayStatus()"
-                    class="cv-btn">Confirmar</button>
+                <button type="button" @click="confirmarGuardado()"
+                    class="cv-btn">Guardar</button>
             </div>
         </div>
     </div>
 </div>
 
+{{ render_date_creator() }}
+
 <script>
     document.addEventListener('alpine:init', () => {
+        const STATUS_LABELS = {
+            {% for s in OrderStatuses %}
+            '{{ s }}': {{ (s | status_label) | tojson }}{% if not loop.last %},{% endif %}
+            {% endfor %}
+        };
+        const DELIVERY_LABELS = {
+            'pickup': {{ ('pickup' | delivery_label) | tojson }},
+            'delivery': {{ ('delivery' | delivery_label) | tojson }},
+        };
+
         Alpine.data('orderDetail', () => ({
             formData: {
                 status: '{{ order.status.value }}',
@@ -307,21 +327,96 @@
                 delivery_method: '{{ order.delivery_method.value }}',
                 description: `{{ order.description or '' }}`
             },
+            initialCartJson: JSON.stringify([
+                {% for item in order.items %}
+                { product_id: {{ item.product_id }}, quantity: {{ item.quantity }} }{% if not loop.last %},{% endif %}
+                {% endfor %}
+            ]),
+            cartJson: '[]',
+            cartTotal: {{ order.total_amount }},
+            init() {
+                this.cartJson = this.initialCartJson;
+            },
+            setCart(json, total) {
+                this.cartJson = json;
+                this.cartTotal = total;
+            },
+            get carritoModificado() {
+                return String(this.cartJson) !== String(this.initialCartJson);
+            },
+            get nuevoTotal() {
+                return this.carritoModificado ? this.cartTotal : {{ order.total_amount }};
+            },
+            get abonoFinal() {
+                const s = this.formData.status;
+                if (s === 'paid' || s === 'delivered') return this.nuevoTotal;
+                return Math.max(0, Math.min(Number(this.formData.amount_paid) || 0, this.nuevoTotal));
+            },
             get isModified() {
                 return String(this.formData.status) !== String(this.initialData.status) ||
                     String(this.formData.amount_paid) !== String(this.initialData.amount_paid) ||
                     String(this.formData.delivery_date) !== String(this.initialData.delivery_date) ||
                     String(this.formData.delivery_method) !== String(this.initialData.delivery_method) ||
-                    String(this.formData.description) !== String(this.initialData.description);
+                    String(this.formData.description) !== String(this.initialData.description) ||
+                    this.carritoModificado;
             },
             get saldoRestante() {
-                const paid = Math.max(0, Number(this.formData.amount_paid) || 0);
-                return {{ order.total_amount }} - paid;
+                return this.nuevoTotal - this.abonoFinal;
+            },
+            get cambiosDetectados() {
+                const changes = [];
+                if (String(this.formData.status) !== String(this.initialData.status)) {
+                    changes.push({
+                        label: 'Estado',
+                        from: STATUS_LABELS[this.initialData.status],
+                        to: STATUS_LABELS[this.formData.status]
+                    });
+                }
+                if (this.carritoModificado) {
+                    changes.push({
+                        label: 'Total',
+                        from: this.fmtClp({{ order.total_amount }}),
+                        to: this.fmtClp(this.cartTotal)
+                    });
+                }
+                const abonoAntes = Number(this.initialData.amount_paid) || 0;
+                if (abonoAntes !== this.abonoFinal) {
+                    changes.push({
+                        label: 'Abono',
+                        from: this.fmtClp(abonoAntes),
+                        to: this.fmtClp(this.abonoFinal)
+                    });
+                }
+                if (String(this.formData.delivery_date) !== String(this.initialData.delivery_date)) {
+                    changes.push({
+                        label: 'Fecha',
+                        from: this.initialData.delivery_date,
+                        to: this.formData.delivery_date
+                    });
+                }
+                if (String(this.formData.delivery_method) !== String(this.initialData.delivery_method)) {
+                    changes.push({
+                        label: 'Método',
+                        from: DELIVERY_LABELS[this.initialData.delivery_method],
+                        to: DELIVERY_LABELS[this.formData.delivery_method]
+                    });
+                }
+                if (String(this.formData.description) !== String(this.initialData.description)) {
+                    changes.push({ label: 'Descripción', from: '', to: 'Modificada' });
+                }
+                return changes;
+            },
+            confirmarGuardadoModal: false,
+            abrirConfirmacion() {
+                if (this.isModified) this.confirmarGuardadoModal = true;
+            },
+            confirmarGuardado() {
+                this.confirmarGuardadoModal = false;
+                this.$nextTick(() => {
+                    document.getElementById('order-form').requestSubmit();
+                });
             },
             cartModal: false,
-            showPayConfirm: false,
-            pendingStatus: '',
-            payConfirmMessage: '',
             fmtClp(v) {
                 return '$' + Number(v || 0).toLocaleString();
             },
@@ -339,34 +434,10 @@
                 setTimeout(() => { this.lightbox.url = ''; }, 300);
                 document.body.style.overflow = 'auto';
             },
-            requestStatus(newStatus) {
-                // Paid / Delivered auto-set the abono to the total: warn before
-                // committing so the admin sees "de X a Y". Other statuses just set.
-                const total = {{ order.total_amount }};
-                const current = Number(this.formData.amount_paid);
-                if ((newStatus === 'paid' || newStatus === 'delivered') && current !== total) {
-                    this.pendingStatus = newStatus;
-                    this.payConfirmMessage = 'El abono se modificará de ' + this.fmtClp(current) + ' a ' + this.fmtClp(total) + '.';
-                    this.showPayConfirm = true;
-                } else {
-                    this.formData.status = newStatus;
+            onDateSelected(detail) {
+                if (detail && detail.date !== undefined) {
+                    this.formData.delivery_date = detail.date;
                 }
-            },
-            cancelPayConfirm() {
-                this.showPayConfirm = false;
-                this.pendingStatus = '';
-            },
-            confirmPayStatus() {
-                if (this.pendingStatus) {
-                    this.formData.status = this.pendingStatus;
-                    this.formData.amount_paid = String({{ order.total_amount }});
-                    this.pendingStatus = '';
-                }
-                this.showPayConfirm = false;
-            },
-            getToday() {
-                const d = new Date();
-                return d.toISOString().split('T')[0];
             }
         }));
     });

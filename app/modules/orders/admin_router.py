@@ -1,5 +1,6 @@
 import json
 from datetime import datetime
+from urllib.parse import quote
 
 from fastapi import (
     APIRouter,
@@ -209,35 +210,6 @@ def update_order_status(
     return RedirectResponse(url=f"/admin/orders/{order_id}", status_code=303)
 
 
-@router.post("/{order_id}/items")
-def update_order_items(
-    order_id: int,
-    cart_items_json: str = Form(...),
-    order_service: OrderService = Depends(get_order_service),
-    product_service: ProductService = Depends(get_product_service),
-) -> Response:
-    current = order_service.get_order(order_id)
-    if current is None:
-        return _error_toast("La orden no existe.")
-
-    stored_prices = {item.product_id: item.unit_price for item in current.items}
-
-    try:
-        parsed = parse_cart_items(
-            cart_items_json, product_service, stored_prices=stored_prices
-        )
-    except CartError as exc:
-        return _error_toast(exc.message)
-
-    order = order_service.update_order_items(
-        order_id, parsed.items, parsed.total_amount
-    )
-    if order is None:
-        return _error_toast("La orden no existe.")
-
-    return _redirect(f"/admin/orders/{order_id}")
-
-
 @router.post("/{order_id}")
 def update_order_details(
     order_id: int,
@@ -246,20 +218,57 @@ def update_order_details(
     delivery_method: DeliveryMethod = Form(...),
     amount_paid: int = Form(0),
     status: OrderStatus = Form(...),
+    cart_items_json: str | None = Form(None),
     service: OrderService = Depends(get_order_service),
+    product_service: ProductService = Depends(get_product_service),
+    scheduling_service: SchedulingService = Depends(get_scheduling_service),
 ) -> RedirectResponse:
-    dt = datetime.fromisoformat(delivery_date)
+    try:
+        dt = datetime.fromisoformat(delivery_date)
+    except ValueError:
+        return RedirectResponse(
+            url=f"/admin/orders/{order_id}?error={quote('La fecha de entrega no es válida.')}",
+            status_code=303,
+        )
 
     order = service.get_order(order_id)
-    if order:
-        if order.status != status:
-            service.change_status(order_id, status)
-        # change_status auto-pays when moving to paid/delivered, so the
-        # manual amount only applies to the other statuses (still capped).
-        if status in (OrderStatus.PAID, OrderStatus.DELIVERED):
-            amount_paid = order.total_amount
-        else:
-            amount_paid = max(0, min(amount_paid, order.total_amount))
+    if not order:
+        return RedirectResponse(url="/admin/orders", status_code=303)
+
+    # The delivery date must be a created, free slot, or the order's own
+    # current date (which this very order occupies). The admin calendar lets
+    # you pick future uncreated dates that get created before saving, so
+    # anything else — like a slot occupied by another order — is rejected.
+    available_dates = {d.date for d in scheduling_service.get_available_dates()}
+    if dt.date() not in available_dates and dt.date() != order.delivery_date.date():
+        return RedirectResponse(
+            url=f"/admin/orders/{order_id}?error={quote('La fecha seleccionada no está disponible.')}",
+            status_code=303,
+        )
+
+    if cart_items_json:
+        stored_prices = {item.product_id: item.unit_price for item in order.items}
+        try:
+            parsed = parse_cart_items(
+                cart_items_json, product_service, stored_prices=stored_prices
+            )
+        except CartError as exc:
+            return RedirectResponse(
+                url=f"/admin/orders/{order_id}?error={quote(exc.message)}",
+                status_code=303,
+            )
+        order = service.update_order_items(order_id, parsed.items, parsed.total_amount)
+        if order is None:
+            return RedirectResponse(url="/admin/orders", status_code=303)
+
+    if order.status != status:
+        service.change_status(order_id, status)
+    # change_status auto-pays when moving to paid/delivered, so the
+    # manual amount only applies to the other statuses (still capped).
+    if status in (OrderStatus.PAID, OrderStatus.DELIVERED):
+        amount_paid = order.total_amount
+    else:
+        amount_paid = max(0, min(amount_paid, order.total_amount))
 
     dto = OrderUpdateRequest(
         delivery_date=dt,

@@ -1,6 +1,6 @@
 <script>
 document.addEventListener('alpine:init', () => {
-    Alpine.data('cookieCart', (initialItems = []) => ({
+    Alpine.data('cookieCart', (initialItems = [], onChange = null) => ({
         cart: (initialItems || []).map(i => ({
             product_id: i.product_id,
             name: i.name,
@@ -48,6 +48,7 @@ document.addEventListener('alpine:init', () => {
         },
         updateJson() {
             this.cartJson = JSON.stringify(this.cart.map(i => ({ product_id: i.product_id, quantity: i.quantity })));
+            if (onChange) onChange(this.cartJson, this.cartTotal);
         },
         prepSubmit() { this.updateJson(); }
     }));
