@@ -36,12 +36,12 @@
                         :class="formData.status === 'confirmed' ? 'bg-sky-100 text-sky-800 border-sky-300 ring-2 ring-sky-300' : 'bg-white text-cookie-brown border-cookie-pink/40 hover:bg-sky-50 opacity-70 hover:opacity-100'">
                         {{ 'confirmed' | status_label }}
                     </button>
-                    <button type="button" @click="formData.status = 'paid'"
+                    <button type="button" @click="requestStatus('paid')"
                         class="px-3 py-1.5 text-xs font-bold rounded-full transition-all border shadow-sm"
                         :class="formData.status === 'paid' ? 'bg-emerald-100 text-emerald-800 border-emerald-300 ring-2 ring-emerald-300' : 'bg-white text-cookie-brown border-cookie-pink/40 hover:bg-emerald-50 opacity-70 hover:opacity-100'">
                         {{ 'paid' | status_label }}
                     </button>
-                    <button type="button" @click="formData.status = 'delivered'"
+                    <button type="button" @click="requestStatus('delivered')"
                         class="px-3 py-1.5 text-xs font-bold rounded-full transition-all border shadow-sm"
                         :class="formData.status === 'delivered' ? 'bg-purple-100 text-purple-800 border-purple-300 ring-2 ring-purple-300' : 'bg-white text-cookie-brown border-cookie-pink/40 hover:bg-purple-50 opacity-70 hover:opacity-100'">
                         {{ 'delivered' | status_label }}
@@ -112,7 +112,8 @@
                     </div>
                     <div class="flex flex-col justify-end">
                         <span class="cv-label">Saldo Restante</span>
-                        <span class="text-lg font-bold text-red-500 mt-1">{{ (order.total_amount - order.amount_paid) | clp }}</span>
+                        <span class="text-lg font-bold text-red-500 mt-1">$<span
+                                x-text="saldoRestante.toLocaleString()"></span></span>
                     </div>
                 </div>
 
@@ -267,6 +268,26 @@
             </div>
         </div>
     </div>
+
+    <!-- ═══ Payment Confirmation Modal ═══ -->
+    <div x-show="showPayConfirm" style="display: none;"
+        class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4"
+        x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0"
+        x-transition:enter-end="opacity-100" x-transition:leave="transition ease-in duration-150"
+        x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0">
+
+        <div class="bg-white rounded-2xl p-6 max-w-sm w-full shadow-2xl"
+            @click.away="cancelPayConfirm()">
+            <h3 class="text-lg font-bold text-cookie-brown mb-2">Confirmar abono</h3>
+            <p class="text-cookie-brown/70 text-sm mb-6" x-text="payConfirmMessage"></p>
+            <div class="flex justify-end gap-3">
+                <button type="button" @click="cancelPayConfirm()"
+                    class="cv-btn bg-cookie-cream text-cookie-brown border-cookie-pink/40 hover:bg-cookie-pink/10 hover:border-cookie-golden">Cancelar</button>
+                <button type="button" @click="confirmPayStatus()"
+                    class="cv-btn">Confirmar</button>
+            </div>
+        </div>
+    </div>
 </div>
 
 <script>
@@ -293,7 +314,17 @@
                     String(this.formData.delivery_method) !== String(this.initialData.delivery_method) ||
                     String(this.formData.description) !== String(this.initialData.description);
             },
+            get saldoRestante() {
+                const paid = Math.max(0, Number(this.formData.amount_paid) || 0);
+                return {{ order.total_amount }} - paid;
+            },
             cartModal: false,
+            showPayConfirm: false,
+            pendingStatus: '',
+            payConfirmMessage: '',
+            fmtClp(v) {
+                return '$' + Number(v || 0).toLocaleString();
+            },
             lightbox: {
                 open: false,
                 url: ''
@@ -307,6 +338,31 @@
                 this.lightbox.open = false;
                 setTimeout(() => { this.lightbox.url = ''; }, 300);
                 document.body.style.overflow = 'auto';
+            },
+            requestStatus(newStatus) {
+                // Paid / Delivered auto-set the abono to the total: warn before
+                // committing so the admin sees "de X a Y". Other statuses just set.
+                const total = {{ order.total_amount }};
+                const current = Number(this.formData.amount_paid);
+                if ((newStatus === 'paid' || newStatus === 'delivered') && current !== total) {
+                    this.pendingStatus = newStatus;
+                    this.payConfirmMessage = 'El abono se modificará de ' + this.fmtClp(current) + ' a ' + this.fmtClp(total) + '.';
+                    this.showPayConfirm = true;
+                } else {
+                    this.formData.status = newStatus;
+                }
+            },
+            cancelPayConfirm() {
+                this.showPayConfirm = false;
+                this.pendingStatus = '';
+            },
+            confirmPayStatus() {
+                if (this.pendingStatus) {
+                    this.formData.status = this.pendingStatus;
+                    this.formData.amount_paid = String({{ order.total_amount }});
+                    this.pendingStatus = '';
+                }
+                this.showPayConfirm = false;
             },
             getToday() {
                 const d = new Date();

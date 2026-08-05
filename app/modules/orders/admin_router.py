@@ -220,9 +220,14 @@ def update_order_details(
 
     order = service.get_order(order_id)
     if order:
-        amount_paid = max(0, min(amount_paid, order.total_amount))
         if order.status != status:
             service.change_status(order_id, status)
+        # change_status auto-pays when moving to paid/delivered, so the
+        # manual amount only applies to the other statuses (still capped).
+        if status in (OrderStatus.PAID, OrderStatus.DELIVERED):
+            amount_paid = order.total_amount
+        else:
+            amount_paid = max(0, min(amount_paid, order.total_amount))
 
     dto = OrderUpdateRequest(
         delivery_date=dt,

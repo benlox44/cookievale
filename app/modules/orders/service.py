@@ -37,7 +37,10 @@ class OrderService:
             for i in data.items
         ]
 
-        amount_paid = max(0, min(amount_paid, data.total_amount))
+        if status in (OrderStatus.PAID, OrderStatus.DELIVERED):
+            amount_paid = data.total_amount
+        else:
+            amount_paid = max(0, min(amount_paid, data.total_amount))
 
         order = Order(
             customer_instagram=data.customer_instagram,
@@ -112,6 +115,8 @@ class OrderService:
             return None
 
         order.status = new_status
+        if new_status in (OrderStatus.PAID, OrderStatus.DELIVERED):
+            order.amount_paid = order.total_amount
         return self.repository.save(order)
 
     def update_order_items(
