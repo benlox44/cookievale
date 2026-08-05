@@ -9,7 +9,11 @@ from app.core.telegram import TelegramNotifier
 from app.core.uploads import save_uploads
 from app.modules.orders.domain import Order, OrderItem, OrderStatus
 from app.modules.orders.repository import OrderRepository
-from app.modules.orders.schemas import OrderCreateRequest, OrderUpdateRequest
+from app.modules.orders.schemas import (
+    OrderCreateRequest,
+    OrderItemCreate,
+    OrderUpdateRequest,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -109,6 +113,33 @@ class OrderService:
 
         order.status = new_status
         return self.repository.save(order)
+
+    def update_order_items(
+        self,
+        order_id: int,
+        items: list[OrderItemCreate],
+        total_amount: int,
+    ) -> Order | None:
+        order = self.repository.get_by_id(order_id)
+        if order is None:
+            return None
+
+        domain_items = [
+            OrderItem(
+                product_id=i.product_id,
+                quantity=i.quantity,
+                unit_price=i.unit_price,
+            )
+            for i in items
+        ]
+
+        amount_paid = min(order.amount_paid, total_amount)
+        if order.status in (OrderStatus.PAID, OrderStatus.DELIVERED):
+            amount_paid = total_amount
+
+        return self.repository.replace_items(
+            order_id, domain_items, total_amount, amount_paid
+        )
 
     def delete_order(self, order_id: int) -> None:
         self.repository.delete(order_id)

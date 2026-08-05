@@ -147,17 +147,20 @@ def create_order(
 def get_order_detail(
     request: Request,
     order_id: int,
+    product_service: ProductService = Depends(get_product_service),
     service: OrderService = Depends(get_order_service),
 ) -> HTMLResponse:
     order = service.get_order(order_id)
     if not order:
         raise HTTPException(status_code=404, detail="Pedido no encontrado")
 
+    products = product_service.list_products(only_active=True)
     return templates.TemplateResponse(
         request=request,
         name="admin/order_detail.html",
         context={
             "order": order,
+            "products": products,
             "OrderStatuses": [e.value for e in OrderStatus],
         },
     )
@@ -172,6 +175,35 @@ def update_order_status(
     service.change_status(order_id, status)
 
     return RedirectResponse(url=f"/admin/orders/{order_id}", status_code=303)
+
+
+@router.post("/{order_id}/items")
+def update_order_items(
+    order_id: int,
+    cart_items_json: str = Form(...),
+    order_service: OrderService = Depends(get_order_service),
+    product_service: ProductService = Depends(get_product_service),
+) -> Response:
+    current = order_service.get_order(order_id)
+    if current is None:
+        return _error_toast("La orden no existe.")
+
+    stored_prices = {item.product_id: item.unit_price for item in current.items}
+
+    try:
+        parsed = parse_cart_items(
+            cart_items_json, product_service, stored_prices=stored_prices
+        )
+    except CartError as exc:
+        return _error_toast(exc.message)
+
+    order = order_service.update_order_items(
+        order_id, parsed.items, parsed.total_amount
+    )
+    if order is None:
+        return _error_toast("La orden no existe.")
+
+    return _redirect(f"/admin/orders/{order_id}")
 
 
 @router.post("/{order_id}")

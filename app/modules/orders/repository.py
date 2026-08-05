@@ -16,6 +16,13 @@ class OrderRepository(Protocol):
     ) -> list[Order]: ...
     def delete(self, order_id: int) -> None: ...
     def get_occupied_dates(self) -> set[date]: ...
+    def replace_items(
+        self,
+        order_id: int,
+        items: list[OrderItem],
+        total_amount: int,
+        amount_paid: int,
+    ) -> Order | None: ...
 
 
 class SQLAlchemyOrderRepository:
@@ -95,6 +102,37 @@ class SQLAlchemyOrderRepository:
         if db_order:
             self.db.delete(db_order)
             self.db.commit()
+
+    def replace_items(
+        self,
+        order_id: int,
+        items: list[OrderItem],
+        total_amount: int,
+        amount_paid: int,
+    ) -> Order | None:
+        stmt = (
+            select(OrderModel)
+            .where(OrderModel.id == order_id)
+            .options(selectinload(OrderModel.items))
+        )
+        db_order = self.db.execute(stmt).scalar_one_or_none()
+        if db_order is None:
+            return None
+
+        db_order.items.clear()
+        for item in items:
+            db_order.items.append(
+                OrderItemModel(
+                    product_id=item.product_id,
+                    quantity=item.quantity,
+                    unit_price=item.unit_price,
+                )
+            )
+        db_order.total_amount = total_amount  # type: ignore[assignment]
+        db_order.amount_paid = amount_paid  # type: ignore[assignment]
+        self.db.commit()
+
+        return self.get_by_id(order_id)
 
     def get_occupied_dates(self) -> set[date]:
         # Only REJECTED orders free a delivery slot; every other status holds
