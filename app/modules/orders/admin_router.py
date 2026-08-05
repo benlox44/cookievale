@@ -22,10 +22,10 @@ from app.core.dependencies import (
 )
 from app.core.security import require_admin
 from app.core.templates import templates
+from app.modules.orders.cart import CartError, parse_cart_items
 from app.modules.orders.domain import DeliveryMethod, OrderStatus
 from app.modules.orders.schemas import (
     OrderCreateRequest,
-    OrderItemCreate,
     OrderUpdateRequest,
 )
 from app.modules.orders.service import OrderService
@@ -117,45 +117,20 @@ def create_order(
         return _error_toast("La fecha seleccionada no está disponible.")
 
     try:
-        cart_items_raw = json.loads(cart_items_json)
-    except json.JSONDecodeError:
-        return _error_toast("Formato de carrito inválido.")
-
-    if not cart_items_raw:
-        return _error_toast("El carrito no puede estar vacío.")
-
-    items = []
-    total_amount = 0
-
-    for item in cart_items_raw:
-        prod_id = int(item.get("product_id"))
-        qty = int(item.get("quantity"))
-        if qty <= 0:
-            continue
-
-        product = product_service.get_product(prod_id)
-        if not product or not product.is_active:
-            return _error_toast("Un producto seleccionado ya no está disponible.")
-
-        unit_p = product.price
-        items.append(
-            OrderItemCreate(product_id=prod_id, quantity=qty, unit_price=unit_p)
-        )
-        total_amount += unit_p * qty
-
-    if not items:
-        return _error_toast("El carrito no puede estar vacío.")
+        parsed = parse_cart_items(cart_items_json, product_service)
+    except CartError as exc:
+        return _error_toast(exc.message)
 
     dto = OrderCreateRequest(
         customer_instagram=customer_instagram,
-        items=items,
-        total_amount=total_amount,
+        items=parsed.items,
+        total_amount=parsed.total_amount,
         delivery_date=delivery_date,
         delivery_method=delivery_method,
         description=description,
     )
 
-    order = order_service.create_order(
+    order_service.create_order(
         data=dto,
         photos=photos,
         status=order_status,
