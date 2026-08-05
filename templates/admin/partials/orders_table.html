@@ -80,7 +80,7 @@
                     </span>
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-cookie-brown/80">
-                    {{ order.delivery_date.strftime('%Y-%m-%d') }}
+                    {{ order.delivery_date | date_short }}
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
                     <div class="flex items-center justify-center gap-2">
