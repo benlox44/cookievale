@@ -48,7 +48,7 @@ document.addEventListener('alpine:init', () => {
         },
         updateJson() {
             this.cartJson = JSON.stringify(this.cart.map(i => ({ product_id: i.product_id, quantity: i.quantity })));
-            if (onChange) onChange(this.cartJson, this.cartTotal);
+            if (onChange) onChange(this.cartJson, this.cartTotal, this.cart);
         },
         prepSubmit() { this.updateJson(); }
     }));

@@ -102,16 +102,19 @@
                         </button>
                     </div>
                     <ul class="space-y-2 mb-3">
-                        {% for item in order.items %}
-                        <li class="flex justify-between text-sm">
-                            <span class="text-cookie-brown">{{ item.quantity }}× {{ item.product_name }}</span>
-                            <span class="text-cookie-brown/60">{{ (item.unit_price * item.quantity) | clp }}</span>
-                        </li>
-                        {% endfor %}
+                        <template x-for="item in cartItems" :key="item.product_id">
+                            <li class="flex justify-between text-sm">
+                                <span class="text-cookie-brown" x-text="item.quantity + '× ' + item.name"></span>
+                                <span class="text-cookie-brown/60" x-text="fmtClp(item.price * item.quantity)"></span>
+                            </li>
+                        </template>
                     </ul>
+                    <div x-show="cartItems.length === 0" class="pb-3">
+                        <p class="text-cookie-brown/60 font-medium text-sm">El carrito está vacío.</p>
+                    </div>
                     <div class="border-t border-cookie-pink/30 pt-3 flex justify-between">
                         <span class="cv-label">Total</span>
-                        <span class="font-bold text-cookie-golden">{{ order.total_amount | clp }}</span>
+                        <span class="font-bold text-cookie-golden" x-text="fmtClp(cartTotal)"></span>
                     </div>
                 </div>
 
@@ -231,7 +234,7 @@
                 {% for item in order.items %}
                 { product_id: {{ item.product_id }}, name: '{{ item.product_name }}', price: {{ item.unit_price }}, quantity: {{ item.quantity }} }{% if not loop.last %},{% endif %}
                 {% endfor %}
-            ], (json) => setCart(json))">
+            ], (json, total, items) => setCart(json, total, items))">
                     {{ render_product_picker(products) }}
 
                 <div class="cv-card mb-6 border-cookie-pink/40 bg-cookie-cream/50">
@@ -334,12 +337,18 @@
             ]),
             cartJson: '[]',
             cartTotal: {{ order.total_amount }},
+            cartItems: [
+                {% for item in order.items %}
+                { product_id: {{ item.product_id }}, name: '{{ item.product_name }}', price: {{ item.unit_price }}, quantity: {{ item.quantity }} }{% if not loop.last %},{% endif %}
+                {% endfor %}
+            ],
             init() {
                 this.cartJson = this.initialCartJson;
             },
-            setCart(json, total) {
+            setCart(json, total, items) {
                 this.cartJson = json;
                 this.cartTotal = total;
+                this.cartItems = items;
             },
             get carritoModificado() {
                 return String(this.cartJson) !== String(this.initialCartJson);
