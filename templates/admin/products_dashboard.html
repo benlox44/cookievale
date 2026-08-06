@@ -40,10 +40,21 @@
 
     <!-- Product Grid -->
     <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-5 mb-10" x-data="productReorder()"
-        x-sort="handleReorder($item, $position)">
+        x-sort="handleReorder($item, $position)"
+        x-sort:config="{ delay: 200, delayOnTouchOnly: true }">
         {% for product in products %}
         <div x-sort:item="{{ product.id }}" data-product-id="{{ product.id }}"
-            class="cv-card p-4 flex flex-col justify-between cursor-move hover:shadow-[0_8px_24px_rgba(212,149,106,0.18)] hover:-translate-y-1 hover:border-cookie-golden/40 transition-all duration-300 group {% if not product.is_active %}opacity-50{% endif %}">
+            class="cv-card p-4 flex flex-col justify-between relative hover:shadow-[0_8px_24px_rgba(212,149,106,0.18)] hover:-translate-y-1 hover:border-cookie-golden/40 transition-all duration-300 group {% if not product.is_active %}opacity-50{% endif %}">
+            <!-- Drag handle (solo el asa arrastra; el resto hace scroll, también en móvil) -->
+            <button type="button" x-sort:handle
+                class="absolute top-2 right-2 z-20 w-9 h-9 flex items-center justify-center rounded-full bg-white/80 text-cookie-brown/60 shadow-sm cursor-grab active:cursor-grabbing touch-none select-none transition-colors hover:bg-white hover:text-cookie-golden"
+                title="Arrastrar para reordenar" aria-label="Reordenar">
+                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                    <path
+                        d="M9 5a2 2 0 11-2-2 2 2 0 012 2zm8 0a2 2 0 11-2-2 2 2 0 012 2zM9 13a2 2 0 11-2-2 2 2 0 012 2zm8 0a2 2 0 11-2-2 2 2 0 012 2zM9 21a2 2 0 11-2-2 2 2 0 012 2zm8 0a2 2 0 11-2-2 2 2 0 012 2z" />
+                </svg>
+            </button>
+
             <!-- Image Slider -->
             {% include "partials/slider.html" %}
 
@@ -57,7 +68,7 @@
                 </span>
                 <div class="flex gap-2 items-center">
                     <form action="/admin/products/{{ product.id }}/delete" method="POST" id="form-delete-{{product.id}}"
-                        x-data="{ showConfirm: false }"
+                        x-data="{ showConfirm: false }" x-sort:ignore
                         @submit.prevent="if(showConfirm) { $el.submit() } else { showConfirm = true }">
                         <button type="submit"
                             class="w-8 h-8 rounded-full bg-red-50 text-red-500 hover:bg-red-500 hover:text-white flex items-center justify-center transition-colors border border-red-100">
@@ -69,7 +80,7 @@
 
                         {{ render_confirm_modal("Eliminar Producto", "¿Estás seguro de eliminar este producto?") }}
                     </form>
-                    <a href="/admin/products/{{ product.id }}"
+                    <a href="/admin/products/{{ product.id }}" x-sort:ignore
                         class="text-xs px-3 py-1.5 rounded-full bg-cookie-cream border border-cookie-pink/40 text-cookie-brown hover:border-cookie-golden hover:bg-cookie-pink/10 transition-colors font-medium">
                         Editar
                     </a>
