@@ -116,12 +116,12 @@ document.addEventListener('alpine:init', () => {
             canPrev() {
                 const k = this.currentKey();
                 if (options.allowFuture) return k > todayKey;
-                return k > this.minMonth && k > todayKey;
+                return k > minMonth && k > todayKey;
             },
             canNext() {
                 const k = this.currentKey();
                 if (options.allowFuture) return k < maxFutureKey;
-                return k < this.maxMonth;
+                return k < maxMonth;
             },
 
             prevMonth() {
