@@ -1,4 +1,3 @@
-import json
 import logging
 import os
 import shutil
@@ -7,7 +6,7 @@ from fastapi import UploadFile
 from sqlalchemy.exc import SQLAlchemyError
 
 from app.core.config import CONTAINER_MEDIA_PATH
-from app.core.uploads import save_uploads
+from app.core.uploads import build_image_order, delete_media_files, save_uploads
 from app.modules.products.domain import Product
 from app.modules.products.repository import ProductRepository
 from app.modules.products.schemas import ProductCreate, ProductUpdate
@@ -80,9 +79,9 @@ class ProductService:
                 if remaining > 0:
                     new_urls = self._save_photos(product_id, valid_photos[:remaining])
 
-        final_urls = self._build_image_order(image_order, current_urls, new_urls)
+        final_urls = build_image_order(image_order, current_urls, new_urls)
         if not final_urls:
-            # Fallback for legacy/malformed order: existing images first, then new.
+            # Empty/malformed image_order: keep existing images, then new.
             final_urls = kept + new_urls
         final_urls = final_urls[:10]
 
@@ -93,50 +92,16 @@ class ProductService:
         removed = [url for url in current_urls if url not in final_urls]
         if removed:
             try:
-                self._delete_media_files(product_id, removed)
+                products_dir = os.path.join(
+                    CONTAINER_MEDIA_PATH, "products", str(product_id)
+                )
+                delete_media_files(products_dir, removed)
             except OSError:
                 logger.warning(
                     "Failed to remove media files for product %d", product_id
                 )
 
         return updated
-
-    @staticmethod
-    def _build_image_order(
-        image_order: str,
-        current_urls: list[str],
-        new_urls: list[str],
-    ) -> list[str]:
-        # image_order is a JSON list mixing existing URLs and "new:<index>"
-        # placeholders that map to saved new photos (in file-submit order).
-        try:
-            tokens = json.loads(image_order)
-        except (ValueError, TypeError):
-            return []
-        if not isinstance(tokens, list):
-            return []
-
-        valid_current = set(current_urls)
-        ordered: list[str] = []
-        for token in tokens:
-            if not isinstance(token, str):
-                continue
-            if token.startswith("new:"):
-                index_str = token[4:]
-                if not index_str.isdigit():
-                    continue
-                index = int(index_str)
-                if 0 <= index < len(new_urls) and new_urls[index] not in ordered:
-                    ordered.append(new_urls[index])
-            elif token in valid_current and token not in ordered:
-                ordered.append(token)
-
-        # Keep any new photo not referenced by the order (defensive).
-        for url in new_urls:
-            if url not in ordered:
-                ordered.append(url)
-
-        return ordered
 
     def reorder_products(self, ordered_ids: list[int]) -> bool:
         return self.repository.reorder(ordered_ids)
@@ -160,13 +125,3 @@ class ProductService:
         products_dir = os.path.join(CONTAINER_MEDIA_PATH, "products", str(product_id))
         url_prefix = f"/media/products/{product_id}"
         return save_uploads(photos, products_dir, url_prefix)
-
-    def _delete_media_files(self, product_id: int, urls: list[str]) -> None:
-        products_dir = os.path.join(CONTAINER_MEDIA_PATH, "products", str(product_id))
-        for url in urls:
-            filename = os.path.basename(url)
-            if not filename:
-                continue
-            filepath = os.path.join(products_dir, filename)
-            if os.path.isfile(filepath):
-                os.remove(filepath)

@@ -1,3 +1,4 @@
+import json
 import logging
 import os
 import shutil
@@ -102,3 +103,50 @@ def save_uploads(
         saved_urls.append(f"{url_prefix}/{filename}")
 
     return saved_urls
+
+
+def build_image_order(
+    image_order: str,
+    current_urls: list[str],
+    new_urls: list[str],
+) -> list[str]:
+    # image_order is a JSON list mixing existing URLs and "new:<index>"
+    # placeholders that map to saved new photos (in file-submit order).
+    try:
+        tokens = json.loads(image_order)
+    except (ValueError, TypeError):
+        return []
+    if not isinstance(tokens, list):
+        return []
+
+    valid_current = set(current_urls)
+    ordered: list[str] = []
+    for token in tokens:
+        if not isinstance(token, str):
+            continue
+        if token.startswith("new:"):
+            index_str = token[4:]
+            if not index_str.isdigit():
+                continue
+            index = int(index_str)
+            if 0 <= index < len(new_urls) and new_urls[index] not in ordered:
+                ordered.append(new_urls[index])
+        elif token in valid_current and token not in ordered:
+            ordered.append(token)
+
+    # Keep any new photo not referenced by the order (defensive).
+    for url in new_urls:
+        if url not in ordered:
+            ordered.append(url)
+
+    return ordered
+
+
+def delete_media_files(media_dir: str, urls: list[str]) -> None:
+    for url in urls:
+        filename = os.path.basename(url)
+        if not filename:
+            continue
+        filepath = os.path.join(media_dir, filename)
+        if os.path.isfile(filepath):
+            os.remove(filepath)
