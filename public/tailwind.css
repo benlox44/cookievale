@@ -121,6 +121,14 @@
     text-decoration: underline;
   }
 
+  /* Prevents browsers from treating thumbnails as natively draggable images
+     (long-press context menu / drag-out-of-page on mobile and desktop). */
+  .cv-nodrag {
+    -webkit-user-drag: none;
+    -webkit-touch-callout: none;
+    user-select: none;
+  }
+
   .cv-btn-ghost {
     display: inline-flex;
     align-items: center;

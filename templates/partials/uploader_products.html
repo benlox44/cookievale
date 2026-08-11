@@ -5,7 +5,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
 
 <div class="mb-4"
-    x-data="cropperData({{ min_width }}, {{ min_height }}, {{ max_images }}, {{ existing_cnt }}, {{ quality }})">
+    x-data="cropperData({{ min_width }}, {{ min_height }}, {{ max_images }}, {{ existing_cnt }}, {{ quality }}, {{ existing_images | tojson }})">
     <!-- Base Uploader UI -->
     <div class="relative rounded-2xl border-2 border-dashed border-cookie-pink/50 bg-cookie-cream/50 transition-all text-center p-6 min-h-[140px] flex flex-col justify-center items-center"
         :class="(files.length === 0 && {{ existing_cnt }} === 0) ? 'hover:border-cookie-golden/60 hover:bg-cookie-pink/10 cursor-pointer' : ''">
@@ -28,46 +28,52 @@
 
             <div x-show="files.length > 0 || {{ existing_cnt }} > 0"
                 x-sort="handleSort($item, $position)"
+                x-sort:config="{ delay: 150, delayOnTouchOnly: true }"
+                @contextmenu.prevent
+                @start="onSortStart($event, $el)"
+                x-ref="sortContainer"
                 class="flex justify-center gap-4 flex-wrap w-full relative z-20">
-                {% if existing_images %}
-                {% for img in existing_images %}
-                <div x-data="{ removed: false }" x-show="!removed"
-                    class="relative group rounded-xl overflow-hidden border-2 border-cookie-pink/50 shadow-sm w-24 h-24">
-                    <img src="{{ img }}" class="w-full h-full object-cover" />
-                    <input type="hidden" name="existing_images" value="{{ img }}" x-bind:disabled="removed" />
-                    <button type="button" @click.prevent="removed = true; $dispatch('existing-image-removed')"
-                        class="absolute top-1 right-1 bg-white/90 hover:bg-red-500 text-red-500 hover:text-white rounded-full p-1 transition-colors cursor-pointer z-40 shadow-sm border border-red-100">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                    </button>
-                    <!-- Optional overlay for desktop if desired, disabled for mobile fixes -->
-                </div>
-                {% endfor %}
-                {% endif %}
-
-                <template x-for="(preview, idx) in previews" :key="preview">
-                    <div x-sort:item="preview"
+                <template x-for="item in allItems" :key="item.key">
+                    <div x-sort:item="item.key" :data-kind="item.kind" :data-sort-key="item.key"
                         class="relative group rounded-xl overflow-hidden border-2 border-cookie-pink/50 shadow-sm w-24 h-24 z-30 cursor-move">
 
-                        <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center touch-none pointer-events-none">
-                            <svg class="w-6 h-6 text-white drop-shadow-md" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9h8M8 15h8" />
-                            </svg>
-                        </div>
-                        <img :src="preview" class="w-full h-full object-cover" />
-                        <button type="button" @click.prevent="removeFile(idx)"
-                            class="absolute top-1 right-1 bg-white/90 hover:bg-red-500 text-red-500 hover:text-white rounded-full p-1 transition-colors cursor-pointer z-40 shadow-sm border border-red-100">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M6 18L18 6M6 6l12 12" />
+                        <button type="button" x-sort:handle
+                            class="absolute top-1 left-1 z-40 w-7 h-7 flex items-center justify-center rounded-full bg-white/90 text-cookie-brown/60 shadow-sm cursor-grab active:cursor-grabbing touch-none select-none transition-colors hover:bg-white hover:text-cookie-golden"
+                            title="Arrastrar para reordenar" aria-label="Reordenar">
+                            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                                <path
+                                    d="M9 5a2 2 0 11-2-2 2 2 0 012 2zm8 0a2 2 0 11-2-2 2 2 0 012 2zM9 13a2 2 0 11-2-2 2 2 0 012 2zm8 0a2 2 0 11-2-2 2 2 0 012 2zM9 21a2 2 0 11-2-2 2 2 0 012 2zm8 0a2 2 0 11-2-2 2 2 0 012 2z" />
                             </svg>
                         </button>
+
+                        <img :src="item.url" draggable="false"
+                            class="w-full h-full object-cover select-none cv-nodrag" />
+
+                        <template x-if="item.kind === 'existing'">
+                            <div>
+                                <input type="hidden" name="existing_images" :value="item.url" />
+                                <button type="button" @click.prevent="removeExisting(item.key)" x-sort:ignore
+                                    class="absolute top-1 right-1 bg-white/90 hover:bg-red-500 text-red-500 hover:text-white rounded-full p-1 transition-colors cursor-pointer z-40 shadow-sm border border-red-100">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
+                                </button>
+                            </div>
+                        </template>
+                        <template x-if="item.kind === 'new'">
+                            <button type="button" @click.prevent="removeNew(item.key)" x-sort:ignore
+                                class="absolute top-1 right-1 bg-white/90 hover:bg-red-500 text-red-500 hover:text-white rounded-full p-1 transition-colors cursor-pointer z-40 shadow-sm border border-red-100">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            </button>
+                        </template>
                     </div>
                 </template>
 
-                <div x-show="{{ max_images }} === 0 || (files.length + {{ existing_cnt }} < {{ max_images }})"
+                <div x-show="{{ max_images }} === 0 || (files.length + {{ existing_cnt }} < {{ max_images }})" x-sort:ignore
                     class="relative group rounded-xl border-2 border-dashed border-cookie-pink/50 hover:border-cookie-golden w-24 h-24 flex flex-col items-center justify-center cursor-pointer overflow-hidden text-cookie-brown/50 hover:text-cookie-golden transition-colors z-30">
                     <input type="file" multiple accept="image/*" @change="handleFiles"
                         class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-40">
@@ -82,6 +88,10 @@
         <!-- Hidden input to actually submit the files to the backend -->
         <input type="file" name="photos" multiple x-ref="photoInput" class="hidden" {% if is_required and
             existing_cnt==0 %} x-bind:required="files.length === 0" {% endif %}>
+
+        <!-- Interleaved order (existing URLs + new:<index> placeholders) so the
+             backend can persist the exact arrangement the admin dragged. -->
+        <input type="hidden" name="image_order" x-ref="imageOrder">
     </div>
 
     <!-- Cropper Modal -->
@@ -135,10 +145,13 @@
 </div>
 
 <script>
-    function cropperData(minWidth, minHeight, maxImages, existingCnt, quality) {
+    function cropperData(minWidth, minHeight, maxImages, existingCnt, quality, existingImages) {
+        const existingItems = existingImages.map((url) => ({ key: url, url, kind: 'existing', removed: false }));
         return {
             files: [],
             previews: [],
+            existingItems,
+            itemKeys: existingItems.map((item) => item.key),
             cropQueue: [],
             isCropping: false,
             cropper: null,
@@ -146,6 +159,31 @@
             // Counter variables for UI
             cropIndex: 0,
             totalToCrop: 0,
+
+            // Combined list of existing images + new previews in drag order
+            get allItems() {
+                const byKey = {};
+                this.existingItems.forEach((item) => {
+                    if (!item.removed) byKey[item.key] = item;
+                });
+                this.previews.forEach((url) => {
+                    byKey[url] = { key: url, url, kind: 'new' };
+                });
+                return this.itemKeys.map((key) => byKey[key]).filter(Boolean);
+            },
+
+            init() {
+                this.syncImageOrder();
+            },
+
+            syncImageOrder() {
+                if (!this.$refs.imageOrder) return;
+                const tokens = this.itemKeys.map((key) => {
+                    const newIndex = this.previews.indexOf(key);
+                    return newIndex !== -1 ? `new:${newIndex}` : key;
+                });
+                this.$refs.imageOrder.value = JSON.stringify(tokens);
+            },
 
             async handleFiles(evt) {
                 const rawFiles = Array.from(evt.target.files).filter(f => f.type.startsWith('image/'));
@@ -235,8 +273,11 @@
                     const customFile = new File([blob], fileName, { type: "image/webp" });
 
                     this.files.push(customFile);
-                    this.previews.push(URL.createObjectURL(blob));
+                    const previewUrl = URL.createObjectURL(blob);
+                    this.previews.push(previewUrl);
+                    this.itemKeys.push(previewUrl);
                     this.updateInputFiles();
+                    this.syncImageOrder();
 
                     this.finishCrop();
                 }, "image/webp", quality);
@@ -256,20 +297,50 @@
                 this.processQueue();
             },
 
-            removeFile(idx) {
-                this.files.splice(idx, 1);
-                this.previews.splice(idx, 1);
+            removeNew(key) {
+                const index = this.previews.indexOf(key);
+                if (index === -1) return;
+                this.previews.splice(index, 1);
+                this.files.splice(index, 1);
+                this.itemKeys = this.itemKeys.filter((k) => k !== key);
                 this.updateInputFiles();
+                this.syncImageOrder();
             },
 
-            handleSort(item, position) {
-                const itemIndex = this.previews.indexOf(item);
-                if (itemIndex === -1) return;
-                let removedPreview = this.previews.splice(itemIndex, 1)[0];
-                let removedFile = this.files.splice(itemIndex, 1)[0];
-                this.previews.splice(position, 0, removedPreview);
-                this.files.splice(position, 0, removedFile);
+            removeExisting(key) {
+                const item = this.existingItems.find((i) => i.key === key);
+                if (item) item.removed = true;
+                this.itemKeys = this.itemKeys.filter((k) => k !== key);
+                window.dispatchEvent(new CustomEvent('existing-image-removed'));
+                this.syncImageOrder();
+            },
+
+            onSortStart(event, el) {
+                const ghost = el.querySelector('.sortable-fallback');
+                if (ghost) ghost._x_ignore = true;
+                if (event.clone && event.clone !== event.item) event.clone._x_ignore = true;
+            },
+
+            handleSort() {
+                // The plugin already moved the DOM node; rebuild the ordered key list
+                // (and the previews/files arrays) from the resulting DOM order so the
+                // rendered grid keeps the dropped positions.
+                const container = this.$refs.sortContainer;
+                if (!container) return;
+                const keys = Array.from(container.querySelectorAll('[data-sort-key]'))
+                    .map((el) => el.getAttribute('data-sort-key'));
+
+                const fileByKey = {};
+                this.previews.forEach((preview, index) => {
+                    fileByKey[preview] = this.files[index];
+                });
+
+                const orderedNewKeys = keys.filter((key) => this.previews.includes(key));
+                this.previews = orderedNewKeys;
+                this.files = orderedNewKeys.map((key) => fileByKey[key]);
+                this.itemKeys = keys;
                 this.updateInputFiles();
+                this.syncImageOrder();
             },
 
             updateInputFiles() {
