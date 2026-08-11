@@ -1,4 +1,4 @@
-{% macro render_uploader_client(max_images, is_required, existing_images, quality, max_width) %}
+{% macro render_uploader_orders(max_images, is_required, existing_images, quality, max_width) %}
 {% if max_images is not defined or is_required is not defined or existing_images is not defined or quality is not
 defined or max_width is not defined %}
 {{ missing_required_argument_uploader() }}

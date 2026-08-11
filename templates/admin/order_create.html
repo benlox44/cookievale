@@ -151,8 +151,8 @@
             <!-- Photos -->
             <div class="relative z-10">
                 <label class="cv-label block mb-1.5">Imagen(es) de referencia <span class="text-cookie-brown/40 font-normal">(Máximo 8)</span></label>
-                {% from "partials/uploader_client.html" import render_uploader_client %}
-                {{ render_uploader_client(8, False, [], 0.8, 2000) }}
+                {% from "partials/uploader_orders.html" import render_uploader_orders %}
+                {{ render_uploader_orders(8, False, [], 0.8, 2000) }}
             </div>
 
             <!-- Notes -->
