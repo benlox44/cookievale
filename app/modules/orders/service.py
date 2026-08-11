@@ -92,21 +92,28 @@ class OrderService:
 
     def list_orders(
         self,
-        status: OrderStatus | None = None,
+        include_closed: bool = False,
         limit: int = 100,
         offset: int = 0,
         sort_by: str | None = None,
         sort_dir: str = "desc",
     ) -> list[Order]:
         return self.repository.list_all(
-            status=status,
+            include_closed=include_closed,
             limit=limit,
             offset=offset,
             sort_by=sort_by,
             sort_dir=sort_dir,
         )
 
-    def update_order(self, order_id: int, data: OrderUpdateRequest) -> Order | None:
+    def update_order(
+        self,
+        order_id: int,
+        data: OrderUpdateRequest,
+        existing_photos: list[str],
+        image_order: str,
+        photos: list[UploadFile] | None,
+    ) -> Order | None:
         order = self.repository.get_by_id(order_id)
         if not order:
             return None

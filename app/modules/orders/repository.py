@@ -13,7 +13,7 @@ class OrderRepository(Protocol):
     def get_by_id(self, order_id: int) -> Order | None: ...
     def list_all(
         self,
-        status: OrderStatus | None = None,
+        include_closed: bool = False,
         limit: int = 100,
         offset: int = 0,
         sort_by: str | None = None,
@@ -87,7 +87,7 @@ class SQLAlchemyOrderRepository:
 
     def list_all(
         self,
-        status: OrderStatus | None = None,
+        include_closed: bool = False,
         limit: int = 100,
         offset: int = 0,
         sort_by: str | None = None,
@@ -96,8 +96,12 @@ class SQLAlchemyOrderRepository:
         stmt = select(OrderModel).options(
             selectinload(OrderModel.items).selectinload(OrderItemModel.product)
         )
-        if status is not None:
-            stmt = stmt.where(OrderModel.status == status)
+        if not include_closed:
+            # Delivered and rejected orders are closed: they are hidden from the
+            # default dashboard view and revealed via the "Mostrar cerradas" toggle.
+            stmt = stmt.where(
+                OrderModel.status.notin_([OrderStatus.DELIVERED, OrderStatus.REJECTED])
+            )
 
         if sort_by == "date":
             sort_col = OrderModel.delivery_date

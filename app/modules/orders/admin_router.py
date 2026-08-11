@@ -54,7 +54,7 @@ def _redirect(url: str) -> Response:
 @router.get("", response_class=HTMLResponse)
 def admin_dashboard(
     request: Request,
-    status_filter: OrderStatus | None = Query(None, alias="status"),
+    include_closed: bool = Query(False),
     page: int = Query(1, ge=1),
     sort_by: str | None = Query(None),
     sort_dir: str = Query("desc"),
@@ -69,7 +69,7 @@ def admin_dashboard(
 
     page_size = 50
     orders = service.list_orders(
-        status=status_filter,
+        include_closed=include_closed,
         limit=page_size,
         offset=(page - 1) * page_size,
         sort_by=sort_by,
@@ -82,7 +82,7 @@ def admin_dashboard(
             name="admin/partials/orders_table.html",
             context={
                 "orders": orders,
-                "current_status": status_filter,
+                "include_closed": include_closed,
                 "current_sort_by": sort_by,
                 "current_sort_dir": sort_dir,
             },
@@ -93,7 +93,7 @@ def admin_dashboard(
         name="admin/orders_dashboard.html",
         context={
             "orders": orders,
-            "current_status": status_filter,
+            "include_closed": include_closed,
             "current_sort_by": sort_by,
             "current_sort_dir": sort_dir,
         },

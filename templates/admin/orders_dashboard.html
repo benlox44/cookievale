@@ -2,7 +2,6 @@
 {% block title %}Panel de Órdenes - CookieVale{% endblock %}
 
 {% block content %}
-{% from "partials/dropdown.html" import render_dropdown %}
 
 <div class="w-full max-w-6xl mx-auto">
     <!-- Header -->
@@ -19,22 +18,17 @@
             <h1 class="cv-h2 m-0">Órdenes</h1>
         </div>
 
-        <div class="flex items-center gap-3">
-            {{ render_dropdown(
-                name="status",
-                options=[
-                    {"value": "", "label": "Todas"},
-                    {"value": "pending", "label": "Pendiente"},
-                    {"value": "confirmed", "label": "Confirmada"},
-                    {"value": "paid", "label": "Pagada"},
-                    {"value": "delivered", "label": "Entregada"},
-                    {"value": "rejected", "label": "Rechazada"},
-                ],
-                selected=current_status.value if current_status else "",
-                hx_get="/admin/orders",
-                hx_target="#orders-table-container",
-                class="text-sm w-40"
-            ) }}
+        <div class="flex items-center gap-4">
+            <div
+                x-data="{ showClosed: {{ 'true' if include_closed else 'false' }}, toggle() { this.showClosed = !this.showClosed; htmx.ajax('GET', '/admin/orders?include_closed=' + this.showClosed, { target: '#orders-table-container', swap: 'innerHTML' }); } }">
+                <button type="button" @click="toggle()"
+                    :class="showClosed
+                        ? 'bg-cookie-golden text-white border-cookie-golden shadow-sm'
+                        : 'bg-white text-cookie-brown border-cookie-golden'"
+                    class="text-xs px-4 py-2 rounded-full border font-medium flex items-center gap-1.5 transition-all select-none">
+                    <span x-text="showClosed ? 'Ocultar cerradas' : 'Mostrar cerradas'"></span>
+                </button>
+            </div>
             <a href="/admin/orders/new"
                 class="cv-btn text-xs px-4 py-2 flex items-center gap-1.5 flex-shrink-0">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
