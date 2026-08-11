@@ -4,7 +4,7 @@
 <div x-data="dateCreator()" @date-selected.window="onDateSelected($event.detail)">
     {{ render_confirm_modal(
         "Crear fecha",
-        'La fecha <span class="font-semibold text-cookie-golden" x-text="pendingDate"></span> no está agendada. ¿Quieres crearla?',
+        'La fecha <span class="font-semibold text-cookie-golden" x-text="pendingDate"></span> no está disponible. ¿Quieres crearla?',
         confirm_text="Crear fecha",
         confirm_class="",
         onConfirm="confirmCreate()",
