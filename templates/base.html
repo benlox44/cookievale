@@ -43,10 +43,34 @@
             }
         } catch(e) { /* clipboard API not available */ }
     </script>
+    <script>
+        // Hide the browser's URL preview (bottom-left status bar) while hovering
+        // links. The real href is stashed in a data attribute during hover and
+        // restored on mousedown (so clicks still navigate) or mouseout. Touch and
+        // keyboard navigation are unaffected since they don't fire mouse events.
+        document.addEventListener('mouseover', function (e) {
+            var a = e.target.closest && e.target.closest('a[href]');
+            if (a && !a.dataset.hiddenHref) {
+                a.dataset.hiddenHref = a.getAttribute('href');
+                a.removeAttribute('href');
+            }
+        });
+        function restoreHref(e) {
+            var a = e.target.closest && e.target.closest('a[data-hidden-href]');
+            if (a) {
+                a.setAttribute('href', a.dataset.hiddenHref);
+                delete a.dataset.hiddenHref;
+            }
+        }
+        document.addEventListener('mousedown', restoreHref);
+        document.addEventListener('mouseout', restoreHref);
+    </script>
     <script src="https://cdn.jsdelivr.net/npm/@alpinejs/sort@3.x.x/dist/cdn.min.js" defer></script>
     <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
     <style>
         [x-cloak] { display: none !important; }
+        /* Keep the pointer cursor on links while their href is hidden during hover. */
+        a[data-hidden-href] { cursor: pointer; }
     </style>
 
 </head>
