@@ -219,6 +219,9 @@ def update_order_details(
     amount_paid: int = Form(0),
     status: OrderStatus = Form(...),
     cart_items_json: str | None = Form(None),
+    existing_photos: list[str] = Form([]),
+    image_order: str = Form("[]"),
+    photos: list[UploadFile] | None = File(None),
     service: OrderService = Depends(get_order_service),
     product_service: ProductService = Depends(get_product_service),
     scheduling_service: SchedulingService = Depends(get_scheduling_service),
@@ -276,7 +279,7 @@ def update_order_details(
         delivery_method=delivery_method,
         amount_paid=amount_paid,
     )
-    service.update_order(order_id, dto)
+    service.update_order(order_id, dto, existing_photos, image_order, photos)
 
     return RedirectResponse(url="/admin/orders", status_code=303)
 

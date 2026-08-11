@@ -6,7 +6,7 @@ from fastapi import UploadFile
 
 from app.core.config import CONTAINER_MEDIA_PATH
 from app.core.telegram import TelegramNotifier
-from app.core.uploads import save_uploads
+from app.core.uploads import build_image_order, delete_media_files, save_uploads
 from app.modules.orders.domain import Order, OrderItem, OrderStatus
 from app.modules.orders.repository import OrderRepository
 from app.modules.orders.schemas import (
@@ -115,7 +115,41 @@ class OrderService:
         order.description = data.description
         order.delivery_method = data.delivery_method
         order.amount_paid = data.amount_paid
-        return self.repository.save(order)
+
+        current_photos = order.reference_photos or []
+        kept = [url for url in existing_photos if url in current_photos]
+
+        new_urls: list[str] = []
+        if photos:
+            valid_photos = [p for p in photos if p.filename]
+            if valid_photos:
+                remaining = 8 - len(kept)
+                if remaining > 0:
+                    order_dir = os.path.join(CONTAINER_MEDIA_PATH, f"orders/{order.id}")
+                    url_prefix = f"/media/orders/{order.id}"
+                    new_urls = save_uploads(
+                        valid_photos[:remaining], order_dir, url_prefix
+                    )
+
+        final_photos = build_image_order(image_order, current_photos, new_urls)
+        if not final_photos:
+            # Empty/malformed image_order: keep existing photos, then new.
+            final_photos = kept + new_urls
+        order.reference_photos = final_photos[:8]
+
+        updated = self.repository.save(order)
+        if updated is None:
+            return None
+
+        removed = [url for url in current_photos if url not in final_photos]
+        if removed:
+            try:
+                order_dir = os.path.join(CONTAINER_MEDIA_PATH, f"orders/{order.id}")
+                delete_media_files(order_dir, removed)
+            except OSError:
+                logger.warning("Failed to remove media files for order %d", order_id)
+
+        return updated
 
     def change_status(self, order_id: int, new_status: OrderStatus) -> Order | None:
         order = self.repository.get_by_id(order_id)

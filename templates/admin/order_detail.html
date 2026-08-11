@@ -14,7 +14,8 @@
     });
 </script>
 {% endif %}
-<div x-data="orderDetail()" @date-selected.window="onDateSelected($event.detail)">
+<div x-data="orderDetail()" @date-selected.window="onDateSelected($event.detail)"
+    @photos-changed.window="photosChanged = true">
     <div class="cv-card p-0 overflow-hidden shadow-[0_4px_20px_rgba(212,149,106,0.1)] mb-8">
 
         <!-- Header -->
@@ -74,7 +75,8 @@
         <!-- Left: Details & Edit -->
         <div>
             <h2 class="cv-h2 mb-5">Detalles y Edición</h2>
-            <form id="order-form" action="/admin/orders/{{ order.id }}" method="POST" class="space-y-5">
+            <form id="order-form" action="/admin/orders/{{ order.id }}" method="POST"
+                enctype="multipart/form-data" class="space-y-5">
                 <input type="hidden" name="cart_items_json" x-model="cartJson" :disabled="!carritoModificado">
 
                 <div>
@@ -159,54 +161,11 @@
             </form>
         </div>
 
-        <!-- Right: Photos -->
+        <!-- Right: Photos (editable: reorder / remove / add / enlarge) -->
         <div>
-            <h2 class="cv-h2 mb-5">Imagen(es) de referencia</h2>
-            {% if order.reference_photos and order.reference_photos|length > 0 %}
-            <div class="grid grid-cols-1 gap-4">
-                {% for photo in order.reference_photos %}
-                <button type="button" @click="openLightbox('{{ photo }}')" class="focus:outline-none text-left">
-                    <img src="{{ photo }}"
-                        class="rounded-2xl border border-cookie-pink/30 shadow-sm hover:opacity-80 transition object-cover h-48 w-full cursor-pointer">
-                </button>
-                {% endfor %}
-            </div>
-            {% else %}
-            <div class="rounded-2xl border-2 border-dashed border-cookie-pink/40 text-center py-16 bg-cookie-cream/50">
-                <svg class="w-12 h-12 text-cookie-brown/20 mx-auto mb-3" fill="none" stroke="currentColor"
-                    viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1"
-                        d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01" />
-                </svg>
-                <p class="text-cookie-brown/40 text-sm">Sin imagenes para esta orden</p>
-            </div>
-            {% endif %}
-        </div>
-    </div>
-
-    <!-- Lightbox Modal -->
-    <div x-show="lightbox.open" style="display: none;"
-        class="fixed inset-0 z-50 flex items-center justify-center bg-brown-900/90 backdrop-blur-sm px-4"
-        x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0"
-        x-transition:enter-end="opacity-100" x-transition:leave="transition ease-in duration-200"
-        x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0"
-        @keydown.escape.window="closeLightbox()">
-
-        <!-- Overlay Click (Fondo debajo del boton y foto) -->
-        <div class="absolute inset-0 cursor-pointer" @click="closeLightbox()"></div>
-
-        <!-- Close Button (Asegurado sobre el overlay con bg oscuro y fixed en vez de absolute) -->
-        <button type="button" @click="closeLightbox()"
-            class="absolute top-6 right-6 z-50 flex items-center justify-center w-12 h-12 bg-black/50 hover:bg-red-500 rounded-full text-white cursor-pointer transition-all">
-            <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"></path>
-            </svg>
-        </button>
-
-        <!-- Image Container -->
-        <div class="relative z-10 max-w-5xl w-full max-h-[90vh] flex items-center justify-center p-4">
-            <img :src="lightbox.url"
-                class="max-w-full max-h-[85vh] object-contain rounded-xl shadow-2xl border border-white/10" @click.stop>
+            <h2 class="cv-h2 mb-5">Imagen(es) de referencia <span class="text-cookie-brown/40 font-normal">(Máximo 8)</span></h2>
+            {% from "partials/uploader_orders.html" import render_uploader_orders %}
+            {{ render_uploader_orders(8, False, (order.reference_photos or []), 0.8, 2000, form='order-form', thumb_class='w-32 h-32', existing_field='existing_photos') }}
         </div>
     </div>
 
@@ -367,7 +326,8 @@
                     String(this.formData.delivery_date) !== String(this.initialData.delivery_date) ||
                     String(this.formData.delivery_method) !== String(this.initialData.delivery_method) ||
                     String(this.formData.description) !== String(this.initialData.description) ||
-                    this.carritoModificado;
+                    this.carritoModificado ||
+                    this.photosChanged;
             },
             get saldoRestante() {
                 return this.nuevoTotal - this.abonoFinal;
@@ -413,6 +373,9 @@
                 if (String(this.formData.description) !== String(this.initialData.description)) {
                     changes.push({ label: 'Descripción', from: '', to: 'Modificada' });
                 }
+                if (this.photosChanged) {
+                    changes.push({ label: 'Imágenes', from: '', to: 'Modificadas' });
+                }
                 return changes;
             },
             confirmarGuardadoModal: false,
@@ -429,20 +392,7 @@
             fmtClp(v) {
                 return '$' + Number(v || 0).toLocaleString();
             },
-            lightbox: {
-                open: false,
-                url: ''
-            },
-            openLightbox(url) {
-                this.lightbox.url = url;
-                this.lightbox.open = true;
-                document.body.style.overflow = 'hidden';
-            },
-            closeLightbox() {
-                this.lightbox.open = false;
-                setTimeout(() => { this.lightbox.url = ''; }, 300);
-                document.body.style.overflow = 'auto';
-            },
+            photosChanged: false,
             onDateSelected(detail) {
                 if (detail && detail.date !== undefined) {
                     this.formData.delivery_date = detail.date;
