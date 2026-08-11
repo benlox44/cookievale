@@ -1,95 +1,18 @@
-{% macro render_uploader_orders(max_images, is_required, existing_images, quality, max_width) %}
+{% macro render_uploader_orders(max_images, is_required, existing_images, quality, max_width, form='', thumb_class='w-24 h-24', existing_field='existing_images') %}
 {% if max_images is not defined or is_required is not defined or existing_images is not defined or quality is not
 defined or max_width is not defined %}
 {{ missing_required_argument_uploader() }}
 {% endif %}
 {% set existing_cnt = existing_images|length %}
-<div class="mb-4" x-data="{
-    files: [],
-    previews: [],
-    async handleFiles(evt) {
-        const rawFiles = Array.from(evt.target.files).filter(f => f.type.startsWith('image/'));
-        if (rawFiles.length === 0) return;
-
-        if ({{ max_images }} > 0 && this.files.length + {{ existing_cnt }} + rawFiles.length > {{ max_images }}) {
-            window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: `Solo puedes subir un máximo de {{ max_images }} imágenes en total.` } }));
-            evt.target.value = '';
-            return;
-        }
-
-        for (let file of rawFiles) {
-            const img = new Image();
-            img.src = URL.createObjectURL(file);
-            await new Promise(resolve => {
-                img.onload = () => {
-                    const canvas = document.createElement('canvas');
-                    let width = img.width;
-                    let height = img.height;
-                    const maxSize = {{ max_width }};
-
-                    if (width > maxSize || height > maxSize) {
-                        if (width > height) {
-                            height = Math.round((height * maxSize) / width);
-                            width = maxSize;
-                        } else {
-                            width = Math.round((width * maxSize) / height);
-                            height = maxSize;
-                        }
-                    }
-
-                    canvas.width = width;
-                    canvas.height = height;
-                    const ctx = canvas.getContext('2d');
-                    ctx.drawImage(img, 0, 0, width, height);
-
-                    canvas.toBlob((blob) => {
-                        const fileName = `compressed_${Date.now()}_${Math.floor(Math.random()*1000)}.webp`;
-                        const customFile = new File([blob], fileName, { type: 'image/webp' });
-
-                        this.files.push(customFile);
-                        this.previews.push(URL.createObjectURL(blob));
-                        resolve();
-                    }, 'image/webp', {{ quality }});
-                };
-            });
-        }
-        evt.target.value = '';
-        this.updateInputFiles();
-    },
-    removeFile(idx) {
-        this.files.splice(idx, 1);
-        this.previews.splice(idx, 1);
-        this.updateInputFiles();
-    },
-    updateInputFiles() {
-        const dt = new DataTransfer();
-        this.files.forEach(f => dt.items.add(f));
-        if (this.$refs.photoInput) {
-            this.$refs.photoInput.files = dt.files;
-        }
-    },
-    handleSort(item, position) {
-
-        const itemIndex = this.previews.indexOf(item);
-        if (itemIndex === -1) return;
-        let removedPreview = this.previews.splice(itemIndex, 1)[0];
-        let removedFile = this.files.splice(itemIndex, 1)[0];
-        this.previews.splice(position, 0, removedPreview);
-        this.files.splice(position, 0, removedFile);
-        this.updateInputFiles();
-    },
-    onSortStart(event, el) {
-        const ghost = el.querySelector('.sortable-fallback');
-        if (ghost) ghost._x_ignore = true;
-        if (event.clone && event.clone !== event.item) event.clone._x_ignore = true;
-    }
-}">
+{% set form_attr = ('form="' ~ form ~ '"') if form else '' %}
+<div class="mb-4"
+    x-data='uploaderOrders({{ max_images }}, {{ existing_cnt }}, {{ quality }}, {{ max_width }}, {{ existing_images | tojson }})'>
     <div class="relative rounded-2xl border-2 border-dashed border-cookie-pink/50 bg-cookie-cream/50 transition-all text-center p-6 min-h-[140px] flex flex-col justify-center items-center"
         :class="(files.length === 0 && {{ existing_cnt }} === 0) ? 'hover:border-cookie-golden/60 hover:bg-cookie-pink/10 cursor-pointer' : ''">
 
         <!-- Input layer when empty -->
         <input type="file" name="photos" multiple accept="image/*" @change="handleFiles" x-ref="photoInput"
-            class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+            class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" {{ form_attr | safe }}
             :class="files.length > 0 || {{ existing_cnt }} > 0 ? 'pointer-events-none' : ''" {% if is_required %}
             :required="files.length === 0 && {{ existing_cnt }} === 0" {% endif %}>
 
@@ -110,29 +33,11 @@ defined or max_width is not defined %}
                 x-sort:config="{ delay: 150, delayOnTouchOnly: true }"
                 @contextmenu.prevent
                 @start="onSortStart($event, $el)"
+                x-ref="sortContainer"
                 class="flex justify-center gap-4 flex-wrap w-full relative z-20">
-                {% if existing_images %}
-                {% for img in existing_images %}
-
-                <div x-data="{ removed: false }" x-show="!removed"
-                    class="relative group rounded-xl overflow-hidden border-2 border-cookie-pink/50 shadow-sm w-24 h-24">
-                    <img src="{{ img }}" draggable="false"
-                        class="w-full h-full object-cover select-none cv-nodrag" />
-                    <input type="hidden" name="existing_images" value="{{ img }}" x-bind:disabled="removed" />
-                    <button type="button" @click.prevent="removed = true"
-                        class="absolute top-1 right-1 bg-white/90 hover:bg-red-500 text-red-500 hover:text-white rounded-full p-1 transition-colors cursor-pointer z-40 shadow-sm border border-red-100">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                    </button>
-                </div>
-                {% endfor %}
-                {% endif %}
-
-                <template x-for="(preview, idx) in previews" :key="preview">
-                    <div x-sort:item="preview" data-kind="new"
-                        class="relative group rounded-xl overflow-hidden border-2 border-cookie-pink/50 shadow-sm w-24 h-24 z-30 cursor-move">
+                <template x-for="item in allItems" :key="item.key">
+                    <div x-sort:item="item.key" :data-kind="item.kind" :data-sort-key="item.key"
+                        class="relative group rounded-xl overflow-hidden border-2 border-cookie-pink/50 shadow-sm {{ thumb_class }} z-30 cursor-move">
 
                         <button type="button" x-sort:handle
                             class="absolute top-1 left-1 z-40 w-7 h-7 flex items-center justify-center rounded-full bg-white/90 text-cookie-brown/60 shadow-sm cursor-grab active:cursor-grabbing touch-none select-none transition-colors hover:bg-white hover:text-cookie-golden"
@@ -143,20 +48,35 @@ defined or max_width is not defined %}
                             </svg>
                         </button>
 
-                        <img :src="preview" draggable="false"
-                            class="w-full h-full object-cover select-none cv-nodrag" />
-                        <button type="button" @click.prevent="removeFile(idx)" x-sort:ignore
-                            class="absolute top-1 right-1 bg-white/90 hover:bg-red-500 text-red-500 hover:text-white rounded-full p-1 transition-colors cursor-pointer z-40 shadow-sm border border-red-100">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M6 18L18 6M6 6l12 12" />
-                            </svg>
-                        </button>
+                        <img :src="item.url" draggable="false" @click.prevent="openLightbox(item.url)"
+                            class="w-full h-full object-cover select-none cv-nodrag cursor-zoom-in" />
+
+                        <template x-if="item.kind === 'existing'">
+                            <div>
+                                <input type="hidden" name="{{ existing_field }}" :value="item.url" {{ form_attr | safe }} />
+                                <button type="button" @click.prevent="removeExisting(item.key)" x-sort:ignore
+                                    class="absolute top-1 right-1 bg-white/90 hover:bg-red-500 text-red-500 hover:text-white rounded-full p-1 transition-colors cursor-pointer z-40 shadow-sm border border-red-100">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
+                                </button>
+                            </div>
+                        </template>
+                        <template x-if="item.kind === 'new'">
+                            <button type="button" @click.prevent="removeNew(item.key)" x-sort:ignore
+                                class="absolute top-1 right-1 bg-white/90 hover:bg-red-500 text-red-500 hover:text-white rounded-full p-1 transition-colors cursor-pointer z-40 shadow-sm border border-red-100">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            </button>
+                        </template>
                     </div>
                 </template>
 
                 <div x-show="{{ max_images }} === 0 || (files.length + {{ existing_cnt }} < {{ max_images }})" x-sort:ignore
-                    class="relative group rounded-xl border-2 border-dashed border-cookie-pink/50 hover:border-cookie-golden w-24 h-24 flex flex-col items-center justify-center cursor-pointer overflow-hidden text-cookie-brown/50 hover:text-cookie-golden transition-colors z-30">
+                    class="relative group rounded-xl border-2 border-dashed border-cookie-pink/50 hover:border-cookie-golden {{ thumb_class }} flex flex-col items-center justify-center cursor-pointer overflow-hidden text-cookie-brown/50 hover:text-cookie-golden transition-colors z-30">
                     <input type="file" multiple accept="image/*" @change="handleFiles"
                         class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-40">
                     <svg class="w-6 h-6 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -167,5 +87,172 @@ defined or max_width is not defined %}
             </div>
         </div>
     </div>
+
+    <!-- Interleaved order (existing URLs + new:<index> placeholders) so the
+         backend can persist the exact arrangement the admin dragged. -->
+    <input type="hidden" name="image_order" x-ref="imageOrder" {{ form_attr | safe }}>
+
+    {% from "partials/image_lightbox.html" import render_image_lightbox %}
+    {{ render_image_lightbox() }}
 </div>
+
+<script>
+    function uploaderOrders(maxImages, existingCnt, quality, maxWidth, existingImages) {
+        const existingItems = existingImages.map((url) => ({ key: url, url, kind: 'existing', removed: false }));
+        return {
+            files: [],
+            previews: [],
+            existingItems,
+            itemKeys: existingItems.map((item) => item.key),
+            lightbox: { open: false, url: '' },
+
+            // Combined list of existing photos + new previews in drag order
+            get allItems() {
+                const byKey = {};
+                this.existingItems.forEach((item) => {
+                    if (!item.removed) byKey[item.key] = item;
+                });
+                this.previews.forEach((url) => {
+                    byKey[url] = { key: url, url, kind: 'new' };
+                });
+                return this.itemKeys.map((key) => byKey[key]).filter(Boolean);
+            },
+
+            init() {
+                this.syncImageOrder();
+            },
+
+            notifyChanged() {
+                window.dispatchEvent(new CustomEvent('photos-changed'));
+            },
+
+            syncImageOrder() {
+                if (!this.$refs.imageOrder) return;
+                const tokens = this.itemKeys.map((key) => {
+                    const newIndex = this.previews.indexOf(key);
+                    return newIndex !== -1 ? `new:${newIndex}` : key;
+                });
+                this.$refs.imageOrder.value = JSON.stringify(tokens);
+            },
+
+            async handleFiles(evt) {
+                const rawFiles = Array.from(evt.target.files).filter(f => f.type.startsWith('image/'));
+                if (rawFiles.length === 0) return;
+
+                if (maxImages > 0 && this.files.length + existingCnt + rawFiles.length > maxImages) {
+                    window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: `Solo puedes subir un máximo de ${maxImages} imágenes en total.` } }));
+                    evt.target.value = '';
+                    return;
+                }
+
+                for (let file of rawFiles) {
+                    const img = new Image();
+                    img.src = URL.createObjectURL(file);
+                    await new Promise(resolve => {
+                        img.onload = () => {
+                            const canvas = document.createElement('canvas');
+                            let width = img.width;
+                            let height = img.height;
+
+                            if (width > maxWidth || height > maxWidth) {
+                                if (width > height) {
+                                    height = Math.round((height * maxWidth) / width);
+                                    width = maxWidth;
+                                } else {
+                                    width = Math.round((width * maxWidth) / height);
+                                    height = maxWidth;
+                                }
+                            }
+
+                            canvas.width = width;
+                            canvas.height = height;
+                            const ctx = canvas.getContext('2d');
+                            ctx.drawImage(img, 0, 0, width, height);
+
+                            canvas.toBlob((blob) => {
+                                const fileName = `compressed_${Date.now()}_${Math.floor(Math.random()*1000)}.webp`;
+                                const customFile = new File([blob], fileName, { type: 'image/webp' });
+
+                                this.files.push(customFile);
+                                const previewUrl = URL.createObjectURL(blob);
+                                this.previews.push(previewUrl);
+                                this.itemKeys.push(previewUrl);
+                                resolve();
+                            }, 'image/webp', quality);
+                        };
+                    });
+                }
+                evt.target.value = '';
+                this.updateInputFiles();
+                this.syncImageOrder();
+                this.notifyChanged();
+            },
+
+            removeNew(key) {
+                const index = this.previews.indexOf(key);
+                if (index === -1) return;
+                this.previews.splice(index, 1);
+                this.files.splice(index, 1);
+                this.itemKeys = this.itemKeys.filter((k) => k !== key);
+                this.updateInputFiles();
+                this.syncImageOrder();
+                this.notifyChanged();
+            },
+
+            removeExisting(key) {
+                const item = this.existingItems.find((i) => i.key === key);
+                if (item) item.removed = true;
+                this.itemKeys = this.itemKeys.filter((k) => k !== key);
+                this.syncImageOrder();
+                this.notifyChanged();
+            },
+
+            onSortStart(event, el) {
+                const ghost = el.querySelector('.sortable-fallback');
+                if (ghost) ghost._x_ignore = true;
+                if (event.clone && event.clone !== event.item) event.clone._x_ignore = true;
+            },
+
+            handleSort() {
+                const container = this.$refs.sortContainer;
+                if (!container) return;
+                const keys = Array.from(container.querySelectorAll('[data-sort-key]'))
+                    .map((el) => el.getAttribute('data-sort-key'));
+
+                const fileByKey = {};
+                this.previews.forEach((preview, index) => {
+                    fileByKey[preview] = this.files[index];
+                });
+
+                const orderedNewKeys = keys.filter((key) => this.previews.includes(key));
+                this.previews = orderedNewKeys;
+                this.files = orderedNewKeys.map((key) => fileByKey[key]);
+                this.itemKeys = keys;
+                this.updateInputFiles();
+                this.syncImageOrder();
+                this.notifyChanged();
+            },
+
+            updateInputFiles() {
+                const dt = new DataTransfer();
+                this.files.forEach(f => dt.items.add(f));
+                if (this.$refs.photoInput) {
+                    this.$refs.photoInput.files = dt.files;
+                }
+            },
+
+            openLightbox(url) {
+                this.lightbox.url = url;
+                this.lightbox.open = true;
+                document.body.style.overflow = 'hidden';
+            },
+
+            closeLightbox() {
+                this.lightbox.open = false;
+                setTimeout(() => { this.lightbox.url = ''; }, 300);
+                document.body.style.overflow = 'auto';
+            }
+        }
+    }
+</script>
 {% endmacro %}

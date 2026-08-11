@@ -5,7 +5,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
 
 <div class="mb-4"
-    x-data="cropperData({{ min_width }}, {{ min_height }}, {{ max_images }}, {{ existing_cnt }}, {{ quality }}, {{ existing_images | tojson }})">
+    x-data='cropperData({{ min_width }}, {{ min_height }}, {{ max_images }}, {{ existing_cnt }}, {{ quality }}, {{ existing_images | tojson }})'>
     <!-- Base Uploader UI -->
     <div class="relative rounded-2xl border-2 border-dashed border-cookie-pink/50 bg-cookie-cream/50 transition-all text-center p-6 min-h-[140px] flex flex-col justify-center items-center"
         :class="(files.length === 0 && {{ existing_cnt }} === 0) ? 'hover:border-cookie-golden/60 hover:bg-cookie-pink/10 cursor-pointer' : ''">
@@ -46,8 +46,8 @@
                             </svg>
                         </button>
 
-                        <img :src="item.url" draggable="false"
-                            class="w-full h-full object-cover select-none cv-nodrag" />
+                        <img :src="item.url" draggable="false" @click.prevent="openLightbox(item.url)"
+                            class="w-full h-full object-cover select-none cv-nodrag cursor-zoom-in" />
 
                         <template x-if="item.kind === 'existing'">
                             <div>
@@ -142,6 +142,9 @@
 
         </div>
     </div>
+
+    {% from "partials/image_lightbox.html" import render_image_lightbox %}
+    {{ render_image_lightbox() }}
 </div>
 
 <script>
@@ -155,10 +158,14 @@
             cropQueue: [],
             isCropping: false,
             cropper: null,
+            lightbox: { open: false, url: '' },
 
-            // Counter variables for UI
             cropIndex: 0,
             totalToCrop: 0,
+
+            notifyChanged() {
+                window.dispatchEvent(new CustomEvent('photos-changed'));
+            },
 
             // Combined list of existing images + new previews in drag order
             get allItems() {
@@ -226,7 +233,7 @@
                 this.totalToCrop = this.cropQueue.length;
                 this.cropIndex = 0;
 
-                evt.target.value = ''; // clean input
+                evt.target.value = '';
                 this.processQueue();
             },
 
@@ -278,6 +285,7 @@
                     this.itemKeys.push(previewUrl);
                     this.updateInputFiles();
                     this.syncImageOrder();
+                    this.notifyChanged();
 
                     this.finishCrop();
                 }, "image/webp", quality);
@@ -305,6 +313,7 @@
                 this.itemKeys = this.itemKeys.filter((k) => k !== key);
                 this.updateInputFiles();
                 this.syncImageOrder();
+                this.notifyChanged();
             },
 
             removeExisting(key) {
@@ -313,6 +322,7 @@
                 this.itemKeys = this.itemKeys.filter((k) => k !== key);
                 window.dispatchEvent(new CustomEvent('existing-image-removed'));
                 this.syncImageOrder();
+                this.notifyChanged();
             },
 
             onSortStart(event, el) {
@@ -341,6 +351,19 @@
                 this.itemKeys = keys;
                 this.updateInputFiles();
                 this.syncImageOrder();
+                this.notifyChanged();
+            },
+
+            openLightbox(url) {
+                this.lightbox.url = url;
+                this.lightbox.open = true;
+                document.body.style.overflow = 'hidden';
+            },
+
+            closeLightbox() {
+                this.lightbox.open = false;
+                setTimeout(() => { this.lightbox.url = ''; }, 300);
+                document.body.style.overflow = 'auto';
             },
 
             updateInputFiles() {
