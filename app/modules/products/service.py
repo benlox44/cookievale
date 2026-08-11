@@ -1,3 +1,4 @@
+import json
 import logging
 import os
 import shutil
@@ -61,6 +62,7 @@ class ProductService:
         product_id: int,
         data: ProductUpdate,
         existing_urls: list[str],
+        image_order: str,
         photos: list[UploadFile] | None,
     ) -> Product | None:
         current = self.repository.get_by_id(product_id)
@@ -70,15 +72,19 @@ class ProductService:
 
         kept = [url for url in existing_urls if url in current_urls]
 
+        new_urls: list[str] = []
         if photos:
             valid_photos = [p for p in photos if p.filename]
             if valid_photos:
                 remaining = 10 - len(kept)
                 if remaining > 0:
                     new_urls = self._save_photos(product_id, valid_photos[:remaining])
-                    kept.extend(new_urls)
 
-        final_urls = kept[:10]
+        final_urls = self._build_image_order(image_order, current_urls, new_urls)
+        if not final_urls:
+            # Fallback for legacy/malformed order: existing images first, then new.
+            final_urls = kept + new_urls
+        final_urls = final_urls[:10]
 
         updated = self.repository.update(product_id, data, final_urls)
         if updated is None:
@@ -94,6 +100,43 @@ class ProductService:
                 )
 
         return updated
+
+    @staticmethod
+    def _build_image_order(
+        image_order: str,
+        current_urls: list[str],
+        new_urls: list[str],
+    ) -> list[str]:
+        # image_order is a JSON list mixing existing URLs and "new:<index>"
+        # placeholders that map to saved new photos (in file-submit order).
+        try:
+            tokens = json.loads(image_order)
+        except (ValueError, TypeError):
+            return []
+        if not isinstance(tokens, list):
+            return []
+
+        valid_current = set(current_urls)
+        ordered: list[str] = []
+        for token in tokens:
+            if not isinstance(token, str):
+                continue
+            if token.startswith("new:"):
+                index_str = token[4:]
+                if not index_str.isdigit():
+                    continue
+                index = int(index_str)
+                if 0 <= index < len(new_urls) and new_urls[index] not in ordered:
+                    ordered.append(new_urls[index])
+            elif token in valid_current and token not in ordered:
+                ordered.append(token)
+
+        # Keep any new photo not referenced by the order (defensive).
+        for url in new_urls:
+            if url not in ordered:
+                ordered.append(url)
+
+        return ordered
 
     def reorder_products(self, ordered_ids: list[int]) -> bool:
         return self.repository.reorder(ordered_ids)

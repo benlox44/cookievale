@@ -104,13 +104,14 @@ def update_product(
     description: str = Form(...),
     is_active: bool = Form(False),
     existing_images: list[str] = Form([]),
+    image_order: str = Form("[]"),
     photos: list[UploadFile] | None = File(None),
     service: ProductService = Depends(get_product_service),
 ) -> RedirectResponse:
     dto = ProductUpdate(
         name=name, price=price, description=description, is_active=is_active
     )
-    service.update_product(product_id, dto, existing_images, photos)
+    service.update_product(product_id, dto, existing_images, image_order, photos)
     return RedirectResponse(
         url="/admin/products", status_code=status.HTTP_303_SEE_OTHER
     )
