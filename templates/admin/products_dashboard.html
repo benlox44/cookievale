@@ -14,7 +14,7 @@
 </script>
 {% endif %}
 
-<div class="w-full max-w-6xl mx-auto">
+<div class="w-full max-w-6xl mx-auto" x-data="productReorder()">
     <!-- Header -->
     <div class="cv-card mb-6 flex flex-col md:flex-row justify-between items-center py-4 px-6 md:px-8 gap-4">
         <div class="flex items-center gap-4 w-full md:w-auto">
@@ -29,62 +29,91 @@
             <h1 class="cv-h2 m-0 flex items-center gap-2">Productos</h1>
         </div>
 
-        <a href="/admin/products/new"
-            class="cv-btn text-xs px-4 py-2 flex items-center gap-1.5 w-full md:w-auto mt-2 md:mt-0">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4" />
-            </svg>
-            Crear nuevo producto
-        </a>
-    </div>
-
-    <!-- Product Grid -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-5 mb-10" x-data="productReorder()"
-        x-sort="handleReorder($item, $position)"
-        x-sort:config="{ delay: 200, delayOnTouchOnly: true }">
-        {% for product in products %}
-        <div x-sort:item="{{ product.id }}" data-product-id="{{ product.id }}"
-            class="cv-card p-4 flex flex-col justify-between relative hover:shadow-[0_8px_24px_rgba(212,149,106,0.18)] hover:-translate-y-1 hover:border-cookie-golden/40 transition-all duration-300 group {% if not product.is_active %}opacity-50{% endif %}">
-            <!-- Drag handle (solo el asa arrastra; el resto hace scroll, también en móvil) -->
-            <button type="button" x-sort:handle
-                class="absolute top-2 right-2 z-20 w-9 h-9 flex items-center justify-center rounded-full bg-white/80 text-cookie-brown/60 shadow-sm cursor-grab active:cursor-grabbing touch-none select-none transition-colors hover:bg-white hover:text-cookie-golden"
-                title="Arrastrar para reordenar" aria-label="Reordenar">
-                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+        <div class="flex flex-col md:flex-row gap-2 w-full md:w-auto mt-2 md:mt-0">
+            {% if products %}
+            <button type="button" @click="toggleReorder()"
+                :class="reorderMode ? '!border-cookie-golden !text-cookie-golden' : ''"
+                class="cv-btn-ghost text-xs px-4 py-2 flex items-center justify-center gap-1.5 w-full md:w-auto">
+                <svg x-show="!reorderMode" class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
                     <path
                         d="M9 5a2 2 0 11-2-2 2 2 0 012 2zm8 0a2 2 0 11-2-2 2 2 0 012 2zM9 13a2 2 0 11-2-2 2 2 0 012 2zm8 0a2 2 0 11-2-2 2 2 0 012 2zM9 21a2 2 0 11-2-2 2 2 0 012 2zm8 0a2 2 0 11-2-2 2 2 0 012 2z" />
                 </svg>
+                <svg x-show="reorderMode" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
+                </svg>
+                <span x-text="reorderMode ? 'Listo' : 'Reordenar'"></span>
             </button>
+            {% endif %}
+            <a href="/admin/products/new"
+                class="cv-btn text-xs px-4 py-2 flex items-center justify-center gap-1.5 w-full md:w-auto">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4" />
+                </svg>
+                Crear nuevo producto
+            </a>
+        </div>
+    </div>
 
-            <!-- Image Slider -->
-            {% include "partials/slider.html" %}
+    <!-- Product Grid -->
+    <div class="grid mb-10"
+        :class="reorderMode ? 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3' : 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-5'"
+        x-sort="handleReorder($item, $position)"
+        @start="onSortStart($event, $el)">
+        {% for product in products %}
+        <div x-sort:item="{{ product.id }}" data-product-id="{{ product.id }}"
+            :class="reorderMode ? 'transition-none' : 'transition-all duration-300 hover:shadow-[0_8px_24px_rgba(212,149,106,0.18)] hover:-translate-y-1 hover:border-cookie-golden/40'"
+            class="cv-card p-4 flex flex-col justify-between relative group {% if not product.is_active %}opacity-50{% endif %}">
 
-            <!-- Info -->
-            {% include "partials/product_info.html" %}
+            <!-- Vista normal -->
+            <div x-show="!reorderMode" class="flex flex-col flex-1">
+                <!-- Image Slider -->
+                {% include "partials/slider.html" %}
 
-            <div class="mt-auto flex justify-between items-center pt-3 border-t border-cookie-pink/20">
-                <span
-                    class="text-[10px] font-bold px-2 py-1 rounded-full {% if product.is_active %}bg-green-100 text-green-700{% else %}bg-red-100 text-red-700{% endif %}">
-                    {{ "Activo" if product.is_active else "Inactivo" }}
-                </span>
-                <div class="flex gap-2 items-center">
-                    <form action="/admin/products/{{ product.id }}/delete" method="POST" id="form-delete-{{product.id}}"
-                        x-data="{ showConfirm: false }" x-sort:ignore
-                        @submit.prevent="if(showConfirm) { $el.submit() } else { showConfirm = true }">
-                        <button type="submit"
-                            class="w-8 h-8 rounded-full bg-red-50 text-red-500 hover:bg-red-500 hover:text-white flex items-center justify-center transition-colors border border-red-100">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                            </svg>
-                        </button>
+                <!-- Info -->
+                {% include "partials/product_info.html" %}
 
-                        {{ render_confirm_modal("Eliminar Producto", "¿Estás seguro de eliminar este producto?") }}
-                    </form>
-                    <a href="/admin/products/{{ product.id }}" x-sort:ignore
-                        class="text-xs px-3 py-1.5 rounded-full bg-cookie-cream border border-cookie-pink/40 text-cookie-brown hover:border-cookie-golden hover:bg-cookie-pink/10 transition-colors font-medium">
-                        Editar
-                    </a>
+                <div class="mt-auto flex justify-between items-center pt-3 border-t border-cookie-pink/20">
+                    <span
+                        class="text-[10px] font-bold px-2 py-1 rounded-full {% if product.is_active %}bg-green-100 text-green-700{% else %}bg-red-100 text-red-700{% endif %}">
+                        {{ "Activo" if product.is_active else "Inactivo" }}
+                    </span>
+                    <div class="flex gap-2 items-center">
+                        <form action="/admin/products/{{ product.id }}/delete" method="POST" id="form-delete-{{product.id}}"
+                            x-data="{ showConfirm: false }" x-sort:ignore
+                            @submit.prevent="if(showConfirm) { $el.submit() } else { showConfirm = true }">
+                            <button type="submit"
+                                class="w-8 h-8 rounded-full bg-red-50 text-red-500 hover:bg-red-500 hover:text-white flex items-center justify-center transition-colors border border-red-100">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                </svg>
+                            </button>
+
+                            {{ render_confirm_modal("Eliminar Producto", "¿Estás seguro de eliminar este producto?") }}
+                        </form>
+                        <a href="/admin/products/{{ product.id }}" x-sort:ignore
+                            class="text-xs px-3 py-1.5 rounded-full bg-cookie-cream border border-cookie-pink/40 text-cookie-brown hover:border-cookie-golden hover:bg-cookie-pink/10 transition-colors font-medium">
+                            Editar
+                        </a>
+                    </div>
                 </div>
+            </div>
+
+            <!-- Vista compacta para el modo reordenar: toda la tarjeta es el punto de agarre -->
+            <div x-show="reorderMode" x-sort:handle @contextmenu.prevent x-cloak
+                class="relative flex flex-col items-center gap-2 pt-1 touch-none select-none cv-nodrag cursor-grab active:cursor-grabbing">
+                <div
+                    class="absolute top-0 right-0 w-8 h-8 flex items-center justify-center rounded-full bg-white/80 text-cookie-brown/60 shadow-sm pointer-events-none">
+                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                        <path
+                            d="M9 5a2 2 0 11-2-2 2 2 0 012 2zm8 0a2 2 0 11-2-2 2 2 0 012 2zM9 13a2 2 0 11-2-2 2 2 0 012 2zm8 0a2 2 0 11-2-2 2 2 0 012 2zM9 21a2 2 0 11-2-2 2 2 0 012 2zm8 0a2 2 0 11-2-2 2 2 0 012 2z" />
+                    </svg>
+                </div>
+                <div class="relative aspect-square w-full overflow-hidden rounded-lg border border-cookie-pink/30 bg-cookie-cream/50">
+                    <img src="{{ product.image_urls[0] if product.image_urls else '/public/icons/icon.png' }}" alt="{{ product.name }}"
+                        draggable="false" class="w-full h-full object-cover select-none cv-nodrag">
+                </div>
+                <p class="text-[11px] font-semibold text-cookie-brown text-center leading-tight">{{ product.name }}</p>
             </div>
         </div>
         {% else %}
@@ -96,30 +125,49 @@
 <script>
     document.addEventListener('alpine:init', () => {
         Alpine.data('productReorder', () => ({
-            handleReorder(item, position) {
-                setTimeout(async () => {
-                    const cards = Array.from(document.querySelectorAll('[data-product-id]'));
-                    const ordered_ids = cards.map(el => parseInt(el.dataset.productId));
+            reorderMode: false,
+            toggleReorder() {
+                if (this.reorderMode) {
+                    this.finishReorder();
+                } else {
+                    this.reorderMode = true;
+                }
+            },
+            // SortableJS inserts a deep clone of the dragged card as its "ghost"
+            // during drags. Alpine's mutation observer would try to initialize that
+            // clone, and its slider x-for children reference `slide` outside the loop
+            // scope, throwing "slide is not defined". Marking it with `_x_ignore`
+            // makes Alpine's initTree() skip it entirely.
+            onSortStart(event, el) {
+                const ghost = el.querySelector('.sortable-fallback');
+                if (ghost) ghost._x_ignore = true;
+                if (event.clone && event.clone !== event.item) event.clone._x_ignore = true;
+            },
+            // El orden se persiste solo al pulsar "Listo"; durante el arrastre no se guarda nada.
+            async finishReorder() {
+                const cards = Array.from(document.querySelectorAll('[data-product-id]'));
+                const ordered_ids = cards.map(el => parseInt(el.dataset.productId));
 
-                    try {
-                        const res = await fetch('/admin/products/reorder', {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json'
-                            },
-                            body: JSON.stringify({ ordered_ids })
-                        });
-                        if (res.ok) {
-                            window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: 'Orden guardado correctamente' } }));
-                        } else {
-                            window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: 'Error guardando el orden', type: 'error' } }));
-                        }
-                    } catch (e) {
-                        console.error("Error saving order", e);
+                try {
+                    const res = await fetch('/admin/products/reorder', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ ordered_ids })
+                    });
+                    if (res.ok) {
+                        window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: 'Orden guardado correctamente' } }));
+                        this.reorderMode = false;
+                    } else {
                         window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: 'Error guardando el orden', type: 'error' } }));
                     }
-                }, 100);
-            }
+                } catch (e) {
+                    console.error("Error saving order", e);
+                    window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: 'Error guardando el orden', type: 'error' } }));
+                }
+            },
+            handleReorder() {}
         }));
     });
 </script>
