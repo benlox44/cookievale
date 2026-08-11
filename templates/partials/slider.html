@@ -15,7 +15,6 @@
                 </template>
             </div>
 
-            <!-- Arrows -->
             <template x-if="slides.length > 1">
                 <div>
                     <button type="button"
@@ -35,7 +34,6 @@
                 </div>
             </template>
 
-            <!-- Dots -->
             <template x-if="slides.length > 1">
                 <div class="absolute bottom-2 left-0 right-0 flex justify-center gap-1.5 z-10">
                     <template x-for="(_, index) in slides" :key="index">
