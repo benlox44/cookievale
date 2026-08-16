@@ -1,3 +1,4 @@
+import json
 import logging
 from collections.abc import Awaitable, Callable
 from urllib.parse import quote, urlparse
@@ -59,14 +60,27 @@ app.state.limiter = limiter
 
 @app.exception_handler(RateLimitExceeded)
 async def rate_limit_handler(request: Request, exc: RateLimitExceeded) -> Response:
-    return templates.TemplateResponse(
-        request=request,
-        name="admin/login.html",
-        context={
-            "error": "Contraseña incorrecta. Intenta de nuevo.",
-            "rate_limited": True,
-        },
-    )
+    if request.url.path == "/admin/login":
+        return templates.TemplateResponse(
+            request=request,
+            name="admin/login.html",
+            context={
+                "error": "Demasiados intentos de inicio de sesión. Espera un momento e intenta de nuevo.",
+                "rate_limited": True,
+            },
+        )
+
+    message = "Demasiadas solicitudes. Espera un momento e intenta de nuevo."
+    if "hx-request" in request.headers:
+        return Response(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            headers={
+                "HX-Trigger": json.dumps(
+                    {"show-toast": {"message": message, "type": "error"}}
+                )
+            },
+        )
+    return JSONResponse(status_code=429, content={"detail": message})
 
 
 app.mount("/public", StaticFiles(directory="public"), name="public")

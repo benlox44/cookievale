@@ -10,6 +10,7 @@ from app.core.dependencies import (
     get_product_service,
     get_scheduling_service,
 )
+from app.core.rate_limit import limiter
 from app.core.templates import templates
 from app.modules.orders.cart import CartError, parse_cart_items
 from app.modules.orders.domain import DeliveryMethod
@@ -48,6 +49,7 @@ def get_new_order_form(
 
 
 @router.post("")
+@limiter.limit("10/hour")
 def submit_order(
     request: Request,
     customer_instagram: str = Form(...),
