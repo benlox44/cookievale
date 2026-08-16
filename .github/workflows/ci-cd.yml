@@ -157,6 +157,15 @@ jobs:
             }
           }
 
+          # Use a clean docker config with no credential store. Docker Desktop's
+          # wincred helper fails in non-interactive (SSH) sessions with
+          # "A specified logon session does not exist", and all images here are
+          # public, so an anonymous config is enough.
+          $cfgDir = Join-Path $env:TEMP 'cookievale-docker-config'
+          New-Item -ItemType Directory -Force $cfgDir | Out-Null
+          '{"auths":{}}' | Set-Content (Join-Path $cfgDir 'config.json')
+          $env:DOCKER_CONFIG = $cfgDir
+
           Write-Host "=== Git fetch ==="
           git fetch origin master
           if ($LASTEXITCODE -ne 0) { throw "git fetch failed" }
