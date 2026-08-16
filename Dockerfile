@@ -12,8 +12,7 @@ RUN apt-get update \
     && apt-get install -y --no-install-recommends gcc libpq-dev postgresql-client make curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Strip CRLF in case the file was checked out or edited on Windows; a trailing
-# \r in $TAILWIND_VERSION would make curl reject the URL (exit code 3).
+# Drop CR so $TAILWIND_VERSION never carries a trailing \r into the download URL.
 RUN sed -i 's/\r$//' versions.env \
     && . ./versions.env \
     && curl -sLO https://github.com/tailwindlabs/tailwindcss/releases/download/v"$TAILWIND_VERSION"/tailwindcss-linux-x64 \

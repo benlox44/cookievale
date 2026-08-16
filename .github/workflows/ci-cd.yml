@@ -107,11 +107,6 @@ jobs:
     needs: [lint, format, mypy, css-check, markdown-lint, line-endings]
     steps:
       - uses: actions/checkout@v4
-      - name: Simulate a Windows checkout (core.autocrlf=true)
-        run: |
-          git config core.autocrlf true
-          git rm --cached -r . -q
-          git reset --hard -q
       - name: Build image
         run: |
           . versions.env
@@ -157,10 +152,8 @@ jobs:
             }
           }
 
-          # Use a clean docker config with no credential store. Docker Desktop's
-          # wincred helper fails in non-interactive (SSH) sessions with
-          # "A specified logon session does not exist", and all images here are
-          # public, so an anonymous config is enough.
+          # Anonymous docker config so registry pulls never depend on the host
+          # credential helper (all images are public).
           $cfgDir = Join-Path $env:TEMP 'cookievale-docker-config'
           New-Item -ItemType Directory -Force $cfgDir | Out-Null
           '{"auths":{}}' | Set-Content (Join-Path $cfgDir 'config.json')

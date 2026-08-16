@@ -54,12 +54,12 @@ New routers must be registered in `app/main.py` via `app.include_router()`.
 - **Comments**: Explain WHY, not WHAT. Only comment complex business logic or edge cases.
 - **HTMX**: Return HTML partials, not JSON. Use `TemplateResponse` with templates in `templates/partials/`.
 - **Domain layer**: Pure `dataclass` or Pydantic models, enums, value objects. No infra dependencies.
-- **Line endings**: LF everywhere. `.gitattributes` pins `versions.env`, `.env.example`, `Makefile`, `Dockerfile` and `docker-compose.yml` to LF even on Windows checkouts (the VPS runs Windows). Never create or edit `.env` with CRLF (breaks `make backup`); copy it from `.env.example`.
+- **Line endings**: LF everywhere. `.gitattributes` pins `versions.env`, `.env.example`, `Makefile`, `Dockerfile` and `docker-compose.yml` to LF. Never create or edit `.env` with CRLF; copy it from `.env.example`.
 
 ## Quirks
 
 - `docker-compose.override.yml` is gitignored — provides dev `--reload` flag via uvicorn and a `tailwind` service that watches templates and recompiles CSS automatically.
-- The VPS is a Windows machine with Docker Desktop. `wincred` (Docker Desktop's credential helper) fails in non-interactive SSH sessions with "A specified logon session does not exist", so the `deploy` job in CI/CD sets `$env:DOCKER_CONFIG` to a clean config (`{"auths":{}}`) before every docker command. All images are public, so anonymous pulls work everywhere.
+- Deploy over SSH: the `deploy` job sets `$env:DOCKER_CONFIG` to a clean `{"auths":{}}` so registry pulls never depend on the host credential helper (all images are public).
 - Versions (Python, PostgreSQL, Tailwind, Node) have a single source of truth: `versions.env`. The Makefile `include`s it, the Dockerfile reads it at build time, and every CI workflow sources it (see the "Load versions" step in each job). When bumping a version, edit `versions.env` only (literal fallbacks in `Dockerfile`/`docker-compose.yml` exist solely so standalone `docker build`/`docker compose` keep working).
 - TailwindCSS: CSS is compiled locally via the standalone CLI (`tailwindcss`). Source config in `tailwind.config.js`, input in `public/tailwind.css` (also contains `@layer components` with custom shared classes like `.cv-input`, `.cv-btn`), output in `public/styles.css`. Run `make css` before pushing to keep the compiled CSS up to date.
 - Media files: host volume `MEDIA_ROOT` mounted as `CONTAINER_MEDIA_PATH` in container. Photos written to `/media/orders/<id>/`.

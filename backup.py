@@ -144,7 +144,7 @@ def main() -> None:
 
     log.info("[OK] Dump integrity verified")
 
-    # ---- Copy .env (normalized to LF so a Windows-created .env restores cleanly on Linux) ----
+    # ---- Copy .env (LF only) ----
     log.info("[*] Copying .env...")
     env_src = SCRIPT_DIR / ".env"
     with env_src.open("r", encoding="utf-8") as f:

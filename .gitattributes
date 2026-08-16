@@ -1,7 +1,5 @@
-# Normalize line endings to LF in the repository.
-# The whole project is consumed by Linux tools (Docker containers, make, shell),
-# so text files are stored and checked out with LF even on Windows. The eol=lf
-# rules override core.autocrlf so the Docker build never sees CRLF versions.env.
+# LF for text files. Explicit eol=lf on files consumed by shell/make/Docker so
+# core.autocrlf never injects CR into values (e.g. versions.env → curl URL).
 * text=auto
 versions.env text eol=lf
 .env.example text eol=lf
