@@ -46,7 +46,7 @@ reset-db:
 	@echo "Database reset complete."
 
 backup:
-	@BD=$$(grep '^BACKUP_DEST=' .env | head -1 | cut -d= -f2-); \
+	@BD=$$(grep '^BACKUP_DEST=' .env | head -1 | cut -d= -f2- | tr -d '\r'); \
 	if [ -z "$$BD" ] || [ ! -d "$$BD" ]; then \
 		echo "ERROR: Backup destination (BACKUP_DEST) is not available. No backup was created."; \
 		exit 1; \

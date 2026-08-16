@@ -144,9 +144,13 @@ def main() -> None:
 
     log.info("[OK] Dump integrity verified")
 
-    # ---- Copy .env ----
+    # ---- Copy .env (normalized to LF so a Windows-created .env restores cleanly on Linux) ----
     log.info("[*] Copying .env...")
-    shutil.copy2(SCRIPT_DIR / ".env", config_dir / ".env")
+    env_src = SCRIPT_DIR / ".env"
+    with env_src.open("r", encoding="utf-8") as f:
+        env_content = f.read()
+    with (config_dir / ".env").open("w", encoding="utf-8", newline="\n") as f:
+        f.write(env_content)
 
     # ---- Media sync ----
     media_src = Path(media_root)

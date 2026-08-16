@@ -85,11 +85,33 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
       - run: npx markdownlint-cli2 "**/*.md"
 
-  docker-build:
+  line-endings:
     runs-on: ubuntu-latest
-    needs: [lint, format, mypy, css-check, markdown-lint]
     steps:
       - uses: actions/checkout@v4
+      - name: Fail if a tracked text file has CRLF line endings
+        run: |
+          git ls-files | while read f; do
+            case "$f" in
+              *.webp|*.png|*.ico|*.jpg|*.jpeg|*.gif) continue ;;
+            esac
+            if grep -q $'\r' "$f" 2>/dev/null; then
+              echo "CRLF line endings found in tracked file: $f"
+              exit 1
+            fi
+          done
+          echo "All tracked text files use LF line endings."
+
+  docker-build:
+    runs-on: ubuntu-latest
+    needs: [lint, format, mypy, css-check, markdown-lint, line-endings]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Simulate a Windows checkout (core.autocrlf=true)
+        run: |
+          git config core.autocrlf true
+          git rm --cached -r . -q
+          git reset --hard -q
       - name: Build image
         run: |
           . versions.env

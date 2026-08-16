@@ -54,6 +54,7 @@ New routers must be registered in `app/main.py` via `app.include_router()`.
 - **Comments**: Explain WHY, not WHAT. Only comment complex business logic or edge cases.
 - **HTMX**: Return HTML partials, not JSON. Use `TemplateResponse` with templates in `templates/partials/`.
 - **Domain layer**: Pure `dataclass` or Pydantic models, enums, value objects. No infra dependencies.
+- **Line endings**: LF everywhere. `.gitattributes` pins `versions.env`, `.env.example`, `Makefile`, `Dockerfile` and `docker-compose.yml` to LF even on Windows checkouts (the VPS runs Windows). Never create or edit `.env` with CRLF (breaks `make backup`); copy it from `.env.example`.
 
 ## Quirks
 
