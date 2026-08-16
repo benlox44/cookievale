@@ -1,4 +1,3 @@
-import json
 from datetime import datetime
 from urllib.parse import quote
 
@@ -20,14 +19,12 @@ from app.core.dependencies import (
     get_product_service,
     get_scheduling_service,
 )
+from app.core.htmx import error_toast, redirect
 from app.core.security import require_admin
 from app.core.templates import templates
 from app.modules.orders.cart import CartError, parse_cart_items
 from app.modules.orders.domain import DeliveryMethod, OrderStatus
-from app.modules.orders.schemas import (
-    OrderCreateRequest,
-    OrderUpdateRequest,
-)
+from app.modules.orders.schemas import OrderUpdateRequest
 from app.modules.orders.service import OrderService
 from app.modules.products.service import ProductService
 from app.modules.scheduling.domain import AvailableDate
@@ -38,17 +35,6 @@ router = APIRouter(
     tags=["AdminOrders"],
     dependencies=[Depends(require_admin)],
 )
-
-
-def _error_toast(message: str) -> Response:
-    headers = {
-        "HX-Trigger": json.dumps({"show-toast": {"message": message, "type": "error"}})
-    }
-    return Response(status_code=204, headers=headers)
-
-
-def _redirect(url: str) -> Response:
-    return Response(status_code=204, headers={"HX-Redirect": url})
 
 
 @router.get("", response_class=HTMLResponse)
@@ -75,28 +61,29 @@ def admin_dashboard(
         sort_by=sort_by,
         sort_dir=sort_dir,
     )
+    total = service.count_orders(include_closed=include_closed)
+    total_pages = max(1, (total + page_size - 1) // page_size)
+
+    context = {
+        "orders": orders,
+        "include_closed": include_closed,
+        "current_sort_by": sort_by,
+        "current_sort_dir": sort_dir,
+        "page": page,
+        "total_pages": total_pages,
+    }
 
     if "hx-request" in request.headers:
         return templates.TemplateResponse(
             request=request,
             name="admin/partials/orders_table.html",
-            context={
-                "orders": orders,
-                "include_closed": include_closed,
-                "current_sort_by": sort_by,
-                "current_sort_dir": sort_dir,
-            },
+            context=context,
         )
 
     return templates.TemplateResponse(
         request=request,
         name="admin/orders_dashboard.html",
-        context={
-            "orders": orders,
-            "include_closed": include_closed,
-            "current_sort_by": sort_by,
-            "current_sort_dir": sort_dir,
-        },
+        context=context,
     )
 
 
@@ -139,31 +126,29 @@ def create_order(
 
     available_dates = [d.date for d in scheduling_service.get_available_dates()]
     if delivery_date.date() not in available_dates:
-        return _error_toast("La fecha seleccionada no está disponible.")
+        return error_toast("La fecha seleccionada no está disponible.")
 
     try:
         parsed = parse_cart_items(cart_items_json, product_service)
     except CartError as exc:
-        return _error_toast(exc.message)
+        return error_toast(exc.message)
 
-    dto = OrderCreateRequest(
-        customer_instagram=customer_instagram,
-        items=parsed.items,
-        total_amount=parsed.total_amount,
-        delivery_date=delivery_date,
-        delivery_method=delivery_method,
-        description=description,
-    )
+    try:
+        order_service.create_from_parsed_cart(
+            cart=parsed,
+            customer_instagram=customer_instagram,
+            delivery_date=delivery_date,
+            delivery_method=delivery_method,
+            description=description,
+            photos=photos,
+            status=order_status,
+            amount_paid=amount_paid,
+            created_by_admin=True,
+        )
+    except ValueError as exc:
+        return error_toast(str(exc))
 
-    order_service.create_order(
-        data=dto,
-        photos=photos,
-        status=order_status,
-        amount_paid=amount_paid,
-        created_by_admin=True,
-    )
-
-    return _redirect("/admin/orders")
+    return redirect("/admin/orders")
 
 
 @router.get("/{order_id}", response_class=HTMLResponse)
@@ -205,7 +190,14 @@ def update_order_status(
     status: OrderStatus = Form(...),
     service: OrderService = Depends(get_order_service),
 ) -> RedirectResponse:
-    service.change_status(order_id, status)
+    # Un-rejecting an order back onto an already-occupied date is rejected by
+    # the database; surface it instead of silently failing.
+    try:
+        service.change_status(order_id, status)
+    except ValueError as exc:
+        return RedirectResponse(
+            url=f"/admin/orders/{order_id}?error={quote(str(exc))}", status_code=303
+        )
 
     return RedirectResponse(url=f"/admin/orders/{order_id}", status_code=303)
 
@@ -279,7 +271,12 @@ def update_order_details(
         delivery_method=delivery_method,
         amount_paid=amount_paid,
     )
-    service.update_order(order_id, dto, existing_photos, image_order, photos)
+    try:
+        service.update_order(order_id, dto, existing_photos, image_order, photos)
+    except ValueError as exc:
+        return RedirectResponse(
+            url=f"/admin/orders/{order_id}?error={quote(str(exc))}", status_code=303
+        )
 
     return RedirectResponse(url="/admin/orders", status_code=303)
 
