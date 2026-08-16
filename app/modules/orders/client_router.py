@@ -1,4 +1,3 @@
-import json
 from datetime import datetime
 
 from fastapi import APIRouter, Depends, File, Form, Request, Response, UploadFile
@@ -10,23 +9,16 @@ from app.core.dependencies import (
     get_product_service,
     get_scheduling_service,
 )
+from app.core.htmx import error_toast
 from app.core.rate_limit import limiter
 from app.core.templates import templates
 from app.modules.orders.cart import CartError, parse_cart_items
 from app.modules.orders.domain import DeliveryMethod
-from app.modules.orders.schemas import OrderCreateRequest
 from app.modules.orders.service import OrderService
 from app.modules.products.service import ProductService
 from app.modules.scheduling.service import SchedulingService
 
 router = APIRouter(prefix="/orders", tags=["Orders"])
-
-
-def _error_toast(message: str) -> Response:
-    headers = {
-        "HX-Trigger": json.dumps({"show-toast": {"message": message, "type": "error"}})
-    }
-    return Response(status_code=204, headers=headers)
 
 
 @router.get("/new", response_class=HTMLResponse)
@@ -67,25 +59,26 @@ def submit_order(
 
     available_dates = [d.date for d in scheduling_service.get_available_dates()]
     if delivery_date.date() not in available_dates:
-        return _error_toast(
+        return error_toast(
             "La fecha seleccionada ha sido tomada recientemente y no está disponible."
         )
 
     try:
         parsed = parse_cart_items(cart_items_json, product_service)
     except CartError as exc:
-        return _error_toast(exc.message)
+        return error_toast(exc.message)
 
-    dto = OrderCreateRequest(
-        customer_instagram=customer_instagram,
-        items=parsed.items,
-        total_amount=parsed.total_amount,
-        delivery_date=delivery_date,
-        delivery_method=delivery_method,
-        description=description,
-    )
-
-    order = order_service.create_order(data=dto, photos=photos)
+    try:
+        order = order_service.create_from_parsed_cart(
+            cart=parsed,
+            customer_instagram=customer_instagram,
+            delivery_date=delivery_date,
+            delivery_method=delivery_method,
+            description=description,
+            photos=photos,
+        )
+    except ValueError as exc:
+        return error_toast(str(exc))
 
     return templates.TemplateResponse(
         request=request,

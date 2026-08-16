@@ -1,8 +1,8 @@
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, Field, field_validator
 
-from app.modules.orders.domain import DeliveryMethod, OrderStatus
+from app.modules.orders.domain import DeliveryMethod
 
 
 class OrderItemCreate(BaseModel):
@@ -33,10 +33,3 @@ class OrderUpdateRequest(BaseModel):
     description: str = Field(max_length=2000)
     delivery_method: DeliveryMethod
     amount_paid: int = Field(ge=0, lt=1_000_000_000)
-
-
-class OrderResponse(OrderCreateRequest):
-    id: int
-    status: OrderStatus
-    amount_paid: int
-    model_config = ConfigDict(from_attributes=True)
