@@ -35,5 +35,5 @@ def require_admin(request: Request) -> None:
     token = request.cookies.get("admin_session")
     if not token or not verify_admin_token(token):
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authenticated"
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="No autenticado"
         )

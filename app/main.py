@@ -1,6 +1,6 @@
 import logging
 from collections.abc import Awaitable, Callable
-from urllib.parse import quote
+from urllib.parse import quote, urlparse
 
 from fastapi import FastAPI, HTTPException, Request, status
 from fastapi.exceptions import RequestValidationError
@@ -28,7 +28,13 @@ logging.basicConfig(
     format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
 )
 
-app = FastAPI(title="CookieVale API")
+# Docs/OpenAPI are dev-only: exposing them in production leaks the API surface.
+app = FastAPI(
+    title="CookieVale API",
+    docs_url="/docs" if DEBUG else None,
+    redoc_url="/redoc" if DEBUG else None,
+    openapi_url="/openapi.json" if DEBUG else None,
+)
 
 
 class HttpsRedirectMiddleware(BaseHTTPMiddleware):
@@ -78,8 +84,16 @@ def _validation_error_response(request: Request, exc: Exception) -> Response:
     is_json = (request.headers.get("content-type") or "").startswith("application/json")
     if request.url.path.startswith("/admin") and not is_json:
         message = "Datos inválidos en el formulario. Revisa los campos."
-        referer = request.headers.get("referer") or "/admin"
-        base = referer.split("?")[0]
+        # Only ever bounce back to an admin path on the same origin so an
+        # attacker-supplied Referer cannot turn this into an open redirect.
+        referer = request.headers.get("referer")
+        base = "/admin"
+        if referer:
+            parsed = urlparse(referer)
+            if parsed.path.startswith("/admin") and (
+                parsed.netloc == request.url.netloc or not parsed.netloc
+            ):
+                base = parsed.path
         return RedirectResponse(
             url=f"{base}?error={quote(message)}",
             status_code=status.HTTP_303_SEE_OTHER,
