@@ -3,7 +3,7 @@ import hmac
 from fastapi import APIRouter, Depends, Form, Request, status
 from fastapi.responses import HTMLResponse, RedirectResponse, Response
 
-from app.core.config import ADMIN_PASSWORD
+from app.core.config import ADMIN_PASSWORD, DEBUG
 from app.core.rate_limit import limiter
 from app.core.security import SESSION_TTL_SECONDS, create_admin_token, require_admin
 from app.core.templates import templates
@@ -32,7 +32,8 @@ def post_login(request: Request, password: str = Form(...)) -> Response:
             key="admin_session",
             value=token,
             httponly=True,
-            secure=True,
+            # Secure only when not debugging so plain-HTTP local dev keeps working.
+            secure=not DEBUG,
             samesite="lax",
             max_age=SESSION_TTL_SECONDS,
         )
