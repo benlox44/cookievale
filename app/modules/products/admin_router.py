@@ -88,7 +88,7 @@ def edit_product_form(
 ) -> HTMLResponse:
     product = service.get_product(product_id)
     if not product:
-        raise HTTPException(status_code=404, detail="Product not found")
+        raise HTTPException(status_code=404, detail="Producto no encontrado")
     return templates.TemplateResponse(
         request=request,
         name="admin/product_form.html",
