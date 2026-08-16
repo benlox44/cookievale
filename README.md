@@ -63,7 +63,7 @@ We rely on a `Makefile` to encapsulate Docker operations.
 
 ## Stack
 
-- **Backend:** FastAPI (Async, Type-Safe)
+- **Backend:** FastAPI (Type-Safe)
 - **Database:** PostgreSQL (with SQLAlchemy ORM & Alembic for migrations)
 - **Data Validation:** Pydantic (DTOs / Schemas) & Python Dataclasses
 - **Frontend:** HTMX + Alpine.js + Jinja2 Templates + TailwindCSS (Lightweight reactivity)
