@@ -64,7 +64,7 @@ MONTHS_SHORT = [
 ]
 
 
-def clp(value: float) -> str:
+def clp(value: int) -> str:
     return f"${value:,.0f}"
 
 

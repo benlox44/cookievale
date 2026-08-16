@@ -7,7 +7,9 @@ from app.modules.scheduling.repository import AvailableDateRepository
 
 
 class SchedulingService:
-    def __init__(self, repo: AvailableDateRepository, order_repo: OrderRepository):
+    def __init__(
+        self, repo: AvailableDateRepository, order_repo: OrderRepository
+    ) -> None:
         self.repo = repo
         self.order_repo = order_repo
 
@@ -17,8 +19,8 @@ class SchedulingService:
     def _purge_past_dates(self) -> None:
         # Past available-date rows are meaningless once the day has passed:
         # the order forms never offered them again and any "occupied" state
-        # is derived from orders, whose history keeps the date. Lazily remove
-        # them on every read so the table self-cleans without a background job.
+        # is derived from orders, whose history keeps the date. Purging only
+        # on admin reads keeps public order traffic free of writes.
         today = datetime.now(tz=TZ).date()
         self.repo.delete_before(today)
 
@@ -26,13 +28,12 @@ class SchedulingService:
         self._purge_past_dates()
         all_dates = self.repo.get_all()
         occupied_dates = self._get_occupied_dates()
-        for d in all_dates:
-            if d.date in occupied_dates:
-                d.is_occupied = True
-        return all_dates
+        return [
+            AvailableDate(id=d.id, date=d.date, is_occupied=d.date in occupied_dates)
+            for d in all_dates
+        ]
 
     def get_available_dates(self) -> list[AvailableDate]:
-        self._purge_past_dates()
         all_dates = self.repo.get_all()
         occupied_dates = self._get_occupied_dates()
         return [d for d in all_dates if d.date not in occupied_dates]

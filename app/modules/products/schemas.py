@@ -1,4 +1,4 @@
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, Field
 
 
 class ProductBase(BaseModel):
@@ -14,12 +14,6 @@ class ProductCreate(ProductBase):
 
 class ProductUpdate(ProductBase):
     pass
-
-
-class ProductResponse(ProductBase):
-    id: int
-    image_urls: list[str] = Field(default_factory=list)
-    model_config = ConfigDict(from_attributes=True)
 
 
 class ProductReorderRequest(BaseModel):

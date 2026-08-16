@@ -6,12 +6,22 @@ from fastapi import UploadFile
 from sqlalchemy.exc import SQLAlchemyError
 
 from app.core.config import CONTAINER_MEDIA_PATH
-from app.core.uploads import build_image_order, delete_media_files, save_uploads
+from app.core.uploads import delete_media_files, save_uploads, update_photo_set
 from app.modules.products.domain import Product
 from app.modules.products.repository import ProductRepository
 from app.modules.products.schemas import ProductCreate, ProductUpdate
 
 logger = logging.getLogger(__name__)
+
+
+def _to_domain(data: ProductCreate | ProductUpdate) -> Product:
+    return Product(
+        id=None,
+        name=data.name,
+        price=data.price,
+        description=data.description,
+        is_active=data.is_active,
+    )
 
 
 class ProductService:
@@ -27,7 +37,7 @@ class ProductService:
     def create_product(
         self, data: ProductCreate, photos: list[UploadFile] | None
     ) -> Product:
-        product = self.repository.create(data, None)
+        product = self.repository.create(_to_domain(data), None)
 
         if product.id is not None and photos:
             valid_photos = [p for p in photos if p.filename][:10]
@@ -35,14 +45,8 @@ class ProductService:
                 product_id = product.id
                 try:
                     image_urls = self._save_photos(product_id, valid_photos)
-                    update_data = ProductUpdate(
-                        name=data.name,
-                        price=data.price,
-                        description=data.description,
-                        is_active=data.is_active,
-                    )
                     updated = self.repository.update(
-                        product_id, update_data, image_urls
+                        product_id, _to_domain(data), image_urls
                     )
                     if updated is not None:
                         product = updated
@@ -69,27 +73,20 @@ class ProductService:
             return None
         current_urls = current.image_urls or []
 
-        kept = [url for url in existing_urls if url in current_urls]
+        final_urls, removed = update_photo_set(
+            current_urls=current_urls,
+            existing_urls=existing_urls,
+            image_order=image_order,
+            photos=photos,
+            max_images=10,
+            media_dir=os.path.join(CONTAINER_MEDIA_PATH, "products", str(product_id)),
+            url_prefix=f"/media/products/{product_id}",
+        )
 
-        new_urls: list[str] = []
-        if photos:
-            valid_photos = [p for p in photos if p.filename]
-            if valid_photos:
-                remaining = 10 - len(kept)
-                if remaining > 0:
-                    new_urls = self._save_photos(product_id, valid_photos[:remaining])
-
-        final_urls = build_image_order(image_order, current_urls, new_urls)
-        if not final_urls:
-            # Empty/malformed image_order: keep existing images, then new.
-            final_urls = kept + new_urls
-        final_urls = final_urls[:10]
-
-        updated = self.repository.update(product_id, data, final_urls)
+        updated = self.repository.update(product_id, _to_domain(data), final_urls)
         if updated is None:
             return None
 
-        removed = [url for url in current_urls if url not in final_urls]
         if removed:
             try:
                 products_dir = os.path.join(

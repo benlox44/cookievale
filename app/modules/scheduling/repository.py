@@ -8,7 +8,7 @@ from app.modules.scheduling.domain import AvailableDate
 from app.modules.scheduling.models import AvailableDateModel
 
 
-class AvailableDateRepositoryProtocol(Protocol):
+class AvailableDateRepository(Protocol):
     def get_all(
         self, limit: int | None = None, offset: int = 0
     ) -> list[AvailableDate]: ...
@@ -19,8 +19,8 @@ class AvailableDateRepositoryProtocol(Protocol):
     def delete_before(self, target: date) -> int: ...
 
 
-class AvailableDateRepository:
-    def __init__(self, db: Session):
+class SQLAlchemyAvailableDateRepository:
+    def __init__(self, db: Session) -> None:
         self.db = db
 
     def get_all(self, limit: int | None = None, offset: int = 0) -> list[AvailableDate]:
@@ -61,9 +61,7 @@ class AvailableDateRepository:
         return self._to_domain(model)
 
     def _to_domain(self, model: AvailableDateModel) -> AvailableDate:
-        mid: int = model.id  # type: ignore[assignment]
-        mdate: date = model.date  # type: ignore[assignment]
-        return AvailableDate(id=mid, date=mdate)
+        return AvailableDate(id=model.id, date=model.date)
 
     def delete(self, id: int) -> None:
         model = self.db.get(AvailableDateModel, id)

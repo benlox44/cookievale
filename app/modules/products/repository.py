@@ -1,24 +1,24 @@
 from typing import Protocol
 
 from sqlalchemy import select
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
 from app.modules.orders.models import OrderItemModel
 from app.modules.products.domain import Product
 from app.modules.products.models import ProductModel
-from app.modules.products.schemas import ProductCreate, ProductUpdate
 
 
-class ProductRepositoryProtocol(Protocol):
+class ProductRepository(Protocol):
     def list_all(self, only_active: bool = False) -> list[Product]: ...
     def get_by_id(self, product_id: int) -> Product | None: ...
     def create(
-        self, data: ProductCreate, image_urls: list[str] | None = None
+        self, product: Product, image_urls: list[str] | None = None
     ) -> Product: ...
     def update(
         self,
         product_id: int,
-        data: ProductUpdate,
+        product: Product,
         image_urls: list[str] | None = None,
     ) -> Product | None: ...
     def reorder(self, ordered_ids: list[int]) -> bool: ...
@@ -26,7 +26,7 @@ class ProductRepositoryProtocol(Protocol):
     def delete(self, product_id: int) -> bool: ...
 
 
-class ProductRepository:
+class SQLAlchemyProductRepository:
     def __init__(self, db: Session) -> None:
         self.db = db
 
@@ -45,14 +45,12 @@ class ProductRepository:
             return None
         return self._to_domain(model)
 
-    def create(
-        self, data: ProductCreate, image_urls: list[str] | None = None
-    ) -> Product:
+    def create(self, product: Product, image_urls: list[str] | None = None) -> Product:
         db_product = ProductModel(
-            name=data.name,
-            description=data.description,
-            price=data.price,
-            is_active=data.is_active,
+            name=product.name,
+            description=product.description,
+            price=product.price,
+            is_active=product.is_active,
             image_urls=image_urls,
         )
         self.db.add(db_product)
@@ -63,7 +61,7 @@ class ProductRepository:
     def update(
         self,
         product_id: int,
-        data: ProductUpdate,
+        product: Product,
         image_urls: list[str] | None = None,
     ) -> Product | None:
         stmt = select(ProductModel).where(ProductModel.id == product_id)
@@ -71,23 +69,34 @@ class ProductRepository:
         if not db_product:
             return None
 
-        db_product.name = data.name  # type: ignore[assignment]
-        db_product.description = data.description  # type: ignore[assignment]
-        db_product.price = data.price  # type: ignore[assignment]
-        db_product.is_active = data.is_active  # type: ignore[assignment]
+        db_product.name = product.name
+        db_product.description = product.description
+        db_product.price = product.price
+        db_product.is_active = product.is_active
         if image_urls is not None:
-            db_product.image_urls = image_urls  # type: ignore[assignment]
+            db_product.image_urls = image_urls
 
         self.db.commit()
         self.db.refresh(db_product)
         return self._to_domain(db_product)
 
     def reorder(self, ordered_ids: list[int]) -> bool:
-        for index, prod_id in enumerate(ordered_ids):
-            stmt = select(ProductModel).where(ProductModel.id == prod_id)
-            db_product = self.db.execute(stmt).scalar_one_or_none()
-            if db_product:
-                db_product.display_order = index  # type: ignore[assignment]
+        if not ordered_ids:
+            return True
+        # Single round-trip instead of one SELECT per product.
+        models = (
+            self.db.execute(
+                select(ProductModel).where(ProductModel.id.in_(ordered_ids))
+            )
+            .scalars()
+            .all()
+        )
+        by_id = {m.id: m for m in models}
+        ordered = {pid: index for index, pid in enumerate(ordered_ids)}
+        for pid, index in ordered.items():
+            model = by_id.get(pid)
+            if model is not None:
+                model.display_order = index
         self.db.commit()
         return True
 
@@ -108,24 +117,17 @@ class ProductRepository:
             self.db.delete(db_product)
             self.db.commit()
             return True
-        except Exception:
+        except SQLAlchemyError:
             self.db.rollback()
             raise
 
     def _to_domain(self, model: ProductModel) -> Product:
-        pid: int | None = model.id  # type: ignore[assignment]
-        pname: str = model.name  # type: ignore[assignment]
-        pprice: int = model.price  # type: ignore[assignment]
-        pdesc: str | None = model.description  # type: ignore[assignment]
-        pactive: bool = model.is_active  # type: ignore[assignment]
-        pimgs: list[str] | None = model.image_urls  # type: ignore[assignment]
-        porder: int = model.display_order  # type: ignore[assignment]
         return Product(
-            id=pid,
-            name=pname,
-            price=pprice,
-            description=pdesc,
-            is_active=pactive,
-            image_urls=pimgs,
-            display_order=porder,
+            id=model.id,
+            name=model.name,
+            price=model.price,
+            description=model.description,
+            is_active=model.is_active,
+            image_urls=model.image_urls,
+            display_order=model.display_order,
         )

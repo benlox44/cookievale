@@ -1,11 +1,13 @@
-from datetime import date, datetime
+from datetime import date
 from typing import Protocol
 
-from sqlalchemy import select
+from sqlalchemy import func, select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, selectinload
 
-from app.modules.orders.domain import DeliveryMethod, Order, OrderItem, OrderStatus
+from app.modules.orders.domain import Order, OrderItem, OrderStatus
 from app.modules.orders.models import OrderItemModel, OrderModel
+from app.modules.products.models import ProductModel
 
 
 class OrderRepository(Protocol):
@@ -19,6 +21,7 @@ class OrderRepository(Protocol):
         sort_by: str | None = None,
         sort_dir: str = "desc",
     ) -> list[Order]: ...
+    def count(self, include_closed: bool = False) -> int: ...
     def delete(self, order_id: int) -> None: ...
     def get_occupied_dates(self) -> set[date]: ...
     def replace_items(
@@ -34,7 +37,29 @@ class SQLAlchemyOrderRepository:
     def __init__(self, db: Session) -> None:
         self.db = db
 
+    def _product_names(self, product_ids: set[int]) -> dict[int, str]:
+        if not product_ids:
+            return {}
+        stmt = select(ProductModel.id, ProductModel.name).where(
+            ProductModel.id.in_(product_ids)
+        )
+        return {pid: name for pid, name in self.db.execute(stmt).all()}
+
     def save(self, order: Order) -> Order:
+        names = self._product_names({item.product_id for item in order.items})
+
+        db_items = []
+        for item in order.items:
+            db_items.append(
+                OrderItemModel(
+                    id=item.id,
+                    product_id=item.product_id,
+                    quantity=item.quantity,
+                    unit_price=item.unit_price,
+                    product_name=names.get(item.product_id),
+                )
+            )
+
         db_order = OrderModel(
             id=order.id,
             customer_instagram=order.customer_instagram,
@@ -46,19 +71,8 @@ class SQLAlchemyOrderRepository:
             amount_paid=order.amount_paid,
             total_amount=order.total_amount,
             created_at=order.created_at,
+            items=db_items,
         )
-
-        db_items = []
-        for item in order.items:
-            db_item = OrderItemModel(
-                id=item.id,
-                product_id=item.product_id,
-                quantity=item.quantity,
-                unit_price=item.unit_price,
-            )
-            db_items.append(db_item)
-
-        db_order.items = db_items
 
         if order.id is None:
             self.db.add(db_order)
@@ -67,7 +81,13 @@ class SQLAlchemyOrderRepository:
             db_order = self.db.merge(db_order)
             self.db.flush()
 
-        self.db.commit()
+        try:
+            self.db.commit()
+        except IntegrityError:
+            self.db.rollback()
+            raise ValueError(
+                "La fecha seleccionada ya tiene una orden activa."
+            ) from None
         self.db.refresh(db_order)
 
         return self._to_domain(db_order)
@@ -119,6 +139,14 @@ class SQLAlchemyOrderRepository:
         db_orders = self.db.execute(stmt).scalars().all()
         return [self._to_domain(o) for o in db_orders]
 
+    def count(self, include_closed: bool = False) -> int:
+        stmt = select(func.count()).select_from(OrderModel)
+        if not include_closed:
+            stmt = stmt.where(
+                OrderModel.status.notin_([OrderStatus.DELIVERED, OrderStatus.REJECTED])
+            )
+        return self.db.execute(stmt).scalar_one()
+
     def delete(self, order_id: int) -> None:
         stmt = select(OrderModel).where(OrderModel.id == order_id)
         db_order = self.db.execute(stmt).scalar_one_or_none()
@@ -142,6 +170,7 @@ class SQLAlchemyOrderRepository:
         if db_order is None:
             return None
 
+        names = self._product_names({item.product_id for item in items})
         db_order.items.clear()
         for item in items:
             db_order.items.append(
@@ -149,10 +178,11 @@ class SQLAlchemyOrderRepository:
                     product_id=item.product_id,
                     quantity=item.quantity,
                     unit_price=item.unit_price,
+                    product_name=names.get(item.product_id),
                 )
             )
-        db_order.total_amount = total_amount  # type: ignore[assignment]
-        db_order.amount_paid = amount_paid  # type: ignore[assignment]
+        db_order.total_amount = total_amount
+        db_order.amount_paid = amount_paid
         self.db.commit()
 
         return self.get_by_id(order_id)
@@ -170,11 +200,9 @@ class SQLAlchemyOrderRepository:
     def _to_domain(self, db_model: OrderModel) -> Order:
         domain_items = []
         for i in db_model.items:
-            product_name = (
-                i.product.name
-                if getattr(i, "product", None)
-                else f"Producto {i.product_id}"
-            )
+            snapshot = i.product_name
+            if not snapshot:
+                snapshot = i.product.name if getattr(i, "product", None) else None
             domain_items.append(
                 OrderItem(
                     id=i.id,
@@ -182,31 +210,20 @@ class SQLAlchemyOrderRepository:
                     product_id=i.product_id,
                     quantity=i.quantity,
                     unit_price=i.unit_price,
-                    product_name=product_name,
+                    product_name=snapshot or f"Producto {i.product_id}",
                 )
             )
 
-        oid: int | None = db_model.id  # type: ignore[assignment]
-        cig: str = db_model.customer_instagram  # type: ignore[assignment]
-        dd: datetime = db_model.delivery_date  # type: ignore[assignment]
-        desc: str = db_model.description  # type: ignore[assignment]
-        dm: DeliveryMethod = db_model.delivery_method  # type: ignore[assignment]
-        rp: list[str] | None = db_model.reference_photos  # type: ignore[assignment]
-        ost: OrderStatus = db_model.status  # type: ignore[assignment]
-        ap: int = db_model.amount_paid  # type: ignore[assignment]
-        ta: int = db_model.total_amount  # type: ignore[assignment]
-        ca: datetime | None = db_model.created_at  # type: ignore[assignment]
-
         return Order(
-            id=oid,
-            customer_instagram=cig,
-            delivery_date=dd,
-            description=desc,
-            delivery_method=dm,
-            reference_photos=rp,
-            status=ost,
-            amount_paid=ap,
-            total_amount=ta,
-            created_at=ca,
+            id=db_model.id,
+            customer_instagram=db_model.customer_instagram,
+            delivery_date=db_model.delivery_date,
+            description=db_model.description,
+            delivery_method=db_model.delivery_method,
+            reference_photos=db_model.reference_photos,
+            status=db_model.status,
+            amount_paid=db_model.amount_paid,
+            total_amount=db_model.total_amount,
+            created_at=db_model.created_at,
             items=domain_items,
         )

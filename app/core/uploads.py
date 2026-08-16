@@ -150,3 +150,40 @@ def delete_media_files(media_dir: str, urls: list[str]) -> None:
         filepath = os.path.join(media_dir, filename)
         if os.path.isfile(filepath):
             os.remove(filepath)
+
+
+def update_photo_set(
+    current_urls: list[str],
+    existing_urls: list[str],
+    image_order: str,
+    photos: list[UploadFile] | None,
+    max_images: int,
+    media_dir: str,
+    url_prefix: str,
+) -> tuple[list[str], list[str]]:
+    """Reconcile kept photos, new uploads and ordering into the final set.
+
+    Shared by orders and products (identical edit-photo behavior): keeps the
+    photos the form still references, saves new uploads up to max_images, and
+    applies the drag-and-drop order. Returns (final_urls, removed_urls) so the
+    caller can delete the media files that were dropped.
+    """
+    current_set = set(current_urls)
+    kept = [url for url in existing_urls if url in current_set]
+
+    new_urls: list[str] = []
+    if photos:
+        valid_photos = [p for p in photos if p.filename]
+        if valid_photos:
+            remaining = max_images - len(kept)
+            if remaining > 0:
+                new_urls = save_uploads(valid_photos[:remaining], media_dir, url_prefix)
+
+    final_urls = build_image_order(image_order, current_urls, new_urls)
+    if not final_urls:
+        # Empty/malformed image_order: keep existing photos, then new.
+        final_urls = kept + new_urls
+    final_urls = final_urls[:max_images]
+
+    removed = [url for url in current_urls if url not in final_urls]
+    return final_urls, removed
