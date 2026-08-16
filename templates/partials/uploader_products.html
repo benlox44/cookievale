@@ -1,8 +1,8 @@
 {% macro render_uploader_products(is_required, existing_images, min_width, min_height, quality, max_images) %}
 {% set existing_cnt = existing_images|length %}
 
-<link href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css" rel="stylesheet">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
+<link href="/public/vendor/cropper.min.css" rel="stylesheet">
+<script src="/public/vendor/cropper.min.js"></script>
 
 <div class="mb-4"
     x-data='cropperData({{ min_width }}, {{ min_height }}, {{ max_images }}, {{ existing_cnt }}, {{ quality }}, {{ existing_images | tojson }})'>

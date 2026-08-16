@@ -9,7 +9,7 @@
     <meta property="og:title" content="CookieVale">
     <meta property="og:description"
         content="Galletas artesanales personalizadas para tus momentos especiales en La Serena y Coquimbo. Haz tu pedido en CookieVale.">
-    <meta property="og:image" content="/public/favicons/cookie.png">
+    <meta property="og:image" content="{{ base_url }}/public/icons/icon.png">
     <meta property="og:url" content="{{ base_url }}{{ request.url.path }}">
     <link rel="canonical" href="{{ base_url }}{{ request.url.path }}">
     <title>{% block title %}CookieVale{% endblock %}</title>
@@ -32,7 +32,7 @@
     <!-- Tailwind CSS -->
     <link rel="stylesheet" href="/public/styles.css?v={{ css_version() }}">
 
-    <script src="https://unpkg.com/htmx.org@1.9.11"></script>
+    <script src="/public/vendor/htmx.min.js"></script>
 
     <script>
         try {
@@ -65,8 +65,8 @@
         document.addEventListener('mousedown', restoreHref);
         document.addEventListener('mouseout', restoreHref);
     </script>
-    <script src="https://cdn.jsdelivr.net/npm/@alpinejs/sort@3.x.x/dist/cdn.min.js" defer></script>
-    <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+    <script src="/public/vendor/alpine-sort.min.js" defer></script>
+    <script src="/public/vendor/alpine.min.js" defer></script>
     <style>
         [x-cloak] { display: none !important; }
         /* Keep the pointer cursor on links while their href is hidden during hover. */
