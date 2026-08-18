@@ -1,6 +1,7 @@
 import json
 import logging
 from collections.abc import Awaitable, Callable
+from datetime import datetime
 from urllib.parse import quote, urlparse
 
 from fastapi import FastAPI, HTTPException, Request, status
@@ -14,7 +15,13 @@ from sqlalchemy.exc import SQLAlchemyError
 from starlette.middleware.base import BaseHTTPMiddleware
 from uvicorn.middleware.proxy_headers import ProxyHeadersMiddleware
 
-from app.core.config import CONTAINER_MEDIA_PATH, DEBUG, TRUSTED_PROXY_HOSTS
+from app.core.config import (
+    BASE_URL,
+    CONTAINER_MEDIA_PATH,
+    DEBUG,
+    TRUSTED_PROXY_HOSTS,
+    TZ,
+)
 from app.core.database import engine
 from app.core.rate_limit import limiter
 from app.core.templates import templates
@@ -140,6 +147,31 @@ def health_check() -> dict[str, str] | JSONResponse:
         )
 
 
-@app.get("/", response_class=HTMLResponse)
+@app.api_route("/", methods=["GET", "HEAD"], response_class=HTMLResponse)
 def index(request: Request) -> HTMLResponse:
     return templates.TemplateResponse(request=request, name="client/index.html")
+
+
+@app.get("/robots.txt", response_class=Response)
+def robots_txt() -> Response:
+    return Response(
+        content=f"User-agent: *\nAllow: /\n\nSitemap: {BASE_URL}/sitemap.xml\n",
+        media_type="text/plain",
+    )
+
+
+@app.get("/sitemap.xml", response_class=Response)
+def sitemap_xml() -> Response:
+    today = datetime.now(tz=TZ).date().isoformat()
+    urls = (
+        f"<url><loc>{BASE_URL}/</loc><lastmod>{today}</lastmod>"
+        "<changefreq>weekly</changefreq><priority>1.0</priority></url>"
+        f"<url><loc>{BASE_URL}/orders/new</loc><lastmod>{today}</lastmod>"
+        "<changefreq>monthly</changefreq><priority>0.8</priority></url>"
+    )
+    xml = (
+        '<?xml version="1.0" encoding="UTF-8"?>\n'
+        '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
+        f"{urls}\n</urlset>\n"
+    )
+    return Response(content=xml, media_type="application/xml")
