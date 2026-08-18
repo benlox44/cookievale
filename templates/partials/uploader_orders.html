@@ -126,6 +126,10 @@ defined or max_width is not defined %}
                 window.dispatchEvent(new CustomEvent('photos-changed'));
             },
 
+            notifyFiles() {
+                window.dispatchEvent(new CustomEvent('cart-files', { detail: this.files }));
+            },
+
             syncImageOrder() {
                 if (!this.$refs.imageOrder) return;
                 const tokens = this.itemKeys.map((key) => {
@@ -145,47 +149,75 @@ defined or max_width is not defined %}
                     return;
                 }
 
-                for (let file of rawFiles) {
-                    const img = new Image();
-                    img.src = URL.createObjectURL(file);
-                    await new Promise(resolve => {
-                        img.onload = () => {
-                            const canvas = document.createElement('canvas');
-                            let width = img.width;
-                            let height = img.height;
-
-                            if (width > maxWidth || height > maxWidth) {
-                                if (width > height) {
-                                    height = Math.round((height * maxWidth) / width);
-                                    width = maxWidth;
-                                } else {
-                                    width = Math.round((width * maxWidth) / height);
-                                    height = maxWidth;
-                                }
-                            }
-
-                            canvas.width = width;
-                            canvas.height = height;
-                            const ctx = canvas.getContext('2d');
-                            ctx.drawImage(img, 0, 0, width, height);
-
-                            canvas.toBlob((blob) => {
-                                const fileName = `compressed_${Date.now()}_${Math.floor(Math.random()*1000)}.webp`;
-                                const customFile = new File([blob], fileName, { type: 'image/webp' });
-
-                                this.files.push(customFile);
-                                const previewUrl = URL.createObjectURL(blob);
-                                this.previews.push(previewUrl);
-                                this.itemKeys.push(previewUrl);
-                                resolve();
-                            }, 'image/webp', quality);
+                const processFile = (file) =>
+                    new Promise((resolve) => {
+                        let settled = false;
+                        let timer;
+                        const finish = (outFile) => {
+                            if (settled) return;
+                            settled = true;
+                            clearTimeout(timer);
+                            resolve(outFile);
                         };
+
+                        const img = new Image();
+                        const objectUrl = URL.createObjectURL(file);
+                        timer = setTimeout(() => finish(file), 8000);
+
+                        img.onload = () => {
+                            try {
+                                const canvas = document.createElement('canvas');
+                                let width = img.width;
+                                let height = img.height;
+
+                                if (width > maxWidth || height > maxWidth) {
+                                    if (width > height) {
+                                        height = Math.round((height * maxWidth) / width);
+                                        width = maxWidth;
+                                    } else {
+                                        width = Math.round((width * maxWidth) / height);
+                                        height = maxWidth;
+                                    }
+                                }
+
+                                canvas.width = width;
+                                canvas.height = height;
+                                canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+
+                                canvas.toBlob((blob) => {
+                                    URL.revokeObjectURL(objectUrl);
+                                    if (blob && blob.type.startsWith('image/')) {
+                                        const extMap = { 'image/png': 'png', 'image/jpeg': 'jpg', 'image/gif': 'gif' };
+                                        const extName = extMap[blob.type] || 'webp';
+                                        const fileName = `compressed_${Date.now()}_${Math.floor(Math.random() * 1000)}.${extName}`;
+                                        finish(new File([blob], fileName, { type: blob.type }));
+                                    } else {
+                                        finish(file);
+                                    }
+                                }, 'image/webp', quality);
+                            } catch (err) {
+                                URL.revokeObjectURL(objectUrl);
+                                finish(file);
+                            }
+                        };
+                        img.onerror = () => {
+                            URL.revokeObjectURL(objectUrl);
+                            finish(file);
+                        };
+                        img.src = objectUrl;
                     });
-                }
+
+                const processed = await Promise.all(rawFiles.map(processFile));
+                processed.forEach((customFile) => {
+                    this.files.push(customFile);
+                    const previewUrl = URL.createObjectURL(customFile);
+                    this.previews.push(previewUrl);
+                    this.itemKeys.push(previewUrl);
+                });
                 evt.target.value = '';
-                this.updateInputFiles();
                 this.syncImageOrder();
                 this.notifyChanged();
+                this.notifyFiles();
             },
 
             removeNew(key) {
@@ -194,9 +226,9 @@ defined or max_width is not defined %}
                 this.previews.splice(index, 1);
                 this.files.splice(index, 1);
                 this.itemKeys = this.itemKeys.filter((k) => k !== key);
-                this.updateInputFiles();
                 this.syncImageOrder();
                 this.notifyChanged();
+                this.notifyFiles();
             },
 
             removeExisting(key) {
@@ -228,17 +260,9 @@ defined or max_width is not defined %}
                 this.previews = orderedNewKeys;
                 this.files = orderedNewKeys.map((key) => fileByKey[key]);
                 this.itemKeys = keys;
-                this.updateInputFiles();
                 this.syncImageOrder();
                 this.notifyChanged();
-            },
-
-            updateInputFiles() {
-                const dt = new DataTransfer();
-                this.files.forEach(f => dt.items.add(f));
-                if (this.$refs.photoInput) {
-                    this.$refs.photoInput.files = dt.files;
-                }
+                this.notifyFiles();
             },
 
             openLightbox(url) {

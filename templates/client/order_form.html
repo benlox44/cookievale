@@ -63,8 +63,7 @@
         {{ render_product_picker(products) }}
 
         <!-- ═══ Order Form ═══ -->
-        <form hx-post="/orders" hx-target="#form-container" hx-swap="outerHTML transition:fade"
-            hx-encoding="multipart/form-data" @submit="prepSubmit">
+        <form @submit.prevent="submitOrder">
 
             <input type="hidden" name="cart_items_json" x-model="cartJson">
             {% from "partials/tooltip.html" import render_tooltip %}

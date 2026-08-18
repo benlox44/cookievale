@@ -8,8 +8,14 @@ document.addEventListener('alpine:init', () => {
             quantity: i.quantity
         })),
         cartJson: '[]',
+        pendingFiles: [],
 
-        init() { this.updateJson(); },
+        init() {
+            this.updateJson();
+            window.addEventListener('cart-files', (e) => {
+                this.pendingFiles = e.detail || [];
+            });
+        },
 
         getQuantity(productId) {
             const item = this.cart.find(i => i.product_id === productId);
@@ -50,7 +56,63 @@ document.addEventListener('alpine:init', () => {
             this.cartJson = JSON.stringify(this.cart.map(i => ({ product_id: i.product_id, quantity: i.quantity })));
             if (onChange) onChange(this.cartJson, this.cartTotal, this.cart);
         },
-        prepSubmit() { this.updateJson(); }
+        prepSubmit() { this.updateJson(); },
+
+        async submitOrder(event) {
+            event.preventDefault();
+            this.updateJson();
+
+            const form = event.target;
+            const formData = new FormData(form);
+            this.pendingFiles.forEach((file) => formData.append('photos', file, file.name));
+
+            const button = form.querySelector('button[type="submit"]');
+            if (button) button.disabled = true;
+
+            try {
+                const response = await fetch('/orders', { method: 'POST', body: formData });
+
+                const triggerHeader = response.headers.get('HX-Trigger');
+                if (triggerHeader) {
+                    try {
+                        const payload = JSON.parse(triggerHeader);
+                        const toast = payload['show-toast'];
+                        if (toast) {
+                            window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: toast.message, type: toast.type } }));
+                        }
+                    } catch (err) { /* malformed HX-Trigger: ignore */ }
+                }
+
+                if (!response.ok) {
+                    try {
+                        const data = await response.json();
+                        if (data && data.detail) {
+                            window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: data.detail, type: 'error' } }));
+                        }
+                    } catch (err) { /* non-JSON error body: ignore */ }
+                    return;
+                }
+
+                const html = await response.text();
+                if (!html.trim()) return;
+
+                const container = document.getElementById('form-container');
+                if (!container) return;
+
+                const template = document.createElement('template');
+                template.innerHTML = html;
+                const node = template.content.firstElementChild;
+                if (!node) return;
+
+                node.style.opacity = '0';
+                node.style.transition = 'opacity 300ms ease';
+                container.replaceWith(node);
+                if (window.Alpine) Alpine.initTree(node);
+                requestAnimationFrame(() => { node.style.opacity = '1'; });
+            } finally {
+                if (button) button.disabled = false;
+            }
+        },
     }));
 });
 </script>
