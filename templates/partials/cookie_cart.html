@@ -64,7 +64,12 @@ document.addEventListener('alpine:init', () => {
 
             const form = event.target;
             const formData = new FormData(form);
-            this.pendingFiles.forEach((file) => formData.append('photos', file, file.name));
+            // DataTransfer-populated input covers htmx/native submissions; only
+            // append from the event on old iOS where setting input.files fails.
+            const photoInput = form.querySelector('input[name="photos"]');
+            if (!photoInput || photoInput.files.length === 0) {
+                this.pendingFiles.forEach((file) => formData.append('photos', file, file.name));
+            }
 
             const button = form.querySelector('button[type="submit"]');
             if (button) button.disabled = true;

@@ -130,6 +130,18 @@ defined or max_width is not defined %}
                 window.dispatchEvent(new CustomEvent('cart-files', { detail: this.files }));
             },
 
+            // Populate the real file input so htmx/native form submissions pick
+            // the files up. Silently skipped on old iOS (DataTransfer unsupported)
+            // where the cart-files event + FormData append in submitOrder cover it.
+            updateInputFiles() {
+                if (!this.$refs.photoInput) return;
+                try {
+                    const dt = new DataTransfer();
+                    this.files.forEach(f => dt.items.add(f));
+                    this.$refs.photoInput.files = dt.files;
+                } catch (err) { /* unsupported DataTransfer: ignored */ }
+            },
+
             syncImageOrder() {
                 if (!this.$refs.imageOrder) return;
                 const tokens = this.itemKeys.map((key) => {
@@ -218,6 +230,7 @@ defined or max_width is not defined %}
                 this.syncImageOrder();
                 this.notifyChanged();
                 this.notifyFiles();
+                this.updateInputFiles();
             },
 
             removeNew(key) {
@@ -229,6 +242,7 @@ defined or max_width is not defined %}
                 this.syncImageOrder();
                 this.notifyChanged();
                 this.notifyFiles();
+                this.updateInputFiles();
             },
 
             removeExisting(key) {
@@ -263,6 +277,7 @@ defined or max_width is not defined %}
                 this.syncImageOrder();
                 this.notifyChanged();
                 this.notifyFiles();
+                this.updateInputFiles();
             },
 
             openLightbox(url) {
