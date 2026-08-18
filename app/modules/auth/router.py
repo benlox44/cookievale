@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, Form, Request, status
 from fastapi.responses import HTMLResponse, RedirectResponse, Response
 
 from app.core.config import ADMIN_PASSWORD, DEBUG
-from app.core.rate_limit import limiter
+from app.core.rate_limit import LOGIN_RATE, limiter
 from app.core.security import SESSION_TTL_SECONDS, create_admin_token, require_admin
 from app.core.templates import templates
 
@@ -22,7 +22,7 @@ def get_login(request: Request) -> HTMLResponse:
 
 
 @router.post("/login")
-@limiter.limit("5/hour")
+@limiter.limit(LOGIN_RATE)
 def post_login(request: Request, password: str = Form(...)) -> Response:
     if hmac.compare_digest(password.encode(), ADMIN_PASSWORD.encode()):
         token = create_admin_token()
