@@ -9,13 +9,6 @@ class AvailabilitySlot:
 
 
 @dataclass
-class AvailabilitySummary:
-    date: date
-    free_slots: int
-    total_slots: int
-
-
-@dataclass
 class AvailableDateOption:
     date: date
     free_slots: int

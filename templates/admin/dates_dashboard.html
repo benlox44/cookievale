@@ -2,11 +2,11 @@
 {% block title %}Disponibilidades - CookieVale{% endblock %}
 
 {% block content %}
-{% from "components/feedback/confirm_modal.html" import render_confirm_modal %}
+{% from "components/forms/date_calendar.html" import render_date_calendar %}
 {% from "components/ui/icons.html" import render_icon %}
-<div class="w-full max-w-4xl mx-auto">
+<div class="w-full max-w-4xl mx-auto" x-data="datesPage()" @date-selected.window="onDateSelected($event.detail)">
     <div class="cv-card mb-6 flex flex-col md:flex-row justify-between items-center py-4 px-6 md:px-8 gap-4">
-        <div class="flex items-center gap-4 flex-shrink-0 w-full md:w-auto">
+        <div class="flex items-center gap-4">
             <a href="/admin"
                 class="text-cookie-golden hover:text-cookie-brown bg-cookie-cream inline-flex items-center justify-center w-10 h-10 rounded-full border border-cookie-pink/40 hover:border-cookie-golden shadow-sm transition-all"
                 title="Volver">
@@ -16,41 +16,71 @@
             </a>
             <h1 class="cv-h2 m-0">Disponibilidades</h1>
         </div>
-        <form action="/admin/dates" method="post" class="flex items-center gap-2 w-full md:w-auto">
-            <label for="selected-date" class="sr-only">Fecha</label>
-            <input id="selected-date" type="date" name="selected_date" min="{{ today }}" required class="cv-input py-2">
-            <button type="submit" class="cv-btn py-2 whitespace-nowrap">Agregar cupo</button>
-        </form>
+        <div class="flex items-center gap-2">
+            <button type="button" @click="addSlot()" :disabled="!selectedDate"
+                class="cv-btn w-9 h-9 p-0 rounded-full disabled:opacity-40 disabled:cursor-not-allowed"
+                title="Agregar un cupo en la fecha seleccionada" aria-label="Agregar cupo">
+                {{ render_icon("plus") }}
+            </button>
+            <button type="button" @click="removeSlot()" :disabled="!canRemove"
+                class="cv-icon-btn-danger w-9 h-9 rounded-full disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center transition-colors"
+                title="Eliminar un cupo de la fecha seleccionada" aria-label="Eliminar cupo">
+                {{ render_icon("trash") }}
+            </button>
+        </div>
     </div>
 
-    <div class="cv-card p-0 overflow-hidden">
-        {% if dates %}
-        <div class="divide-y divide-cookie-pink/20">
-            {% for item in dates %}
-            <div class="flex items-center justify-between gap-4 px-5 py-4" x-data="{ showConfirm: false, deleting: false, remove() { this.deleting = true; fetch('/admin/dates/{{ item.date.isoformat() }}', { method: 'DELETE' }).then(r => { if (r.ok) { window.location.reload(); return; } return r.json().then(data => { this.deleting = false; window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: data.detail || 'No se pudo eliminar el cupo' } })); }); }).catch(() => { this.deleting = false; window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: 'Error de conexión' } })); }); } }">
-                <div>
-                    <p class="font-serif font-bold text-cookie-brown">
-                        {{ weekdays[item.date.weekday()] }} {{ item.date.strftime('%d/%m/%Y') }}
-                    </p>
-                    <p class="text-sm text-cookie-brown/60 mt-1">
-                        {{ item.free_slots }} libre{% if item.free_slots != 1 %}s{% endif %}
-                        · {{ item.total_slots }} total{% if item.total_slots != 1 %}es{% endif %}
-                    </p>
-                </div>
-                <button type="button" @click="showConfirm = true" {% if item.free_slots == 0 %}disabled{% endif %}
-                    class="w-9 h-9 rounded-full bg-red-50 text-red-500 hover:bg-red-500 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center transition-colors"
-                    title="Eliminar un cupo libre" aria-label="Eliminar un cupo libre">
-                    {{ render_icon("trash") }}
-                </button>
-                {{ render_confirm_modal("Eliminar disponibilidad", "¿Estás seguro de eliminar un cupo libre de esta fecha?", onConfirm="remove()") }}
-            </div>
-            {% endfor %}
-        </div>
-        {% else %}
-        <div class="p-8 text-center text-cookie-brown/60">
-            Todavía no hay fechas disponibles. Agrega el primer cupo usando el formulario superior.
-        </div>
-        {% endif %}
+    <div class="cv-card p-4">
+        {{ render_date_calendar('selected_date', slot_counts, today) }}
     </div>
 </div>
+
+<script>
+function datesPage() {
+    return {
+        selectedDate: '',
+        selectedHasSlot: false,
+        get canRemove() {
+            return !!this.selectedDate && this.selectedHasSlot;
+        },
+        toast(message, type) {
+            window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: message, type: type || 'error' } }));
+        },
+        onDateSelected(detail) {
+            this.selectedDate = detail.date || '';
+            this.selectedHasSlot = !!detail.available;
+        },
+        addSlot() {
+            if (!this.selectedDate) {
+                this.toast('Primero selecciona una fecha en el calendario.');
+                return;
+            }
+            const formData = new FormData();
+            formData.append('selected_date', this.selectedDate);
+            fetch('/admin/dates', { method: 'POST', body: formData })
+                .then((r) => {
+                    if (r.ok) { window.location.reload(); return; }
+                    return r.json().then((data) => this.toast(data.detail || 'No se pudo agregar el cupo.'));
+                })
+                .catch(() => this.toast('Error de conexión.'));
+        },
+        removeSlot() {
+            if (!this.selectedDate) {
+                this.toast('Primero selecciona una fecha en el calendario.');
+                return;
+            }
+            if (!this.selectedHasSlot) {
+                this.toast('No hay cupos para eliminar en la fecha seleccionada.');
+                return;
+            }
+            fetch('/admin/dates/' + this.selectedDate, { method: 'DELETE' })
+                .then((r) => {
+                    if (r.ok) { window.location.reload(); return; }
+                    return r.json().then((data) => this.toast(data.detail || 'No se pudo eliminar el cupo.'));
+                })
+                .catch(() => this.toast('Error de conexión.'));
+        }
+    };
+}
+</script>
 {% endblock %}

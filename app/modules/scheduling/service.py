@@ -3,11 +3,7 @@ from datetime import date, datetime
 
 from app.core.config import TZ
 from app.modules.orders.repository import OrderRepository
-from app.modules.scheduling.domain import (
-    AvailabilitySlot,
-    AvailabilitySummary,
-    AvailableDateOption,
-)
+from app.modules.scheduling.domain import AvailabilitySlot, AvailableDateOption
 from app.modules.scheduling.repository import AvailabilitySlotRepository
 
 
@@ -25,27 +21,18 @@ class SchedulingService:
         today = datetime.now(tz=TZ).date()
         self.repo.delete_before(today)
 
-    def get_summaries(self) -> list[AvailabilitySummary]:
+    def get_free_slots(self) -> list[AvailabilitySlot]:
         self._purge_past_slots()
-        slots = self.repo.get_all()
         occupied = self._occupied_slot_ids()
-        grouped: dict[date, list[AvailabilitySlot]] = defaultdict(list)
-        for slot in slots:
-            grouped[slot.date].append(slot)
-        return [
-            AvailabilitySummary(
-                date=slot_date,
-                free_slots=sum(slot.id not in occupied for slot in date_slots),
-                total_slots=len(date_slots),
-            )
-            for slot_date, date_slots in grouped.items()
-        ]
+        return [slot for slot in self.repo.get_all() if slot.id not in occupied]
 
     def get_available_dates(self) -> list[AvailableDateOption]:
+        free_by_date: dict[date, int] = defaultdict(int)
+        for slot in self.get_free_slots():
+            free_by_date[slot.date] += 1
         return [
-            AvailableDateOption(date=summary.date, free_slots=summary.free_slots)
-            for summary in self.get_summaries()
-            if summary.free_slots > 0
+            AvailableDateOption(date=slot_date, free_slots=count)
+            for slot_date, count in sorted(free_by_date.items())
         ]
 
     def add_slot(self, new_date: date) -> AvailabilitySlot:
@@ -58,16 +45,14 @@ class SchedulingService:
         occupied = self._occupied_slot_ids()
         slot = next(
             (
-                slot
-                for slot in self.repo.get_all()
-                if slot.date == target_date and slot.id not in occupied
+                s
+                for s in self.repo.get_all()
+                if s.date == target_date and s.id not in occupied
             ),
             None,
         )
         if slot is None:
-            raise ValueError(
-                "No hay disponibilidades libres para eliminar en esa fecha."
-            )
+            raise ValueError("No hay cupos libres para eliminar en esa fecha.")
         self.repo.delete(slot.id)
 
     def get_slot_for_date(

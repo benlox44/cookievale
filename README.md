@@ -120,7 +120,7 @@ Instead of grouping files by technical concern (e.g. all models together, all ro
 
 | Method | Path | Description |
 | --- | --- | --- |
-| `GET` | `/admin/dates` | Delivery dates calendar and scheduling. |
+| `GET` | `/admin/dates` | Delivery slots calendar and scheduling. |
 | `POST` | `/admin/dates` | Add an availability slot for a date. |
 | `DELETE` | `/admin/dates/{target_date}` | Delete one free availability slot for a date. |
 

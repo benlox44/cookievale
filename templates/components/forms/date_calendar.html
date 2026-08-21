@@ -1,0 +1,161 @@
+{% macro render_date_calendar(name, dates, today, selected='', show_counts=False, only_available=False, restrict_months=False) %}
+{% set state = namespace(entries=[]) %}
+{% for item in dates %}
+    {% set state.entries = state.entries + [{'date': item.date.isoformat(), 'free': item.free_slots}] %}
+{% endfor %}
+<div x-data='cvDateCalendar({{ {'name': name, 'dates': state.entries, 'today': today, 'selected': selected, 'showCounts': show_counts, 'onlyAvailable': only_available, 'restrictMonths': restrict_months} | tojson }})'
+    class="cv-calendar">
+    <input type="hidden" :name="name" :value="selected">
+
+    <div class="cv-calendar-head">
+        <button type="button" @click="prevMonth()" :disabled="!canPrev()" class="cv-calendar-nav"
+            aria-label="Mes anterior">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7" />
+            </svg>
+        </button>
+        <span class="cv-calendar-month" x-text="monthLabel"></span>
+        <button type="button" @click="nextMonth()" :disabled="!canNext()" class="cv-calendar-nav" aria-label="Mes siguiente">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7" />
+            </svg>
+        </button>
+    </div>
+
+    <div class="cv-calendar-weekdays">
+        <template x-for="day in weekdays" :key="day">
+            <span x-text="day"></span>
+        </template>
+    </div>
+
+    <div class="cv-calendar-grid">
+        <template x-for="cell in days" :key="cell.key">
+            <button type="button" @click="select(cell.date)" :disabled="!cell.selectable"
+                class="cv-calendar-day"
+                :class="{
+                    'is-selected': cell.date === selected,
+                    'is-disabled': cell.disabled
+                }">
+                <span x-text="cell.num || ''"></span>
+                <span class="cv-calendar-count" x-show="cell.count > 0 && showCounts" x-text="cell.count"></span>
+            </button>
+        </template>
+    </div>
+
+    <p class="cv-calendar-hint" x-show="selected" x-text="fmt(selected)"></p>
+</div>
+
+<script>
+(function () {
+    if (window.__cvDateCalendarLoaded) return;
+    window.__cvDateCalendarLoaded = true;
+    document.addEventListener('alpine:init', () => {
+        Alpine.data('cvDateCalendar', (config) => {
+            const pad = (n) => String(n).padStart(2, '0');
+            const MONTHS = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+            const SHORT = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+
+            const [ty, tm, td] = config.today.split('-').map(Number);
+
+            return {
+                name: config.name || '',
+                dates: config.dates || [],
+                today: config.today || '',
+                map: {},
+                selected: config.selected || '',
+                showCounts: config.showCounts !== false,
+                onlyAvailable: !!config.onlyAvailable,
+                restrictMonths: !!config.restrictMonths,
+                weekdays: ['Lu', 'Ma', 'Mi', 'Ju', 'Vi', 'Sa', 'Do'],
+                year: ty,
+                month: tm - 1,
+                days: [],
+
+                get monthLabel() {
+                    return MONTHS[this.month] + ' ' + this.year;
+                },
+
+                init() {
+                    this.map = {};
+                    this.dates.forEach((entry) => {
+                        this.map[entry.date] = entry;
+                    });
+                    this.build();
+                },
+
+                fmt(date) {
+                    const parts = date.split('-');
+                    return parseInt(parts[2]) + ' de ' + SHORT[parseInt(parts[1]) - 1] + ' ' + parts[0];
+                },
+
+                select(date) {
+                    this.selected = this.selected === date ? '' : date;
+                    const entry = this.map[date];
+                    const available = !!entry && entry.free > 0;
+                    this.$dispatch('date-selected', { date: this.selected, available: available });
+                },
+
+                canPrev() {
+                    return this.year > ty || (this.year === ty && this.month > tm - 1);
+                },
+                canNext() {
+                    if (!this.restrictMonths) return true;
+                    const nextBoundary = new Date(this.year, this.month + 1, 1).getTime();
+                    return this.dates.some((entry) => {
+                        const [ey, em, ed] = entry.date.split('-').map(Number);
+                        return new Date(ey, em - 1, ed).getTime() >= nextBoundary;
+                    });
+                },
+                nextMonth() {
+                    this.month++;
+                    if (this.month > 11) {
+                        this.month = 0;
+                        this.year++;
+                    }
+                    this.build();
+                },
+                prevMonth() {
+                    if (this.canPrev()) {
+                        this.month--;
+                        if (this.month < 0) {
+                            this.month = 11;
+                            this.year--;
+                        }
+                        this.build();
+                    }
+                },
+
+                build() {
+                    const first = new Date(this.year, this.month, 1);
+                    const last = new Date(this.year, this.month + 1, 0);
+                    const offset = (first.getDay() + 6) % 7;
+                    const result = [];
+                    for (let i = 0; i < offset; i++) {
+                        result.push({ key: 'e' + i, num: '', selectable: false });
+                    }
+                    const todayMs = new Date(ty, tm - 1, td).getTime();
+                    for (let d = 1; d <= last.getDate(); d++) {
+                        const ds = this.year + '-' + pad(this.month + 1) + '-' + pad(d);
+                        const dt = new Date(this.year, this.month, d).getTime();
+                        const entry = this.map[ds];
+                        const past = dt < todayMs;
+                        const available = entry ? entry.free > 0 : false;
+                        const disabled = past || (this.onlyAvailable && !available);
+                        result.push({
+                            key: ds,
+                            num: d,
+                            date: ds,
+                            selectable: !disabled || ds === this.selected,
+                            available: available,
+                            count: entry ? entry.free : 0,
+                            disabled: disabled,
+                        });
+                    }
+                    this.days = result;
+                },
+            };
+        });
+    });
+})();
+</script>
+{% endmacro %}

@@ -20,23 +20,14 @@ router = APIRouter(
 def dates_dashboard(
     request: Request, service: SchedulingService = Depends(get_scheduling_service)
 ) -> HTMLResponse:
-    dates = service.get_summaries()
+    slot_counts = service.get_available_dates()
     today = datetime.now(tz=TZ).date().strftime("%Y-%m-%d")
     return templates.TemplateResponse(
         request=request,
         name="admin/dates_dashboard.html",
         context={
-            "dates": dates,
+            "slot_counts": slot_counts,
             "today": today,
-            "weekdays": [
-                "Lunes",
-                "Martes",
-                "Miércoles",
-                "Jueves",
-                "Viernes",
-                "Sábado",
-                "Domingo",
-            ],
         },
     )
 
@@ -54,7 +45,7 @@ def add_date(
 
 
 @router.delete("/{target_date}", response_model=None)
-def delete_date(
+def delete_slot(
     target_date: date,
     service: SchedulingService = Depends(get_scheduling_service),
 ) -> dict[str, str] | JSONResponse:
