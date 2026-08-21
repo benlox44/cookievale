@@ -1,14 +1,77 @@
-{% macro render_dropdown(name, options, selected='', id='', required=False, hx_get='', hx_target='', placeholder='', class='') %}
-<select name="{{ name }}"
-    {% if id %}id="{{ id }}"{% endif %}
-    {% if required %}required{% endif %}
-    {% if hx_get %}x-data="{}" @change="htmx.ajax('GET', '{{ hx_get }}' + ($el.value ? '?{{ name }}=' + $el.value : ''), {target: '{{ hx_target }}'})"{% endif %}
-    class="cv-input {{ class }}">
-    {% if placeholder %}
-    <option value="" disabled {% if not selected %}selected{% endif %}>{{ placeholder }}</option>
-    {% endif %}
-    {% for opt in options %}
-    <option value="{{ opt.value }}" {% if opt.value == selected %}selected{% endif %}>{{ opt.label }}</option>
-    {% endfor %}
-</select>
+{% macro render_dropdown(name, options, selected='', id='', required=False, hx_get='', hx_target='', placeholder='', class='', model='', change_event='') %}
+<div x-data='cvDropdown({{ {'name': name, 'options': options, 'selected': selected, 'placeholder': placeholder, 'model': model, 'changeEvent': change_event, 'hxGet': hx_get, 'hxTarget': hx_target} | tojson }})'
+    @click.outside="open = false" class="cv-dropdown {{ class }}">
+    <button type="button" @click="toggle()" @keydown.down.prevent="open = true" @keydown.up.prevent="open = false"
+        @keydown.escape="open = false" class="cv-dropdown-trigger" aria-haspopup="listbox" :aria-expanded="open">
+        <span class="cv-dropdown-value" :class="{ 'is-placeholder': !value }" x-text="value ? label : placeholder"></span>
+        <svg class="cv-dropdown-chevron" :class="{ 'is-open': open }" viewBox="0 0 20 20" fill="currentColor"
+            aria-hidden="true">
+            <path fill-rule="evenodd"
+                d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.51a.75.75 0 01-1.08 0l-4.25-4.51a.75.75 0 01.02-1.06z"
+                clip-rule="evenodd" />
+        </svg>
+    </button>
+
+    <div x-show="open" x-transition:enter="cv-dropdown-menu-enter" x-transition:enter-start="cv-dropdown-menu-enter-start"
+        x-transition:enter-end="cv-dropdown-menu-enter-end"
+        x-transition:leave="cv-dropdown-menu-leave" x-transition:leave-start="cv-dropdown-menu-leave-start"
+        x-transition:leave-end="cv-dropdown-menu-leave-end"
+        class="cv-dropdown-menu" role="listbox">
+        <template x-for="opt in options" :key="opt.value">
+            <button type="button" @click="select(opt.value)" role="option"
+                class="cv-dropdown-option" :class="{ 'is-selected': opt.value === value }"
+                :aria-selected="opt.value === value">
+                <span x-text="opt.label"></span>
+                <svg class="cv-dropdown-check" :class="{ 'is-hidden': opt.value !== value }" viewBox="0 0 20 20"
+                    fill="currentColor" aria-hidden="true">
+                    <path fill-rule="evenodd"
+                        d="M16.704 5.29a.75.75 0 010 1.06l-7.25 7.25a.75.75 0 01-1.06 0l-3.25-3.25a.75.75 0 111.06-1.06l2.72 2.72 6.72-6.72a.75.75 0 011.06 0z"
+                        clip-rule="evenodd" />
+                </svg>
+            </button>
+        </template>
+    </div>
+
+    <select :name="name" x-ref="native" tabindex="-1" aria-hidden="true"{% if required %} required{% endif %}
+        class="cv-dropdown-native"{% if model %} x-model="{{ model }}"{% endif %}
+        {% if change_event %}@change="{{ change_event }}"{% endif %}
+        {% if hx_get %}@change="htmx.ajax('GET', '{{ hx_get }}' + ($el.value ? '?{{ name }}=' + $el.value : ''), {target: '{{ hx_target }}'})"{% endif %}>
+        <option value=""></option>
+        <template x-for="opt in options" :key="opt.value">
+            <option :value="opt.value" x-text="opt.label"></option>
+        </template>
+    </select>
+</div>
+
+<script>
+(function () {
+    if (window.__cvDropdownLoaded) return;
+    window.__cvDropdownLoaded = true;
+    document.addEventListener('alpine:init', () => {
+        Alpine.data('cvDropdown', (config) => ({
+            open: false,
+            value: config.selected || '',
+            name: config.name || '',
+            placeholder: config.placeholder || 'Selecciona una opción',
+            options: config.options || [],
+            init() {
+                this.$refs.native.value = this.value;
+            },
+            get label() {
+                const option = this.options.find((item) => item.value === this.value);
+                return option ? option.label : '';
+            },
+            toggle() {
+                this.open = !this.open;
+            },
+            select(val) {
+                this.value = val;
+                this.$refs.native.value = val;
+                this.open = false;
+                this.$refs.native.dispatchEvent(new Event('change', { bubbles: true }));
+            },
+        }));
+    });
+})();
+</script>
 {% endmacro %}

@@ -3,7 +3,8 @@
 
 {% block content %}
 {% from "components/products/picker.html" import render_product_picker %}
-{% from "components/forms/availability_select.html" import render_availability_select %}
+{% from "components/forms/date_calendar.html" import render_date_calendar %}
+{% from "components/forms/dropdown.html" import render_dropdown %}
 {% if request.query_params.get('error') %}
 <script>
     window.addEventListener('DOMContentLoaded', function () {
@@ -14,8 +15,9 @@
 </script>
 {% endif %}
 <div x-data="orderDetail()"
-    @photos-changed.window="photosChanged = true">
-    <div class="cv-card p-0 overflow-hidden shadow-[0_4px_20px_rgba(212,149,106,0.1)] mb-8">
+    @photos-changed.window="photosChanged = true"
+    @date-selected.window="onCalendarDate($event.detail.date)">
+    <div class="cv-card cv-shadow-card p-0 overflow-hidden mb-8">
 
         <!-- Header -->
         <div
@@ -131,15 +133,20 @@
                 <div class="space-y-4 relative z-10">
                     <div>
                         <label class="cv-label block mb-1.5">Fecha de Entrega</label>
-                        {{ render_availability_select(available_dates, weekdays, selected=order.delivery_date.strftime('%Y-%m-%d'), model='formData.delivery_date') }}
+                        {{ render_date_calendar('delivery_date', available_dates, today, selected=order.delivery_date.strftime('%Y-%m-%d'), only_available=True, restrict_months=True) }}
                     </div>
                     <div>
                         <label class="cv-label block mb-1.5">Método de Entrega</label>
-                        <select name="delivery_method" x-model="formData.delivery_method" class="cv-input relative z-20"
-                            required>
-                            <option value="pickup">{{ 'pickup' | delivery_label }}</option>
-                            <option value="delivery">{{ 'delivery' | delivery_label }}</option>
-                        </select>
+                        {{ render_dropdown(
+                            name='delivery_method',
+                            options=[
+                                {'value': 'pickup', 'label': 'pickup' | delivery_label},
+                                {'value': 'delivery', 'label': 'delivery' | delivery_label},
+                            ],
+                            selected=order.delivery_method.value,
+                            required=True,
+                            model='formData.delivery_method'
+                        ) }}
                     </div>
                 </div>
 
@@ -300,6 +307,9 @@
                 this.cartJson = json;
                 this.cartTotal = total;
                 this.cartItems = items;
+            },
+            onCalendarDate(date) {
+                if (date) this.formData.delivery_date = date;
             },
             get carritoModificado() {
                 return String(this.cartJson) !== String(this.initialCartJson);

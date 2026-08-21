@@ -5,7 +5,7 @@
 {% block content %}
 {% from "components/forms/dropdown.html" import render_dropdown %}
 {% from "components/products/picker.html" import render_product_picker %}
-{% from "components/forms/availability_select.html" import render_availability_select %}
+{% from "components/forms/date_calendar.html" import render_date_calendar %}
 {% if request.query_params.get('error') %}
 <script>
     window.addEventListener('DOMContentLoaded', function () {
@@ -98,9 +98,9 @@
                 <div>
                     <div class="flex items-center gap-2 mb-1.5">
                         <label class="cv-label block mb-0">Fecha de entrega</label>
-                        {{ render_tooltip("Fechas disponibles para agendar. Si eliges una fecha no creada, podrás crearla.") }}
+                        {{ render_tooltip("Elige una fecha con disponibilidad para agendar.") }}
                     </div>
-                        {{ render_availability_select(available_dates, weekdays) }}
+                        {{ render_date_calendar('delivery_date', available_dates, today, only_available=True, restrict_months=True) }}
                 </div>
                 <div>
                     <div class="flex items-center gap-2 mb-1.5">
@@ -125,13 +125,16 @@
                         <label class="cv-label block mb-0">Estado inicial</label>
                         {{ render_tooltip("Estado con el que se crea la orden.") }}
                     </div>
-                    <select name="order_status" required class="cv-input">
-                        {% for s in OrderStatuses %}
-                        <option value="{{ s.value }}" {% if s.value == 'pending' %}selected{% endif %}>
-                            {{ s | status_label }}
-                        </option>
-                        {% endfor %}
-                    </select>
+                    {% set status_options = namespace(items=[]) %}
+                    {% for s in OrderStatuses %}
+                        {% set status_options.items = status_options.items + [{'value': s.value, 'label': s | status_label}] %}
+                    {% endfor %}
+                    {{ render_dropdown(
+                        name='order_status',
+                        options=status_options.items,
+                        selected='pending',
+                        required=True
+                    ) }}
                 </div>
                 <div>
                     <div class="flex items-center gap-2 mb-1.5">

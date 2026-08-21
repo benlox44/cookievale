@@ -14,6 +14,7 @@ from fastapi import (
 )
 from fastapi.responses import HTMLResponse, RedirectResponse
 
+from app.core.config import TZ
 from app.core.dependencies import (
     get_order_service,
     get_product_service,
@@ -111,6 +112,7 @@ def new_order_form(
                 "Domingo",
             ],
             "OrderStatuses": list(OrderStatus),
+            "today": datetime.now(tz=TZ).date().strftime("%Y-%m-%d"),
         },
     )
 
@@ -201,6 +203,7 @@ def get_order_detail(
                 "Domingo",
             ],
             "OrderStatuses": [e.value for e in OrderStatus],
+            "today": datetime.now(tz=TZ).date().strftime("%Y-%m-%d"),
         },
     )
 
@@ -211,8 +214,8 @@ def update_order_status(
     status: OrderStatus = Form(...),
     service: OrderService = Depends(get_order_service),
 ) -> RedirectResponse:
-    # Un-rejecting an order back onto an already-occupied date is rejected by
-    # the database; surface it instead of silently failing.
+    # Moving an order to an already-occupied slot is rejected by the database;
+    # surface it instead of silently failing.
     try:
         service.change_status(order_id, status)
     except ValueError as exc:
