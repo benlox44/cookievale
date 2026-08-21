@@ -127,7 +127,7 @@
                     </div>
                     {% set status_options = namespace(items=[]) %}
                     {% for s in OrderStatuses %}
-                        {% set status_options.items = status_options.items + [{'value': s.value, 'label': s | status_label}] %}
+                        {% set status_options.items = status_options.items + [{'value': s, 'label': s | status_label}] %}
                     {% endfor %}
                     {{ render_dropdown(
                         name='order_status',
