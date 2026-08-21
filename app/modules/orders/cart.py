@@ -42,7 +42,6 @@ def parse_cart_items(
         raise CartError("El carrito no puede estar vacío.")
 
     items: list[OrderItemCreate] = []
-    total = 0
     for item in cart_raw:
         try:
             prod_id = int(item.get("product_id"))
@@ -64,9 +63,23 @@ def parse_cart_items(
         items.append(
             OrderItemCreate(product_id=prod_id, quantity=qty, unit_price=unit_p)
         )
-        total += unit_p * qty
+
+    # Merge repeated product entries (same product_id sent twice in the JSON).
+    merged: dict[int, OrderItemCreate] = {}
+    for item in items:
+        prev = merged.get(item.product_id)
+        if prev is None:
+            merged[item.product_id] = item
+        else:
+            merged[item.product_id] = OrderItemCreate(
+                product_id=item.product_id,
+                quantity=prev.quantity + item.quantity,
+                unit_price=item.unit_price,
+            )
+    items = list(merged.values())
 
     if not items:
         raise CartError("El carrito no puede estar vacío.")
 
+    total = sum(item.unit_price * item.quantity for item in items)
     return ParsedCart(items=items, total_amount=total)
