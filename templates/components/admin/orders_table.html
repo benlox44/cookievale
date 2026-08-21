@@ -132,14 +132,14 @@
     <span class="text-xs text-cookie-brown/60">Página {{ page }} de {{ total_pages }}</span>
     <div class="flex items-center gap-2">
         {% if page > 1 %}
-        <a hx-get="/admin/orders?page={{ page - 1 }}&sort_by={{ current_sort_by }}&sort_dir={{ current_sort_dir }}{% if include_closed %}&include_closed=true{% endif %}"
+        <a hx-get="/admin/orders?page={{ page - 1 }}&sort_by={{ current_sort_by }}&sort_dir={{ current_sort_dir }}{% if include_delivered %}&include_delivered=true{% endif %}"
             hx-target="#orders-table-container"
             class="text-xs px-3 py-1.5 rounded-full border border-cookie-pink/40 text-cookie-brown hover:border-cookie-golden transition-all select-none">
             Anterior
         </a>
         {% endif %}
         {% if page < total_pages %}
-        <a hx-get="/admin/orders?page={{ page + 1 }}&sort_by={{ current_sort_by }}&sort_dir={{ current_sort_dir }}{% if include_closed %}&include_closed=true{% endif %}"
+        <a hx-get="/admin/orders?page={{ page + 1 }}&sort_by={{ current_sort_by }}&sort_dir={{ current_sort_dir }}{% if include_delivered %}&include_delivered=true{% endif %}"
             hx-target="#orders-table-container"
             class="text-xs px-3 py-1.5 rounded-full border border-cookie-pink/40 text-cookie-brown hover:border-cookie-golden transition-all select-none">
             Siguiente
