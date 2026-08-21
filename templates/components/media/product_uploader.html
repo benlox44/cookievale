@@ -311,6 +311,7 @@
                 this.previews.splice(index, 1);
                 this.files.splice(index, 1);
                 this.itemKeys = this.itemKeys.filter((k) => k !== key);
+                URL.revokeObjectURL(key);
                 this.updateInputFiles();
                 this.syncImageOrder();
                 this.notifyChanged();
@@ -367,11 +368,13 @@
             },
 
             updateInputFiles() {
-                const dt = new DataTransfer();
-                this.files.forEach(f => dt.items.add(f));
-                if (this.$refs.photoInput) {
-                    this.$refs.photoInput.files = dt.files;
-                }
+                try {
+                    const dt = new DataTransfer();
+                    this.files.forEach(f => dt.items.add(f));
+                    if (this.$refs.photoInput) {
+                        this.$refs.photoInput.files = dt.files;
+                    }
+                } catch (err) { /* unsupported DataTransfer: ignored */ }
             }
         }
     }

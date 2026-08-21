@@ -239,6 +239,7 @@ defined or max_width is not defined %}
                 this.previews.splice(index, 1);
                 this.files.splice(index, 1);
                 this.itemKeys = this.itemKeys.filter((k) => k !== key);
+                URL.revokeObjectURL(key);
                 this.syncImageOrder();
                 this.notifyChanged();
                 this.notifyFiles();
