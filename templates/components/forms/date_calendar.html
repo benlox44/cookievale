@@ -80,6 +80,11 @@
                     this.dates.forEach((entry) => {
                         this.map[entry.date] = entry;
                     });
+                    if (this.selected) {
+                        const [sy, sm] = this.selected.split('-').map(Number);
+                        this.year = sy;
+                        this.month = sm - 1;
+                    }
                     this.build();
                 },
 
@@ -96,7 +101,11 @@
                 },
 
                 canPrev() {
-                    return this.year > ty || (this.year === ty && this.month > tm - 1);
+                    const prevBoundary = new Date(this.year, this.month, 1).getTime();
+                    return this.dates.some((entry) => {
+                        const [ey, em, ed] = entry.date.split('-').map(Number);
+                        return new Date(ey, em - 1, ed).getTime() < prevBoundary;
+                    });
                 },
                 canNext() {
                     if (!this.restrictMonths) return true;
