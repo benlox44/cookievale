@@ -25,7 +25,6 @@
     --bg-hover: #FEF6F1;
     --bg-inverse: #FFFFFF;
     --bg-glass: rgba(255, 255, 255, 0.7);
-    --bg-glass-soft: rgba(255, 255, 255, 0.8);
     --bg-media-placeholder: #E5E7EB;
     --accent: var(--cookie-golden);
     --accent-hover: #C07A52;
@@ -38,13 +37,9 @@
     --danger-shadow: rgba(239, 68, 68, 0.2);
     --overlay: rgba(0, 0, 0, 0.9);
     --overlay-soft: rgba(0, 0, 0, 0.5);
-    --overlay-faint: rgba(0, 0, 0, 0.1);
-    --surface-translucent: rgba(255, 255, 255, 0.7);
     --success-text: var(--status-success-text);
     --success-bg: var(--status-success-bg);
     --success-border: var(--status-success-border);
-    --overlay: rgba(0, 0, 0, 0.9);
-    --overlay-soft: rgba(0, 0, 0, 0.5);
     --accent-shadow: rgba(212, 149, 106, 0.35);
     --accent-shadow-hover: rgba(212, 149, 106, 0.4);
     --accent-shadow-soft: rgba(212, 149, 106, 0.18);
@@ -107,10 +102,6 @@
 
   .cv-glass-card {
     background: var(--bg-glass);
-  }
-
-  .cv-glass-header {
-    background: var(--bg-glass-soft);
   }
 
   .cv-shadow-card {
@@ -260,7 +251,8 @@
   }
 
   .cv-dropdown-trigger:focus-visible,
-  .cv-dropdown.is-open .cv-dropdown-trigger {
+  .cv-dropdown.is-open .cv-dropdown-trigger,
+  .cv-dropdown:focus-within .cv-dropdown-trigger {
     border-color: var(--accent);
     box-shadow: 0 0 0 3px var(--focus-ring);
     outline: none;
@@ -468,8 +460,7 @@
     background: var(--danger);
   }
 
-  .cv-status-badge,
-  .cv-status-control {
+  .cv-status-badge {
     color: var(--status-text);
     background: var(--status-bg);
     border-color: var(--status-border);
@@ -485,25 +476,6 @@
     font-weight: 700;
     letter-spacing: 0.05em;
     text-transform: uppercase;
-  }
-
-  .cv-status-control {
-    border-width: 1px;
-    border-radius: 9999px;
-    padding: 0.375rem 0.75rem;
-    font-size: 0.75rem;
-    font-weight: 700;
-    opacity: 0.7;
-    transition: opacity 0.15s, box-shadow 0.15s;
-  }
-
-  .cv-status-control:hover,
-  .cv-status-control.is-selected {
-    opacity: 1;
-  }
-
-  .cv-status-control.is-selected {
-    box-shadow: 0 0 0 2px var(--status-border);
   }
 
   .cv-status-warning { --status-bg: var(--status-warning-bg); --status-text: var(--status-warning-text); --status-border: var(--status-warning-border); }
@@ -523,7 +495,6 @@
   }
 
   .cv-surface { background: var(--bg-card); }
-  .cv-text-inverse { color: var(--bg-inverse); }
   .cv-text-danger { color: var(--danger); }
   .cv-text-success { color: var(--success-text); }
   .cv-alert-danger {
@@ -534,8 +505,7 @@
   .cv-overlay { background: var(--overlay); }
   .cv-overlay-control { background: var(--overlay-soft); color: var(--bg-inverse); }
   .cv-overlay-control:hover { background: var(--danger); }
-  .cv-overlay-faint { background: var(--overlay-faint); }
-  .cv-surface-translucent { background: var(--surface-translucent); }
+  .cv-surface-translucent { background: var(--bg-glass); }
   .cv-surface-translucent:hover { background: var(--bg-card); }
   .cv-success-badge {
     background: var(--success-bg);
@@ -594,41 +564,5 @@
     display: flex;
     align-items: center;
     height: 100%;
-  }
-
-  .badge-pending {
-    background: var(--status-pending-bg);
-    color: var(--status-pending-text);
-    border: 1px solid var(--status-pending-border);
-  }
-
-  .badge-confirmed {
-    background: var(--status-confirmed-bg);
-    color: var(--status-confirmed-text);
-    border: 1px solid var(--status-confirmed-border);
-  }
-
-  .badge-paid {
-    background: var(--status-paid-bg);
-    color: var(--status-paid-text);
-    border: 1px solid var(--status-paid-border);
-  }
-
-  .badge-delivered {
-    background: var(--status-delivered-bg);
-    color: var(--status-delivered-text);
-    border: 1px solid var(--status-delivered-border);
-  }
-
-  .badge {
-    padding-top: 0.2rem;
-    padding-bottom: 0.2rem;
-    padding-left: 0.65rem;
-    padding-right: 0.65rem;
-    border-radius: 9999px;
-    font-size: 0.75rem;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
   }
 }
