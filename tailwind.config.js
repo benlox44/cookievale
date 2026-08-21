@@ -9,11 +9,11 @@ module.exports = {
       },
       colors: {
         cookie: {
-          pink: "#fdd0cd",
-          peach: "#F4A07A",
-          golden: "#D4956A",
-          brown: "#7B3F2B",
-          cream: "#FDF5EE",
+          pink: "var(--cookie-pink)",
+          peach: "var(--cookie-peach)",
+          golden: "var(--cookie-golden)",
+          brown: "var(--cookie-brown)",
+          cream: "var(--cookie-cream)",
         },
       },
     },

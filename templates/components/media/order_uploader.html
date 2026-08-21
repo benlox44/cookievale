@@ -55,7 +55,7 @@ defined or max_width is not defined %}
                             <div>
                                 <input type="hidden" name="{{ existing_field }}" :value="item.url" {{ form_attr | safe }} />
                                 <button type="button" @click.prevent="removeExisting(item.key)" x-sort:ignore
-                                    class="absolute top-1 right-1 bg-white/90 hover:bg-red-500 text-red-500 hover:text-white rounded-full p-1 transition-colors cursor-pointer z-40 shadow-sm border border-red-100">
+                                    class="absolute top-1 right-1 cv-icon-btn-danger rounded-full p-1 transition-colors cursor-pointer z-40 shadow-sm">
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                             d="M6 18L18 6M6 6l12 12" />
@@ -65,7 +65,7 @@ defined or max_width is not defined %}
                         </template>
                         <template x-if="item.kind === 'new'">
                             <button type="button" @click.prevent="removeNew(item.key)" x-sort:ignore
-                                class="absolute top-1 right-1 bg-white/90 hover:bg-red-500 text-red-500 hover:text-white rounded-full p-1 transition-colors cursor-pointer z-40 shadow-sm border border-red-100">
+                                class="absolute top-1 right-1 cv-icon-btn-danger rounded-full p-1 transition-colors cursor-pointer z-40 shadow-sm">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                         d="M6 18L18 6M6 6l12 12" />

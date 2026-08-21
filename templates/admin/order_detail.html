@@ -124,11 +124,11 @@
                         <label class="cv-label block mb-1.5">Abono Confirmado ($)</label>
                         <input type="number" step="1" onkeypress="return event.charCode >= 48 && event.charCode <= 57"
                             name="amount_paid" x-model="formData.amount_paid"
-                            class="cv-input font-bold text-emerald-700">
+                            class="cv-input font-bold cv-text-success">
                     </div>
                     <div class="flex flex-col justify-end">
                         <span class="cv-label">Saldo Restante</span>
-                        <span class="text-lg font-bold text-red-500 mt-1">$<span
+                        <span class="text-lg font-bold cv-text-danger mt-1">$<span
                                 x-text="saldoRestante.toLocaleString()"></span></span>
                     </div>
                 </div>

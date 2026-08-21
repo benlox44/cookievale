@@ -1,4 +1,4 @@
-{% macro render_confirm_modal(title, message, confirm_text="Eliminar", confirm_class="bg-red-500 hover:bg-red-600 text-white border-red-500 shadow-red-200", onConfirm="", onCancel="") %}
+{% macro render_confirm_modal(title, message, confirm_text="Eliminar", confirm_class="cv-btn-danger", onConfirm="", onCancel="") %}
 <template x-teleport="body">
     <div x-show="showConfirm" class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4"
         style="display: none;">

@@ -2,13 +2,13 @@
 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 mb-10">
     {% for product in products %}
     <div
-        class="cv-card p-4 flex flex-col justify-between hover:shadow-[0_8px_24px_rgba(212,149,106,0.18)] hover:-translate-y-1 hover:border-cookie-golden/40 transition-all duration-300 group">
+        class="cv-card cv-shadow-card-hover p-4 flex flex-col justify-between hover:-translate-y-1 hover:border-cookie-golden/40 transition-all duration-300 group">
         {% include "components/products/slider.html" %}
         {% include "components/products/info.html" %}
         <div
             class="flex items-center justify-between bg-cookie-cream rounded-xl p-1.5 border border-cookie-pink/30">
             <button type="button" @click="removeItem({{ product.id }})"
-                class="w-9 h-9 flex items-center justify-center rounded-lg text-cookie-brown/60 hover:bg-white hover:shadow-sm hover:text-red-400 transition-all active:scale-90 shrink-0">
+                class="w-9 h-9 flex items-center justify-center rounded-lg text-cookie-brown/60 cv-surface-translucent hover:shadow-sm cv-text-danger transition-all active:scale-90 shrink-0">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M20 12H4" />
                 </svg>

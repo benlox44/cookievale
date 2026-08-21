@@ -9,9 +9,9 @@
             class="min-w-[250px] max-w-sm bg-white border border-cookie-pink/40 shadow-xl rounded-xl overflow-hidden pointer-events-auto flex flex-col">
             <div class="p-4 text-cookie-brown font-medium text-sm whitespace-pre-wrap" x-text="toast.message"></div>
 
-            <div class="h-1 w-full" :class="toast.type === 'error' ? 'bg-red-100' : 'bg-cookie-pink/20'">
+            <div class="h-1 w-full bg-cookie-pink/20">
                 <div class="h-full transition-all duration-[100ms] ease-linear"
-                    :class="toast.type === 'error' ? 'bg-red-500' : 'bg-cookie-golden'"
+                    class="bg-cookie-golden"
                     :style="`width: ${toast.progress}%`"></div>
             </div>
         </div>

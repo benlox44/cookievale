@@ -6,13 +6,13 @@
      above the sticky header and dropdowns. -->
 <template x-teleport="body">
     <div x-show="lightbox.open" style="display: none;"
-        class="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 backdrop-blur-sm px-4"
+        class="cv-overlay fixed inset-0 z-[100] flex items-center justify-center backdrop-blur-sm px-4"
         @keydown.escape.window="closeLightbox()">
 
         <div class="absolute inset-0 cursor-pointer" @click="closeLightbox()"></div>
 
         <button type="button" @click="closeLightbox()"
-            class="absolute top-6 right-6 z-50 flex items-center justify-center w-12 h-12 bg-black/50 hover:bg-red-500 rounded-full text-white cursor-pointer transition-all">
+            class="cv-overlay-control absolute top-6 right-6 z-50 flex items-center justify-center w-12 h-12 rounded-full cursor-pointer transition-all">
             <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"></path>
             </svg>
@@ -20,7 +20,7 @@
 
         <div class="relative z-10 max-w-5xl w-full max-h-[90vh] flex items-center justify-center p-4">
             <img :src="lightbox.url"
-                class="max-w-full max-h-[85vh] object-contain rounded-xl shadow-2xl border border-white/10" @click.stop>
+                class="max-w-full max-h-[85vh] object-contain rounded-xl shadow-2xl border border-cookie-pink/20" @click.stop>
         </div>
     </div>
 </template>
