@@ -1,0 +1,10 @@
+{% macro render_brand(href, subtitle='') %}
+<a href="{{ href }}" class="cv-header-brand gap-2.5 group">
+    <div class="cv-header-logo rounded-full bg-cookie-pink/30 group-hover:bg-cookie-pink/50 transition-colors">
+        <img src="/public/icons/icon.png" alt="CookieVale" class="w-7 h-7 object-contain">
+    </div>
+    <span class="cv-header-title font-serif font-bold text-xl text-cookie-brown tracking-tight">
+        CookieVale{% if subtitle %}<span class="text-cookie-brown/50 ml-1 text-lg font-medium">{{ subtitle }}</span>{% endif %}
+    </span>
+</a>
+{% endmacro %}
