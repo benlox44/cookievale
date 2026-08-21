@@ -181,7 +181,7 @@ class SQLAlchemyOrderRepository:
         db_order.amount_paid = amount_paid
         self.db.commit()
 
-        return self.get_by_id(order_id)
+        return self._to_domain(db_order)
 
     def get_occupied_slot_ids(self) -> set[int]:
         stmt = select(OrderModel.availability_slot_id)
