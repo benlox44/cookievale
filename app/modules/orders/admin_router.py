@@ -259,10 +259,14 @@ def update_order_details(
             dt.date(), current_slot_id=order.availability_slot_id
         )
     except ValueError:
-        return RedirectResponse(
-            url=f"/admin/orders/{order_id}?error={quote('La fecha seleccionada no está disponible.')}",
-            status_code=303,
-        )
+        if dt.date() >= datetime.now(tz=TZ).date():
+            return RedirectResponse(
+                url=f"/admin/orders/{order_id}?error={quote('La fecha seleccionada no está disponible.')}",
+                status_code=303,
+            )
+        # Past dates have no bookable slots (they are purged), so an order
+        # returning to its own past date needs none.
+        availability_slot_id = None
 
     if cart_items_json:
         stored_prices = {item.product_id: item.unit_price for item in order.items}

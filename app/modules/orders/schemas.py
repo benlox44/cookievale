@@ -31,7 +31,7 @@ class OrderCreateRequest(BaseModel):
 
 class OrderUpdateRequest(BaseModel):
     delivery_date: datetime
-    availability_slot_id: int = Field(gt=0)
+    availability_slot_id: int | None = Field(default=None, gt=0)
     description: str = Field(max_length=2000)
     delivery_method: DeliveryMethod
     amount_paid: int = Field(ge=0, lt=1_000_000_000)
