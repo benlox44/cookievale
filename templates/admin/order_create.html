@@ -108,10 +108,7 @@
                     </div>
                     {{ render_dropdown(
                         name="delivery_method",
-                        options=[
-                            {"value": "pickup", "label": "Retiro"},
-                            {"value": "delivery", "label": "Delivery"},
-                        ],
+                        options=delivery_methods,
                         placeholder="Selecciona un método",
                         required=True,
                     ) }}
@@ -152,9 +149,9 @@
 
             <!-- Photos -->
             <div class="relative z-10">
-                <label class="cv-label block mb-1.5">Imagen(es) de referencia <span class="text-cookie-brown/40 font-normal">(Máximo 8)</span></label>
+                <label class="cv-label block mb-1.5">Imagen(es) de referencia <span class="text-cookie-brown/40 font-normal">(Máximo {{ MAX_ORDER_PHOTOS }})</span></label>
                 {% from "components/media/order_uploader.html" import render_uploader_orders %}
-                {{ render_uploader_orders(8, False, [], 0.8, 2000) }}
+                {{ render_uploader_orders(MAX_ORDER_PHOTOS, False, [], 0.8, 2000) }}
             </div>
 
             <!-- Notes -->

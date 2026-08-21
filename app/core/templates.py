@@ -5,7 +5,7 @@ from pathlib import Path
 
 from fastapi.templating import Jinja2Templates
 
-from app.core.config import BASE_URL
+from app.core.config import BASE_URL, MAX_ORDER_PHOTOS, MAX_PRODUCT_IMAGES
 
 templates = Jinja2Templates(directory="templates")
 templates.env.globals["base_url"] = BASE_URL
@@ -85,3 +85,10 @@ templates.env.filters["clp"] = clp
 templates.env.filters["status_label"] = status_label
 templates.env.filters["delivery_label"] = delivery_label
 templates.env.filters["date_short"] = date_short
+
+templates.env.globals["delivery_methods"] = [
+    {"value": "pickup", "label": DELIVERY_LABELS["pickup"]},
+    {"value": "delivery", "label": DELIVERY_LABELS["delivery"]},
+]
+templates.env.globals["MAX_ORDER_PHOTOS"] = MAX_ORDER_PHOTOS
+templates.env.globals["MAX_PRODUCT_IMAGES"] = MAX_PRODUCT_IMAGES
