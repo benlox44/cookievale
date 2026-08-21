@@ -5,16 +5,16 @@ import shutil
 from fastapi import UploadFile
 from sqlalchemy.exc import SQLAlchemyError
 
-from app.core.config import CONTAINER_MEDIA_PATH
+from app.core.config import CONTAINER_MEDIA_PATH, MAX_PRODUCT_IMAGES
 from app.core.uploads import delete_media_files, save_uploads, update_photo_set
 from app.modules.products.domain import Product
 from app.modules.products.repository import ProductRepository
-from app.modules.products.schemas import ProductCreate, ProductUpdate
+from app.modules.products.schemas import ProductInput
 
 logger = logging.getLogger(__name__)
 
 
-def _to_domain(data: ProductCreate | ProductUpdate) -> Product:
+def _to_domain(data: ProductInput) -> Product:
     return Product(
         id=None,
         name=data.name,
@@ -35,12 +35,12 @@ class ProductService:
         return self.repository.get_by_id(product_id)
 
     def create_product(
-        self, data: ProductCreate, photos: list[UploadFile] | None
+        self, data: ProductInput, photos: list[UploadFile] | None
     ) -> Product:
         product = self.repository.create(_to_domain(data), None)
 
         if product.id is not None and photos:
-            valid_photos = [p for p in photos if p.filename][:10]
+            valid_photos = [p for p in photos if p.filename][:MAX_PRODUCT_IMAGES]
             if valid_photos:
                 product_id = product.id
                 try:
@@ -63,7 +63,7 @@ class ProductService:
     def update_product(
         self,
         product_id: int,
-        data: ProductUpdate,
+        data: ProductInput,
         existing_urls: list[str],
         image_order: str,
         photos: list[UploadFile] | None,
@@ -78,7 +78,7 @@ class ProductService:
             existing_urls=existing_urls,
             image_order=image_order,
             photos=photos,
-            max_images=10,
+            max_images=MAX_PRODUCT_IMAGES,
             media_dir=os.path.join(CONTAINER_MEDIA_PATH, "products", str(product_id)),
             url_prefix=f"/media/products/{product_id}",
         )

@@ -8,11 +8,7 @@ class ProductBase(BaseModel):
     is_active: bool = True
 
 
-class ProductCreate(ProductBase):
-    pass
-
-
-class ProductUpdate(ProductBase):
+class ProductInput(ProductBase):
     pass
 
 

@@ -18,9 +18,8 @@ from app.core.dependencies import get_product_service
 from app.core.security import require_admin
 from app.core.templates import templates
 from app.modules.products.schemas import (
-    ProductCreate,
+    ProductInput,
     ProductReorderRequest,
-    ProductUpdate,
 )
 from app.modules.products.service import ProductService
 
@@ -62,7 +61,7 @@ def create_product(
 ) -> RedirectResponse:
     if photos is None:
         photos = []
-    dto = ProductCreate(
+    dto = ProductInput(
         name=name, price=price, description=description, is_active=is_active
     )
     service.create_product(dto, photos)
@@ -108,7 +107,7 @@ def update_product(
     photos: list[UploadFile] | None = File(None),
     service: ProductService = Depends(get_product_service),
 ) -> RedirectResponse:
-    dto = ProductUpdate(
+    dto = ProductInput(
         name=name, price=price, description=description, is_active=is_active
     )
     service.update_product(product_id, dto, existing_images, image_order, photos)
@@ -120,7 +119,6 @@ def update_product(
 @router.post("/{product_id}/delete")
 def delete_product(
     product_id: int,
-    request: Request,
     service: ProductService = Depends(get_product_service),
 ) -> RedirectResponse:
     try:
