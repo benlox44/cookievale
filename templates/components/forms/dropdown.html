@@ -2,7 +2,8 @@
 <div x-data='cvDropdown({{ {'name': name, 'options': options, 'selected': selected, 'placeholder': placeholder, 'model': model, 'changeEvent': change_event, 'hxGet': hx_get, 'hxTarget': hx_target} | tojson }})'
     @click.outside="open = false" class="cv-dropdown {{ class }}">
     <button type="button" @click="toggle()" @keydown.down.prevent="open = true" @keydown.up.prevent="open = false"
-        @keydown.escape="open = false" class="cv-dropdown-trigger" aria-haspopup="listbox" :aria-expanded="open">
+        @keydown.escape="open = false" class="cv-dropdown-trigger" aria-hidden="true" tabindex="-1"
+        aria-haspopup="listbox" :aria-expanded="open">
         <span class="cv-dropdown-value" :class="{ 'is-placeholder': !value }" x-text="value ? label : placeholder"></span>
         <svg class="cv-dropdown-chevron" :class="{ 'is-open': open }" viewBox="0 0 20 20" fill="currentColor"
             aria-hidden="true">
@@ -32,14 +33,14 @@
         </template>
     </div>
 
-    <select :name="name" x-ref="native" tabindex="-1" aria-hidden="true"{% if required %} required{% endif %}
+    <select :name="name" x-ref="native"{% if required %} required{% endif %}
         class="cv-dropdown-native"{% if model %} x-model="{{ model }}"{% endif %}
         {% if change_event %}@change="{{ change_event }}"{% endif %}
         {% if hx_get %}@change="htmx.ajax('GET', '{{ hx_get }}' + ($el.value ? '?{{ name }}=' + $el.value : ''), {target: '{{ hx_target }}'})"{% endif %}>
         <option value=""></option>
-        <template x-for="opt in options" :key="opt.value">
-            <option :value="opt.value" x-text="opt.label"></option>
-        </template>
+        {% for opt in options %}
+        <option value="{{ opt.value }}" {% if opt.value == selected %}selected{% endif %}>{{ opt.label }}</option>
+        {% endfor %}
     </select>
 </div>
 
@@ -56,6 +57,9 @@
             options: config.options || [],
             init() {
                 this.$refs.native.value = this.value;
+                this.$refs.native.addEventListener('change', () => {
+                    this.value = this.$refs.native.value;
+                });
             },
             get label() {
                 const option = this.options.find((item) => item.value === this.value);
