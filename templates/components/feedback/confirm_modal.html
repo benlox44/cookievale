@@ -10,7 +10,7 @@
                 <button type="button" @click="showConfirm = false{% if onCancel %}; {{ onCancel }}{% endif %}"
                     class="cv-btn bg-cookie-cream text-cookie-brown border-cookie-pink/40 hover:bg-cookie-pink/10 hover:border-cookie-golden">Cancelar</button>
                 <button type="button"
-                    @click="showConfirm = false; {% if onConfirm %}{{ onConfirm }}{% elif true %}if ($root.hasAttribute('hx-delete') || $root.hasAttribute('hx-post')) { htmx.trigger($root, 'submit') } else { $root.submit() }{% endif %}"
+                    @click="showConfirm = false; {% if onConfirm %}{{ onConfirm }}{% else %}if ($root.hasAttribute('hx-delete') || $root.hasAttribute('hx-post')) { htmx.trigger($root, 'submit') } else { $root.submit() }{% endif %}"
                     class="cv-btn {{ confirm_class }}">{{ confirm_text }}</button>
             </div>
         </div>
