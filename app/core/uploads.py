@@ -68,10 +68,6 @@ def get_safe_extension(file: UploadFile) -> str:
     if detected in MIME_TO_EXT:
         return MIME_TO_EXT[detected]
 
-    content_type = file.content_type or ""
-    if content_type in MIME_TO_EXT and content_type == detected:
-        return MIME_TO_EXT[content_type]
-
     if file.filename:
         name = os.path.basename(file.filename)
         if "." in name:
