@@ -48,6 +48,7 @@ class OrderService:
         order = Order(
             customer_instagram=data.customer_instagram,
             delivery_date=data.delivery_date,
+            availability_slot_id=data.availability_slot_id,
             description=data.description,
             delivery_method=data.delivery_method,
             total_amount=data.total_amount,
@@ -99,6 +100,7 @@ class OrderService:
         cart: ParsedCart,
         customer_instagram: str,
         delivery_date: datetime,
+        availability_slot_id: int,
         delivery_method: DeliveryMethod,
         description: str,
         photos: list[UploadFile],
@@ -111,6 +113,7 @@ class OrderService:
             items=cart.items,
             total_amount=cart.total_amount,
             delivery_date=delivery_date,
+            availability_slot_id=availability_slot_id,
             delivery_method=delivery_method,
             description=description,
         )
@@ -157,6 +160,7 @@ class OrderService:
             return None
 
         order.delivery_date = data.delivery_date
+        order.availability_slot_id = data.availability_slot_id
         order.description = data.description
         order.delivery_method = data.delivery_method
         order.amount_paid = data.amount_paid

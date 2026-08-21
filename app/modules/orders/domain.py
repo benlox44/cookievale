@@ -32,6 +32,7 @@ class Order:
     delivery_date: datetime
     description: str
     delivery_method: DeliveryMethod
+    availability_slot_id: int | None = None
     items: list[OrderItem] = field(default_factory=list)
     total_amount: int = 0
     amount_paid: int = 0

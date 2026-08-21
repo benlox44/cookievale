@@ -4,7 +4,7 @@
 
 {% block content %}
 {% from "components/products/picker.html" import render_product_picker %}
-{% from "partials/calendar.html" import render_date_calendar %}
+{% from "components/forms/availability_select.html" import render_availability_select %}
 <div x-data="cookieCart()">
     <div id="form-container">
 
@@ -125,7 +125,7 @@
                         {{ render_tooltip("Las fechas disponibles para agendar.") }}
                     </div>
                     {% if available_dates %}
-                    {{ render_date_calendar(available_dates) }}
+                    {{ render_availability_select(available_dates, weekdays) }}
                     {% else %}
                     <div class="p-3 bg-red-50 text-red-500 border border-red-200 rounded-xl text-sm font-medium">
                         Por el momento no estamos recibiendo pedidos.
@@ -182,4 +182,3 @@
 {% endblock %}
 
 {% include "components/orders/cart.html" %}
-{% include "partials/calendar.html" %}

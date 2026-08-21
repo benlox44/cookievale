@@ -1,78 +1,53 @@
 from datetime import date
 from typing import Protocol
 
-from sqlalchemy import delete, exc, select
+from sqlalchemy import delete, select
 from sqlalchemy.orm import Session
 
-from app.modules.scheduling.domain import AvailableDate
-from app.modules.scheduling.models import AvailableDateModel
+from app.modules.scheduling.domain import AvailabilitySlot
+from app.modules.scheduling.models import AvailabilitySlotModel
 
 
-class AvailableDateRepository(Protocol):
-    def get_all(
-        self, limit: int | None = None, offset: int = 0
-    ) -> list[AvailableDate]: ...
-    def get_by_date(self, target_date: date) -> AvailableDate | None: ...
-    def get_by_id(self, id: int) -> AvailableDate | None: ...
-    def create(self, target_date: date) -> AvailableDate: ...
-    def delete(self, id: int) -> None: ...
+class AvailabilitySlotRepository(Protocol):
+    def get_all(self) -> list[AvailabilitySlot]: ...
+    def get_by_id(self, slot_id: int) -> AvailabilitySlot | None: ...
+    def create(self, target_date: date) -> AvailabilitySlot: ...
+    def delete(self, slot_id: int) -> None: ...
     def delete_before(self, target: date) -> int: ...
 
 
-class SQLAlchemyAvailableDateRepository:
+class SQLAlchemyAvailabilitySlotRepository:
     def __init__(self, db: Session) -> None:
         self.db = db
 
-    def get_all(self, limit: int | None = None, offset: int = 0) -> list[AvailableDate]:
-        stmt = select(AvailableDateModel).order_by(AvailableDateModel.date.asc())
-        if limit is not None:
-            stmt = stmt.limit(limit)
-        results = self.db.execute(stmt.offset(offset))
-        models = results.scalars().all()
-        return [self._to_domain(m) for m in models]
+    def get_all(self) -> list[AvailabilitySlot]:
+        stmt = select(AvailabilitySlotModel).order_by(AvailabilitySlotModel.date.asc())
+        return [self._to_domain(model) for model in self.db.scalars(stmt).all()]
 
-    def get_by_date(self, target_date: date) -> AvailableDate | None:
-        result = self.db.execute(
-            select(AvailableDateModel).where(AvailableDateModel.date == target_date)
-        )
-        m = result.scalars().first()
-        if m:
-            return self._to_domain(m)
-        return None
+    def get_by_id(self, slot_id: int) -> AvailabilitySlot | None:
+        model = self.db.get(AvailabilitySlotModel, slot_id)
+        return self._to_domain(model) if model else None
 
-    def get_by_id(self, id: int) -> AvailableDate | None:
-        result = self.db.execute(
-            select(AvailableDateModel).where(AvailableDateModel.id == id)
-        )
-        m = result.scalars().first()
-        if m:
-            return self._to_domain(m)
-        return None
-
-    def create(self, target_date: date) -> AvailableDate:
-        model = AvailableDateModel(date=target_date)
+    def create(self, target_date: date) -> AvailabilitySlot:
+        model = AvailabilitySlotModel(date=target_date)
         self.db.add(model)
-        try:
-            self.db.commit()
-            self.db.refresh(model)
-        except exc.IntegrityError:
-            self.db.rollback()
-            raise ValueError("La fecha ya existe.")
+        self.db.commit()
+        self.db.refresh(model)
         return self._to_domain(model)
 
-    def _to_domain(self, model: AvailableDateModel) -> AvailableDate:
-        return AvailableDate(id=model.id, date=model.date)
-
-    def delete(self, id: int) -> None:
-        model = self.db.get(AvailableDateModel, id)
+    def delete(self, slot_id: int) -> None:
+        model = self.db.get(AvailabilitySlotModel, slot_id)
         if model:
             self.db.delete(model)
             self.db.commit()
 
     def delete_before(self, target: date) -> int:
         result = self.db.execute(
-            delete(AvailableDateModel).where(AvailableDateModel.date < target)
+            delete(AvailabilitySlotModel).where(AvailabilitySlotModel.date < target)
         )
         self.db.commit()
-        rowcount: int = result.rowcount  # type: ignore[attr-defined]
-        return rowcount
+        return int(result.rowcount or 0)  # type: ignore[attr-defined]
+
+    @staticmethod
+    def _to_domain(model: AvailabilitySlotModel) -> AvailabilitySlot:
+        return AvailabilitySlot(id=model.id, date=model.date)

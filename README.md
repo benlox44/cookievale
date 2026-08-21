@@ -121,8 +121,8 @@ Instead of grouping files by technical concern (e.g. all models together, all ro
 | Method | Path | Description |
 | --- | --- | --- |
 | `GET` | `/admin/dates` | Delivery dates calendar and scheduling. |
-| `POST` | `/admin/dates` | Create or update a delivery date. |
-| `DELETE` | `/admin/dates/{date_id}` | Delete a delivery date. |
+| `POST` | `/admin/dates` | Add an availability slot for a date. |
+| `DELETE` | `/admin/dates/{target_date}` | Delete one free availability slot for a date. |
 
 ### System
 

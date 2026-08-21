@@ -35,6 +35,15 @@ def get_new_order_form(
         context={
             "products": products,
             "available_dates": available_dates,
+            "weekdays": [
+                "Lunes",
+                "Martes",
+                "Miércoles",
+                "Jueves",
+                "Viernes",
+                "Sábado",
+                "Domingo",
+            ],
             "today": datetime.now(tz=TZ).date().strftime("%Y-%m-%d"),
         },
     )
@@ -57,8 +66,11 @@ def submit_order(
     if photos is None:
         photos = []
 
-    available_dates = [d.date for d in scheduling_service.get_available_dates()]
-    if delivery_date.date() not in available_dates:
+    try:
+        availability_slot_id = scheduling_service.get_slot_for_date(
+            delivery_date.date()
+        )
+    except ValueError:
         return error_toast(
             "La fecha seleccionada ha sido tomada recientemente y no está disponible."
         )
@@ -73,6 +85,7 @@ def submit_order(
             cart=parsed,
             customer_instagram=customer_instagram,
             delivery_date=delivery_date,
+            availability_slot_id=availability_slot_id,
             delivery_method=delivery_method,
             description=description,
             photos=photos,

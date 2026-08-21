@@ -8,7 +8,7 @@ from app.core.config import DATABASE_URL
 from app.core.database import Base
 from app.modules.orders.models import OrderItemModel, OrderModel  # noqa
 from app.modules.products.models import ProductModel  # noqa
-from app.modules.scheduling.models import AvailableDateModel  # noqa
+from app.modules.scheduling.models import AvailabilitySlotModel  # noqa
 
 config = context.config
 

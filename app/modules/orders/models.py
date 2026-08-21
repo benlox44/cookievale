@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import ARRAY, DateTime, ForeignKey, Index, Integer, String, func, text
+from sqlalchemy import ARRAY, DateTime, ForeignKey, Index, Integer, String, text
 from sqlalchemy import Enum as SAEnum
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -15,6 +15,9 @@ class OrderModel(Base, TimestampMixin):
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
     customer_instagram: Mapped[str] = mapped_column(String, nullable=False)
     delivery_date: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+    availability_slot_id: Mapped[int | None] = mapped_column(
+        ForeignKey("availability_slots.id", ondelete="SET NULL"), nullable=True
+    )
     description: Mapped[str] = mapped_column(String, nullable=False)
     delivery_method: Mapped[DeliveryMethod] = mapped_column(
         SAEnum(DeliveryMethod), default=DeliveryMethod.PICKUP, nullable=False
@@ -35,13 +38,12 @@ class OrderModel(Base, TimestampMixin):
         "OrderItemModel", back_populates="order", cascade="all, delete-orphan"
     )
 
-    # A delivery slot is held by the first active (non-rejected) order on that
-    # date; the partial unique index turns the check-then-insert race into a
-    # database error instead of a double booking.
+    # A slot can be held by only one active order. The partial unique index
+    # protects the final reservation against concurrent submissions.
     __table_args__ = (
         Index(
-            "uq_orders_delivery_date_active",
-            func.date(delivery_date),
+            "uq_orders_availability_slot_active",
+            availability_slot_id,
             unique=True,
             postgresql_where=text("status <> 'REJECTED'"),
         ),

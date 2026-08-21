@@ -27,7 +27,7 @@ from app.modules.orders.domain import DeliveryMethod, OrderStatus
 from app.modules.orders.schemas import OrderUpdateRequest
 from app.modules.orders.service import OrderService
 from app.modules.products.service import ProductService
-from app.modules.scheduling.domain import AvailableDate
+from app.modules.scheduling.domain import AvailableDateOption
 from app.modules.scheduling.service import SchedulingService
 
 router = APIRouter(
@@ -101,6 +101,15 @@ def new_order_form(
         context={
             "products": products,
             "available_dates": available_dates,
+            "weekdays": [
+                "Lunes",
+                "Martes",
+                "Miércoles",
+                "Jueves",
+                "Viernes",
+                "Sábado",
+                "Domingo",
+            ],
             "OrderStatuses": list(OrderStatus),
         },
     )
@@ -124,8 +133,11 @@ def create_order(
     if photos is None:
         photos = []
 
-    available_dates = [d.date for d in scheduling_service.get_available_dates()]
-    if delivery_date.date() not in available_dates:
+    try:
+        availability_slot_id = scheduling_service.get_slot_for_date(
+            delivery_date.date()
+        )
+    except ValueError:
         return error_toast("La fecha seleccionada no está disponible.")
 
     try:
@@ -138,6 +150,7 @@ def create_order(
             cart=parsed,
             customer_instagram=customer_instagram,
             delivery_date=delivery_date,
+            availability_slot_id=availability_slot_id,
             delivery_method=delivery_method,
             description=description,
             photos=photos,
@@ -165,13 +178,12 @@ def get_order_detail(
 
     products = product_service.list_products(only_active=True)
     available_dates = scheduling_service.get_available_dates()
-    # The order's own delivery date is occupied by this very order, so it is
-    # missing from the free slots above; keep it in the calendar as an
-    # already-created date so it does not look like a pending one.
-    existing_dates = {d.date for d in available_dates}
     order_date = order.delivery_date.date()
-    if order_date not in existing_dates:
-        available_dates = [AvailableDate(id=0, date=order_date), *available_dates]
+    if not any(option.date == order_date for option in available_dates):
+        available_dates = [
+            AvailableDateOption(date=order_date, free_slots=0),
+            *available_dates,
+        ]
     return templates.TemplateResponse(
         request=request,
         name="admin/order_detail.html",
@@ -179,6 +191,15 @@ def get_order_detail(
             "order": order,
             "products": products,
             "available_dates": available_dates,
+            "weekdays": [
+                "Lunes",
+                "Martes",
+                "Miércoles",
+                "Jueves",
+                "Viernes",
+                "Sábado",
+                "Domingo",
+            ],
             "OrderStatuses": [e.value for e in OrderStatus],
         },
     )
@@ -230,12 +251,11 @@ def update_order_details(
     if not order:
         return RedirectResponse(url="/admin/orders", status_code=303)
 
-    # The delivery date must be a created, free slot, or the order's own
-    # current date (which this very order occupies). The admin calendar lets
-    # you pick future uncreated dates that get created before saving, so
-    # anything else — like a slot occupied by another order — is rejected.
-    available_dates = {d.date for d in scheduling_service.get_available_dates()}
-    if dt.date() not in available_dates and dt.date() != order.delivery_date.date():
+    try:
+        availability_slot_id = scheduling_service.get_slot_for_date(
+            dt.date(), current_slot_id=order.availability_slot_id
+        )
+    except ValueError:
         return RedirectResponse(
             url=f"/admin/orders/{order_id}?error={quote('La fecha seleccionada no está disponible.')}",
             status_code=303,
@@ -267,6 +287,7 @@ def update_order_details(
 
     dto = OrderUpdateRequest(
         delivery_date=dt,
+        availability_slot_id=availability_slot_id,
         description=description,
         delivery_method=delivery_method,
         amount_paid=amount_paid,

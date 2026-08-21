@@ -1,4 +1,3 @@
-from datetime import date
 from typing import Protocol
 
 from sqlalchemy import func, select
@@ -23,7 +22,7 @@ class OrderRepository(Protocol):
     ) -> list[Order]: ...
     def count(self, include_closed: bool = False) -> int: ...
     def delete(self, order_id: int) -> None: ...
-    def get_occupied_dates(self) -> set[date]: ...
+    def get_occupied_slot_ids(self) -> set[int]: ...
     def replace_items(
         self,
         order_id: int,
@@ -64,6 +63,7 @@ class SQLAlchemyOrderRepository:
             id=order.id,
             customer_instagram=order.customer_instagram,
             delivery_date=order.delivery_date,
+            availability_slot_id=order.availability_slot_id,
             description=order.description,
             delivery_method=order.delivery_method,
             reference_photos=order.reference_photos,
@@ -86,7 +86,7 @@ class SQLAlchemyOrderRepository:
         except IntegrityError:
             self.db.rollback()
             raise ValueError(
-                "La fecha seleccionada ya tiene una orden activa."
+                "La fecha seleccionada ya no tiene disponibilidades libres."
             ) from None
         self.db.refresh(db_order)
 
@@ -187,15 +187,13 @@ class SQLAlchemyOrderRepository:
 
         return self.get_by_id(order_id)
 
-    def get_occupied_dates(self) -> set[date]:
-        # Only REJECTED orders free a delivery slot; every other status holds
-        # the date even if the order is not confirmed yet. When adding new
-        # statuses, decide here whether they should block a date.
-        stmt = select(OrderModel.delivery_date, OrderModel.status).where(
+    def get_occupied_slot_ids(self) -> set[int]:
+        stmt = select(OrderModel.availability_slot_id).where(
             OrderModel.status != OrderStatus.REJECTED
         )
-        rows = self.db.execute(stmt).all()
-        return {row.delivery_date.date() for row in rows}
+        return {
+            slot_id for slot_id in self.db.scalars(stmt).all() if slot_id is not None
+        }
 
     def _to_domain(self, db_model: OrderModel) -> Order:
         domain_items = []
@@ -218,6 +216,7 @@ class SQLAlchemyOrderRepository:
             id=db_model.id,
             customer_instagram=db_model.customer_instagram,
             delivery_date=db_model.delivery_date,
+            availability_slot_id=db_model.availability_slot_id,
             description=db_model.description,
             delivery_method=db_model.delivery_method,
             reference_photos=db_model.reference_photos,

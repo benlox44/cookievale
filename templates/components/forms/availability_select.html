@@ -1,0 +1,13 @@
+{% macro render_availability_select(dates, weekdays, selected='', model='') %}
+<select name="delivery_date"{% if model %} x-model="{{ model }}"{% endif %}
+    @change="$dispatch('date-selected', { date: $event.target.value })"
+    class="cv-input" required>
+    <option value="">Selecciona una fecha</option>
+    {% for option in dates %}
+    {% set date_value = option.date.strftime('%Y-%m-%d') %}
+    <option value="{{ date_value }}"{% if date_value == selected %} selected{% endif %}>
+        {{ weekdays[option.date.weekday()] }} {{ option.date.strftime('%d/%m/%Y') }}{% if option.free_slots > 0 %} · {{ option.free_slots }} cupo{% if option.free_slots != 1 %}s{% endif %}{% endif %}
+    </option>
+    {% endfor %}
+</select>
+{% endmacro %}

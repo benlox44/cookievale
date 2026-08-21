@@ -5,8 +5,7 @@
 {% block content %}
 {% from "components/forms/dropdown.html" import render_dropdown %}
 {% from "components/products/picker.html" import render_product_picker %}
-{% from "partials/calendar.html" import render_date_calendar %}
-{% from "partials/date_creator.html" import render_date_creator %}
+{% from "components/forms/availability_select.html" import render_availability_select %}
 {% if request.query_params.get('error') %}
 <script>
     window.addEventListener('DOMContentLoaded', function () {
@@ -101,7 +100,7 @@
                         <label class="cv-label block mb-0">Fecha de entrega</label>
                         {{ render_tooltip("Fechas disponibles para agendar. Si eliges una fecha no creada, podrás crearla.") }}
                     </div>
-                    {{ render_date_calendar(available_dates, allow_future=True) }}
+                        {{ render_availability_select(available_dates, weekdays) }}
                 </div>
                 <div>
                     <div class="flex items-center gap-2 mb-1.5">
@@ -179,9 +178,6 @@
     </div>
 </div>
 
-{{ render_date_creator() }}
 {% endblock %}
 
 {% include "components/orders/cart.html" %}
-{% include "partials/calendar.html" %}
-{% include "partials/date_creator.html" %}

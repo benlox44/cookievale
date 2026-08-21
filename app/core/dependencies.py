@@ -6,7 +6,7 @@ from app.modules.orders.repository import SQLAlchemyOrderRepository
 from app.modules.orders.service import OrderService
 from app.modules.products.repository import SQLAlchemyProductRepository
 from app.modules.products.service import ProductService
-from app.modules.scheduling.repository import SQLAlchemyAvailableDateRepository
+from app.modules.scheduling.repository import SQLAlchemyAvailabilitySlotRepository
 from app.modules.scheduling.service import SchedulingService
 
 
@@ -22,5 +22,5 @@ def get_product_service(db: Session = Depends(get_db)) -> ProductService:
 
 def get_scheduling_service(db: Session = Depends(get_db)) -> SchedulingService:
     return SchedulingService(
-        SQLAlchemyAvailableDateRepository(db), SQLAlchemyOrderRepository(db)
+        SQLAlchemyAvailabilitySlotRepository(db), SQLAlchemyOrderRepository(db)
     )

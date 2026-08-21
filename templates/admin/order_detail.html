@@ -3,8 +3,7 @@
 
 {% block content %}
 {% from "components/products/picker.html" import render_product_picker %}
-{% from "partials/calendar.html" import render_date_calendar %}
-{% from "partials/date_creator.html" import render_date_creator %}
+{% from "components/forms/availability_select.html" import render_availability_select %}
 {% if request.query_params.get('error') %}
 <script>
     window.addEventListener('DOMContentLoaded', function () {
@@ -14,7 +13,7 @@
     });
 </script>
 {% endif %}
-<div x-data="orderDetail()" @date-selected.window="onDateSelected($event.detail)"
+<div x-data="orderDetail()"
     @photos-changed.window="photosChanged = true">
     <div class="cv-card p-0 overflow-hidden shadow-[0_4px_20px_rgba(212,149,106,0.1)] mb-8">
 
@@ -137,7 +136,7 @@
                 <div class="space-y-4 relative z-10">
                     <div>
                         <label class="cv-label block mb-1.5">Fecha de Entrega</label>
-                        {{ render_date_calendar(available_dates, initial_selected=order.delivery_date.strftime('%Y-%m-%d'), allow_future=True) }}
+                        {{ render_availability_select(available_dates, weekdays, selected=order.delivery_date.strftime('%Y-%m-%d'), model='formData.delivery_date') }}
                     </div>
                     <div>
                         <label class="cv-label block mb-1.5">Método de Entrega</label>
@@ -259,8 +258,6 @@
         </div>
     </div>
 </div>
-
-{{ render_date_creator() }}
 
 <script>
     document.addEventListener('alpine:init', () => {
@@ -393,16 +390,9 @@
                 return '$' + Number(v || 0).toLocaleString();
             },
             photosChanged: false,
-            onDateSelected(detail) {
-                if (detail && detail.date !== undefined) {
-                    this.formData.delivery_date = detail.date;
-                }
-            }
         }));
     });
 </script>
 {% endblock %}
 
 {% include "components/orders/cart.html" %}
-{% include "partials/calendar.html" %}
-{% include "partials/date_creator.html" %}
