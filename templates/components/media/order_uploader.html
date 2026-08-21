@@ -1,8 +1,4 @@
 {% macro render_uploader_orders(max_images, is_required, existing_images, quality, max_width, form='', thumb_class='w-24 h-24', existing_field='existing_images') %}
-{% if max_images is not defined or is_required is not defined or existing_images is not defined or quality is not
-defined or max_width is not defined %}
-{{ missing_required_argument_uploader() }}
-{% endif %}
 {% set existing_cnt = existing_images|length %}
 {% set form_attr = ('form="' ~ form ~ '"') if form else '' %}
 <div class="mb-4"
