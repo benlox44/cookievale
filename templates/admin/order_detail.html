@@ -39,26 +39,13 @@
                 <input type="hidden" name="status" x-model="formData.status" form="order-form" />
                 <div class="flex flex-wrap items-center gap-1.5 justify-start md:justify-end m-0">
                     <span class="cv-label text-cookie-brown mb-0 mr-2 hidden md:inline-block">Estado:</span>
-                    <button type="button" @click="formData.status = 'pending'"
-                        class="cv-status-control cv-status-warning"
-                        :class="formData.status === 'pending' ? 'is-selected' : ''">
-                        {{ 'pending' | status_label }}
+                    {% for s in OrderStatuses %}
+                    <button type="button" @click="formData.status = '{{ s }}'"
+                        class="px-3 py-1.5 text-xs font-bold rounded-full transition-all border shadow-sm"
+                        :class="formData.status === '{{ s }}' ? 'bg-cookie-golden text-white border-cookie-golden ring-2 ring-cookie-golden' : 'bg-white text-cookie-brown border-cookie-pink/40 hover:bg-cookie-cream opacity-70 hover:opacity-100'">
+                        {{ s | status_label }}
                     </button>
-                    <button type="button" @click="formData.status = 'confirmed'"
-                        class="cv-status-control cv-status-info"
-                        :class="formData.status === 'confirmed' ? 'is-selected' : ''">
-                        {{ 'confirmed' | status_label }}
-                    </button>
-                    <button type="button" @click="formData.status = 'paid'"
-                        class="cv-status-control cv-status-success"
-                        :class="formData.status === 'paid' ? 'is-selected' : ''">
-                        {{ 'paid' | status_label }}
-                    </button>
-                    <button type="button" @click="formData.status = 'delivered'"
-                        class="cv-status-control cv-status-neutral"
-                        :class="formData.status === 'delivered' ? 'is-selected' : ''">
-                        {{ 'delivered' | status_label }}
-                    </button>
+                    {% endfor %}
                 </div>
             </div>
         </div>
