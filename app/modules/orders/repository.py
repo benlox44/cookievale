@@ -14,13 +14,13 @@ class OrderRepository(Protocol):
     def get_by_id(self, order_id: int) -> Order | None: ...
     def list_all(
         self,
-        include_closed: bool = False,
+        include_delivered: bool = False,
         limit: int = 100,
         offset: int = 0,
         sort_by: str | None = None,
         sort_dir: str = "desc",
     ) -> list[Order]: ...
-    def count(self, include_closed: bool = False) -> int: ...
+    def count(self, include_delivered: bool = False) -> int: ...
     def delete(self, order_id: int) -> None: ...
     def get_occupied_slot_ids(self) -> set[int]: ...
     def replace_items(
@@ -107,7 +107,7 @@ class SQLAlchemyOrderRepository:
 
     def list_all(
         self,
-        include_closed: bool = False,
+        include_delivered: bool = False,
         limit: int = 100,
         offset: int = 0,
         sort_by: str | None = None,
@@ -116,12 +116,10 @@ class SQLAlchemyOrderRepository:
         stmt = select(OrderModel).options(
             selectinload(OrderModel.items).selectinload(OrderItemModel.product)
         )
-        if not include_closed:
-            # Delivered and rejected orders are closed: they are hidden from the
-            # default dashboard view and revealed via the "Mostrar cerradas" toggle.
-            stmt = stmt.where(
-                OrderModel.status.notin_([OrderStatus.DELIVERED, OrderStatus.REJECTED])
-            )
+        if not include_delivered:
+            # Delivered orders are closed: hidden from the default dashboard
+            # view and revealed via the "Mostrar entregadas" toggle.
+            stmt = stmt.where(OrderModel.status != OrderStatus.DELIVERED)
 
         if sort_by == "date":
             sort_col = OrderModel.delivery_date
@@ -139,12 +137,10 @@ class SQLAlchemyOrderRepository:
         db_orders = self.db.execute(stmt).scalars().all()
         return [self._to_domain(o) for o in db_orders]
 
-    def count(self, include_closed: bool = False) -> int:
+    def count(self, include_delivered: bool = False) -> int:
         stmt = select(func.count()).select_from(OrderModel)
-        if not include_closed:
-            stmt = stmt.where(
-                OrderModel.status.notin_([OrderStatus.DELIVERED, OrderStatus.REJECTED])
-            )
+        if not include_delivered:
+            stmt = stmt.where(OrderModel.status != OrderStatus.DELIVERED)
         return self.db.execute(stmt).scalar_one()
 
     def delete(self, order_id: int) -> None:
@@ -188,9 +184,7 @@ class SQLAlchemyOrderRepository:
         return self.get_by_id(order_id)
 
     def get_occupied_slot_ids(self) -> set[int]:
-        stmt = select(OrderModel.availability_slot_id).where(
-            OrderModel.status != OrderStatus.REJECTED
-        )
+        stmt = select(OrderModel.availability_slot_id)
         return {
             slot_id for slot_id in self.db.scalars(stmt).all() if slot_id is not None
         }

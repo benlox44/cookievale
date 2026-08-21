@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import ARRAY, DateTime, ForeignKey, Index, Integer, String, text
+from sqlalchemy import ARRAY, DateTime, ForeignKey, Index, Integer, String
 from sqlalchemy import Enum as SAEnum
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -38,14 +38,13 @@ class OrderModel(Base, TimestampMixin):
         "OrderItemModel", back_populates="order", cascade="all, delete-orphan"
     )
 
-    # A slot can be held by only one active order. The partial unique index
-    # protects the final reservation against concurrent submissions.
+    # A slot can be held by only one order; the unique index protects the final
+    # reservation against concurrent submissions.
     __table_args__ = (
         Index(
             "uq_orders_availability_slot_active",
             availability_slot_id,
             unique=True,
-            postgresql_where=text("status <> 'REJECTED'"),
         ),
     )
 

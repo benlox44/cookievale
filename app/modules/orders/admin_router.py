@@ -40,7 +40,7 @@ router = APIRouter(
 @router.get("", response_class=HTMLResponse)
 def admin_dashboard(
     request: Request,
-    include_closed: bool = Query(False),
+    include_delivered: bool = Query(False),
     page: int = Query(1, ge=1),
     sort_by: str | None = Query(None),
     sort_dir: str = Query("desc"),
@@ -55,18 +55,18 @@ def admin_dashboard(
 
     page_size = 50
     orders = service.list_orders(
-        include_closed=include_closed,
+        include_delivered=include_delivered,
         limit=page_size,
         offset=(page - 1) * page_size,
         sort_by=sort_by,
         sort_dir=sort_dir,
     )
-    total = service.count_orders(include_closed=include_closed)
+    total = service.count_orders(include_delivered=include_delivered)
     total_pages = max(1, (total + page_size - 1) // page_size)
 
     context = {
         "orders": orders,
-        "include_closed": include_closed,
+        "include_delivered": include_delivered,
         "current_sort_by": sort_by,
         "current_sort_dir": sort_dir,
         "page": page,

@@ -37,7 +37,6 @@ STATUS_LABELS = {
     "confirmed": "Confirmada",
     "paid": "Pagada",
     "delivered": "Entregada",
-    "rejected": "Rechazada",
 }
 
 DELIVERY_LABELS = {

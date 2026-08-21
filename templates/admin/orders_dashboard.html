@@ -20,13 +20,13 @@
 
         <div class="flex items-center gap-4">
             <div
-                x-data="{ showClosed: {{ 'true' if include_closed else 'false' }}, toggle() { this.showClosed = !this.showClosed; htmx.ajax('GET', '/admin/orders?include_closed=' + this.showClosed, { target: '#orders-table-container', swap: 'innerHTML' }); } }">
+                x-data="{ showDelivered: {{ 'true' if include_delivered else 'false' }}, toggle() { this.showDelivered = !this.showDelivered; htmx.ajax('GET', '/admin/orders?include_delivered=' + this.showDelivered, { target: '#orders-table-container', swap: 'innerHTML' }); } }">
                 <button type="button" @click="toggle()"
-                    :class="showClosed
+                    :class="showDelivered
                         ? 'bg-cookie-golden text-white border-cookie-golden shadow-sm'
                         : 'bg-white text-cookie-brown border-cookie-golden'"
                     class="text-xs px-4 py-2 rounded-full border font-medium flex items-center gap-1.5 transition-all select-none">
-                    <span x-text="showClosed ? 'Ocultar cerradas' : 'Mostrar cerradas'"></span>
+                    <span x-text="showDelivered ? 'Ocultar entregadas' : 'Mostrar entregadas'"></span>
                 </button>
             </div>
             <a href="/admin/orders/new"

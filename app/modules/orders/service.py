@@ -130,22 +130,22 @@ class OrderService:
 
     def list_orders(
         self,
-        include_closed: bool = False,
+        include_delivered: bool = False,
         limit: int = 100,
         offset: int = 0,
         sort_by: str | None = None,
         sort_dir: str = "desc",
     ) -> list[Order]:
         return self.repository.list_all(
-            include_closed=include_closed,
+            include_delivered=include_delivered,
             limit=limit,
             offset=offset,
             sort_by=sort_by,
             sort_dir=sort_dir,
         )
 
-    def count_orders(self, include_closed: bool = False) -> int:
-        return self.repository.count(include_closed)
+    def count_orders(self, include_delivered: bool = False) -> int:
+        return self.repository.count(include_delivered)
 
     def update_order(
         self,

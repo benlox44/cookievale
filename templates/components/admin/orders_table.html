@@ -1,7 +1,7 @@
 {% from "components/feedback/confirm_modal.html" import render_confirm_modal %}
 
-{%- macro sort_url(col, cur_sort_by, cur_sort_dir, include_closed) -%}
-/admin/orders?sort_by={{ col }}&sort_dir={{ 'asc' if (cur_sort_by == col and cur_sort_dir == 'desc') else 'desc' }}{% if include_closed %}&include_closed=true{% endif %}
+{%- macro sort_url(col, cur_sort_by, cur_sort_dir, include_delivered) -%}
+/admin/orders?sort_by={{ col }}&sort_dir={{ 'asc' if (cur_sort_by == col and cur_sort_dir == 'desc') else 'desc' }}{% if include_delivered %}&include_delivered=true{% endif %}
 {%- endmacro -%}
 
 <div class="overflow-x-auto">
@@ -10,7 +10,7 @@
             <tr>
                 <th scope="col"
                     class="px-6 py-4 text-left text-xs font-semibold text-cookie-brown uppercase tracking-wider">
-                    <a hx-get="{{ sort_url('id', current_sort_by, current_sort_dir, include_closed) }}" hx-target="#orders-table-container"
+                    <a hx-get="{{ sort_url('id', current_sort_by, current_sort_dir, include_delivered) }}" hx-target="#orders-table-container"
                         class="inline-flex items-center gap-1 hover:text-cookie-golden cursor-pointer select-none">
                         ID
                         {% if current_sort_by == 'id' %}
@@ -35,7 +35,7 @@
                     Método</th>
                 <th scope="col"
                     class="px-6 py-4 text-left text-xs font-semibold text-cookie-brown uppercase tracking-wider">
-                    <a hx-get="{{ sort_url('date', current_sort_by, current_sort_dir, include_closed) }}" hx-target="#orders-table-container"
+                    <a hx-get="{{ sort_url('date', current_sort_by, current_sort_dir, include_delivered) }}" hx-target="#orders-table-container"
                         class="inline-flex items-center gap-1 hover:text-cookie-golden cursor-pointer select-none">
                         Fecha
                         {% if current_sort_by == 'date' %}

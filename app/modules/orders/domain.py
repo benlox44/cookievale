@@ -8,7 +8,6 @@ class OrderStatus(str, Enum):
     CONFIRMED = "confirmed"
     PAID = "paid"
     DELIVERED = "delivered"
-    REJECTED = "rejected"
 
 
 class DeliveryMethod(str, Enum):
