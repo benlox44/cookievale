@@ -28,7 +28,7 @@ from app.modules.orders.domain import DeliveryMethod, OrderStatus
 from app.modules.orders.schemas import OrderUpdateRequest
 from app.modules.orders.service import OrderService
 from app.modules.products.service import ProductService
-from app.modules.scheduling.domain import AvailableDateOption
+from app.modules.scheduling.domain import AvailableSlotOption
 from app.modules.scheduling.service import SchedulingService
 
 router = APIRouter(
@@ -183,7 +183,7 @@ def get_order_detail(
     order_date = order.delivery_date.date()
     if not any(option.date == order_date for option in available_dates):
         available_dates = [
-            AvailableDateOption(date=order_date, free_slots=0),
+            AvailableSlotOption(date=order_date, free_slots=0),
             *available_dates,
         ]
     return templates.TemplateResponse(

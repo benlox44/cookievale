@@ -3,7 +3,7 @@ from datetime import date, datetime
 
 from app.core.config import TZ
 from app.modules.orders.repository import OrderRepository
-from app.modules.scheduling.domain import AvailabilitySlot, AvailableDateOption
+from app.modules.scheduling.domain import AvailabilitySlot, AvailableSlotOption
 from app.modules.scheduling.repository import AvailabilitySlotRepository
 
 
@@ -26,12 +26,12 @@ class SchedulingService:
         occupied = self._occupied_slot_ids()
         return [slot for slot in self.repo.get_all() if slot.id not in occupied]
 
-    def get_available_dates(self) -> list[AvailableDateOption]:
+    def get_available_dates(self) -> list[AvailableSlotOption]:
         free_by_date: dict[date, int] = defaultdict(int)
         for slot in self.get_free_slots():
             free_by_date[slot.date] += 1
         return [
-            AvailableDateOption(date=slot_date, free_slots=count)
+            AvailableSlotOption(date=slot_date, free_slots=count)
             for slot_date, count in sorted(free_by_date.items())
         ]
 
