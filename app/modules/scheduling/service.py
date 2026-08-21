@@ -55,6 +55,9 @@ class SchedulingService:
             raise ValueError("No hay cupos libres para eliminar en esa fecha.")
         self.repo.delete(slot.id)
 
+    def remove_slot(self, slot_id: int) -> None:
+        self.repo.delete(slot_id)
+
     def get_slot_for_date(
         self, target_date: date, current_slot_id: int | None = None
     ) -> int:

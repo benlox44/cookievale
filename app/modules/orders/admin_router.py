@@ -310,6 +310,11 @@ def delete_order(
     order_id: int,
     request: Request,
     service: OrderService = Depends(get_order_service),
+    scheduling_service: SchedulingService = Depends(get_scheduling_service),
 ) -> RedirectResponse:
-    service.delete_order(order_id)
+    order = service.get_order(order_id)
+    if order:
+        service.delete_order(order_id)
+        if order.availability_slot_id is not None:
+            scheduling_service.remove_slot(order.availability_slot_id)
     return RedirectResponse(url="/admin/orders", status_code=303)
