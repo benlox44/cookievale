@@ -1,4 +1,4 @@
-{% from "partials/confirm_modal.html" import render_confirm_modal %}
+{% from "components/feedback/confirm_modal.html" import render_confirm_modal %}
 
 {%- macro sort_url(col, cur_sort_by, cur_sort_dir, include_closed) -%}
 /admin/orders?sort_by={{ col }}&sort_dir={{ 'asc' if (cur_sort_by == col and cur_sort_dir == 'desc') else 'desc' }}{% if include_closed %}&include_closed=true{% endif %}

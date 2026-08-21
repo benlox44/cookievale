@@ -92,7 +92,7 @@ defined or max_width is not defined %}
          backend can persist the exact arrangement the admin dragged. -->
     <input type="hidden" name="image_order" x-ref="imageOrder" {{ form_attr | safe }}>
 
-    {% from "partials/image_lightbox.html" import render_image_lightbox %}
+    {% from "components/media/image_lightbox.html" import render_image_lightbox %}
     {{ render_image_lightbox() }}
 </div>
 

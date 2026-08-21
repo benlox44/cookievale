@@ -2,7 +2,7 @@
 {% block title %}Productos - CookieVale{% endblock %}
 
 {% block content %}
-{% from "partials/confirm_modal.html" import render_confirm_modal %}
+{% from "components/feedback/confirm_modal.html" import render_confirm_modal %}
 
 {% if request.query_params.get('error') %}
 <script>
@@ -67,10 +67,10 @@
             <!-- Vista normal -->
             <div x-show="!reorderMode" class="flex flex-col flex-1">
                 <!-- Image Slider -->
-                {% include "partials/slider.html" %}
+                {% include "components/products/slider.html" %}
 
                 <!-- Info -->
-                {% include "partials/product_info.html" %}
+                {% include "components/products/info.html" %}
 
                 <div class="mt-auto flex justify-between items-center pt-3 border-t border-cookie-pink/20">
                     <span
@@ -117,7 +117,7 @@
             </div>
         </div>
         {% else %}
-        {% include "partials/empty_products.html" %}
+        {% include "components/products/empty_state.html" %}
         {% endfor %}
     </div>
 </div>

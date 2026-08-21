@@ -3,8 +3,8 @@
     {% for product in products %}
     <div
         class="cv-card p-4 flex flex-col justify-between hover:shadow-[0_8px_24px_rgba(212,149,106,0.18)] hover:-translate-y-1 hover:border-cookie-golden/40 transition-all duration-300 group">
-        {% include "partials/slider.html" %}
-        {% include "partials/product_info.html" %}
+        {% include "components/products/slider.html" %}
+        {% include "components/products/info.html" %}
         <div
             class="flex items-center justify-between bg-cookie-cream rounded-xl p-1.5 border border-cookie-pink/30">
             <button type="button" @click="removeItem({{ product.id }})"
@@ -28,7 +28,7 @@
         </div>
     </div>
     {% else %}
-    {% include "partials/empty_products.html" %}
+    {% include "components/products/empty_state.html" %}
     {% endfor %}
 </div>
 {% endmacro %}

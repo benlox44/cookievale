@@ -3,8 +3,8 @@
 {% block title %}Crear Orden - CookieVale Admin{% endblock %}
 
 {% block content %}
-{% from "partials/dropdown.html" import render_dropdown %}
-{% from "partials/product_picker.html" import render_product_picker %}
+{% from "components/forms/dropdown.html" import render_dropdown %}
+{% from "components/products/picker.html" import render_product_picker %}
 {% from "partials/calendar.html" import render_date_calendar %}
 {% from "partials/date_creator.html" import render_date_creator %}
 {% if request.query_params.get('error') %}
@@ -44,7 +44,7 @@
             hx-encoding="multipart/form-data" @submit="prepSubmit">
 
             <input type="hidden" name="cart_items_json" x-model="cartJson">
-            {% from "partials/tooltip.html" import render_tooltip %}
+            {% from "components/forms/tooltip.html" import render_tooltip %}
 
             <!-- Cart Summary -->
             <div class="cv-card mb-6 border-cookie-pink/40 bg-cookie-cream/50">
@@ -151,7 +151,7 @@
             <!-- Photos -->
             <div class="relative z-10">
                 <label class="cv-label block mb-1.5">Imagen(es) de referencia <span class="text-cookie-brown/40 font-normal">(Máximo 8)</span></label>
-                {% from "partials/uploader_orders.html" import render_uploader_orders %}
+                {% from "components/media/order_uploader.html" import render_uploader_orders %}
                 {{ render_uploader_orders(8, False, [], 0.8, 2000) }}
             </div>
 
@@ -182,6 +182,6 @@
 {{ render_date_creator() }}
 {% endblock %}
 
-{% include "partials/cookie_cart.html" %}
+{% include "components/orders/cart.html" %}
 {% include "partials/calendar.html" %}
 {% include "partials/date_creator.html" %}

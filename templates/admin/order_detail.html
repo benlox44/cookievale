@@ -2,7 +2,7 @@
 {% block title %}Orden #{{ order.id }} - CookieVale{% endblock %}
 
 {% block content %}
-{% from "partials/product_picker.html" import render_product_picker %}
+{% from "components/products/picker.html" import render_product_picker %}
 {% from "partials/calendar.html" import render_date_calendar %}
 {% from "partials/date_creator.html" import render_date_creator %}
 {% if request.query_params.get('error') %}
@@ -164,7 +164,7 @@
         <!-- Right: Photos (editable: reorder / remove / add / enlarge) -->
         <div>
             <h2 class="cv-h2 mb-5">Imagen(es) de referencia <span class="text-cookie-brown/40 font-normal">(Máximo 8)</span></h2>
-            {% from "partials/uploader_orders.html" import render_uploader_orders %}
+            {% from "components/media/order_uploader.html" import render_uploader_orders %}
             {{ render_uploader_orders(8, False, (order.reference_photos or []), 0.8, 2000, form='order-form', thumb_class='w-32 h-32', existing_field='existing_photos') }}
         </div>
     </div>
@@ -403,6 +403,6 @@
 </script>
 {% endblock %}
 
-{% include "partials/cookie_cart.html" %}
+{% include "components/orders/cart.html" %}
 {% include "partials/calendar.html" %}
 {% include "partials/date_creator.html" %}

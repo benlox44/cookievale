@@ -1,4 +1,4 @@
-{% from "partials/confirm_modal.html" import render_confirm_modal %}
+{% from "components/feedback/confirm_modal.html" import render_confirm_modal %}
 
 {% macro render_date_creator() %}
 <div x-data="dateCreator()" @date-selected.window="onDateSelected($event.detail)">
