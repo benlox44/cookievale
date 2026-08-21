@@ -76,7 +76,7 @@ def admin_dashboard(
     if "hx-request" in request.headers:
         return templates.TemplateResponse(
             request=request,
-            name="admin/partials/orders_table.html",
+            name="components/admin/orders_table.html",
             context=context,
         )
 

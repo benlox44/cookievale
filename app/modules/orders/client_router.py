@@ -95,6 +95,6 @@ def submit_order(
 
     return templates.TemplateResponse(
         request=request,
-        name="client/partials/order_success.html",
+        name="components/orders/order_success.html",
         context={"order": order},
     )
