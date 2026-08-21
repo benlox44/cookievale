@@ -4,9 +4,7 @@ import time
 
 from fastapi import HTTPException, Request, status
 
-from app.core.config import SECRET_KEY
-
-SESSION_TTL_SECONDS = 8 * 60 * 60
+from app.core.config import SECRET_KEY, SESSION_TTL_SECONDS
 
 
 def create_admin_token() -> str:

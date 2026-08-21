@@ -6,7 +6,7 @@ from html import escape
 
 from fastapi import UploadFile
 
-from app.core.config import CONTAINER_MEDIA_PATH
+from app.core.config import CONTAINER_MEDIA_PATH, MAX_ORDER_PHOTOS
 from app.core.telegram import TelegramNotifier
 from app.core.uploads import delete_media_files, save_uploads, update_photo_set
 from app.modules.orders.cart import ParsedCart
@@ -62,7 +62,7 @@ class OrderService:
         if photos and photos[0].filename:
             order_dir = os.path.join(CONTAINER_MEDIA_PATH, f"orders/{order.id}")
             url_prefix = f"/media/orders/{order.id}"
-            saved_paths = save_uploads(photos[:8], order_dir, url_prefix)
+            saved_paths = save_uploads(photos[:MAX_ORDER_PHOTOS], order_dir, url_prefix)
 
             if saved_paths:
                 order.reference_photos = saved_paths
@@ -172,11 +172,11 @@ class OrderService:
             existing_urls=existing_photos,
             image_order=image_order,
             photos=photos,
-            max_images=8,
+            max_images=MAX_ORDER_PHOTOS,
             media_dir=order_dir,
             url_prefix=f"/media/orders/{order.id}",
         )
-        order.reference_photos = final_photos[:8]
+        order.reference_photos = final_photos[:MAX_ORDER_PHOTOS]
 
         updated = self.repository.save(order)
         if updated is None:

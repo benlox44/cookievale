@@ -3,9 +3,9 @@ import hmac
 from fastapi import APIRouter, Depends, Form, Request, status
 from fastapi.responses import HTMLResponse, RedirectResponse, Response
 
-from app.core.config import ADMIN_PASSWORD, DEBUG
+from app.core.config import ADMIN_PASSWORD, DEBUG, SESSION_TTL_SECONDS
 from app.core.rate_limit import LOGIN_RATE, limiter
-from app.core.security import SESSION_TTL_SECONDS, create_admin_token, require_admin
+from app.core.security import create_admin_token, require_admin
 from app.core.templates import templates
 
 router = APIRouter(prefix="/admin", tags=["Auth"])
