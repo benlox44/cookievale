@@ -4,16 +4,11 @@
 {% block content %}
 {% from "components/forms/date_calendar.html" import render_date_calendar %}
 {% from "components/ui/icons.html" import render_icon %}
+{% from "components/ui/back_button.html" import render_back_button %}
 <div class="w-full max-w-4xl mx-auto" x-data="datesPage()" @date-selected.window="onDateSelected($event.detail)">
     <div class="cv-card mb-6 flex flex-col md:flex-row justify-between items-center py-4 px-6 md:px-8 gap-4">
         <div class="flex items-center gap-4">
-            <a href="/admin"
-                class="text-cookie-golden hover:text-cookie-brown bg-cookie-cream inline-flex items-center justify-center w-10 h-10 rounded-full border border-cookie-pink/40 hover:border-cookie-golden shadow-sm transition-all"
-                title="Volver">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-                </svg>
-            </a>
+            {{ render_back_button('/admin') }}
             <h1 class="cv-h2 m-0">Disponibilidades</h1>
         </div>
         <div class="flex items-center gap-2">

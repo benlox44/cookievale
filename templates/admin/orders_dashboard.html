@@ -2,19 +2,14 @@
 {% block title %}Panel de Órdenes - CookieVale{% endblock %}
 
 {% block content %}
+{% from "components/ui/icons.html" import render_icon %}
+{% from "components/ui/back_button.html" import render_back_button %}
 
 <div class="w-full">
     <!-- Header -->
     <div class="cv-card mb-6 flex flex-wrap items-center justify-between gap-4 py-4 px-6 md:px-8">
         <div class="flex items-center gap-4">
-            <a href="/admin"
-                class="text-cookie-golden hover:text-cookie-brown bg-cookie-cream inline-flex items-center justify-center w-10 h-10 rounded-full border border-cookie-pink/40 hover:border-cookie-golden shadow-sm transition-all"
-                title="Volver">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
-                        d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-                </svg>
-            </a>
+            {{ render_back_button('/admin') }}
             <h1 class="cv-h2 m-0">Órdenes</h1>
         </div>
 
@@ -31,9 +26,7 @@
             </div>
             <a href="/admin/orders/new"
                 class="cv-btn text-xs px-4 py-2 flex items-center gap-1.5 flex-shrink-0">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4" />
-                </svg>
+                {{ render_icon("plus") }}
                 Crear Orden
             </a>
         </div>

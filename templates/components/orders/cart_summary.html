@@ -1,0 +1,33 @@
+{% macro render_cart_summary(empty_message='Tu carrito está vacío.', total_label='Total') %}
+<div x-show="cart.length === 0" class="py-8 text-center flex flex-col items-center">
+    <div
+        class="w-16 h-16 bg-cookie-pink/20 rounded-full flex items-center justify-center mb-3 border border-cookie-pink/30">
+        <svg class="w-8 h-8 text-cookie-brown/30" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+        </svg>
+    </div>
+    <p class="text-cookie-brown/60 font-medium text-sm">{{ empty_message }}</p>
+</div>
+<div x-show="cart.length > 0">
+    <ul class="space-y-2.5 mb-5">
+        <template x-for="item in cart" :key="item.product_id">
+            <li class="flex justify-between items-center bg-white border border-cookie-pink/30 rounded-xl px-4 py-2.5">
+                <div class="flex items-center gap-3">
+                    <span
+                        class="w-7 h-7 rounded-full bg-cookie-golden text-white flex items-center justify-center font-bold text-xs"
+                        x-text="item.quantity"></span>
+                    <span class="font-medium text-cookie-brown text-sm" x-text="item.name"></span>
+                </div>
+                <span class="text-sm font-semibold text-cookie-brown/70">$<span
+                        x-text="(item.price * item.quantity).toLocaleString()"></span></span>
+            </li>
+        </template>
+    </ul>
+    <div class="flex justify-between items-center border-t border-cookie-pink/30 pt-4">
+        <span class="cv-label uppercase tracking-wider">{{ total_label }}</span>
+        <span class="font-serif font-bold text-2xl text-cookie-golden">$<span
+                x-text="cartTotal.toLocaleString()"></span></span>
+    </div>
+</div>
+{% endmacro %}

@@ -6,6 +6,9 @@
 {% from "components/forms/dropdown.html" import render_dropdown %}
 {% from "components/products/picker.html" import render_product_picker %}
 {% from "components/forms/date_calendar.html" import render_date_calendar %}
+{% from "components/ui/icons.html" import render_icon %}
+{% from "components/ui/back_button.html" import render_back_button %}
+{% from "components/orders/cart_summary.html" import render_cart_summary %}
 {% if request.query_params.get('error') %}
 <script>
     window.addEventListener('DOMContentLoaded', function () {
@@ -18,14 +21,7 @@
 <div class="w-full" x-data="cookieCart()">
     <!-- Header -->
     <div class="cv-card mb-6 flex items-center gap-4 py-4 px-6 md:px-8">
-        <a href="/admin/orders"
-            class="text-cookie-golden hover:text-cookie-brown bg-cookie-cream inline-flex items-center justify-center w-10 h-10 rounded-full border border-cookie-pink/40 hover:border-cookie-golden shadow-sm transition-all"
-            title="Volver">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
-                    d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-            </svg>
-        </a>
+        {{ render_back_button('/admin/orders') }}
         <h1 class="cv-h2 m-0">Crear Orden</h1>
     </div>
 
@@ -54,32 +50,7 @@
                     </svg>
                     Resumen del pedido
                 </h2>
-                <div x-show="cart.length === 0" class="py-8 text-center flex flex-col items-center">
-                    <div class="w-16 h-16 bg-cookie-pink/20 rounded-full flex items-center justify-center mb-3 border border-cookie-pink/30">
-                        <svg class="w-8 h-8 text-cookie-brown/30" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
-                                d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
-                        </svg>
-                    </div>
-                    <p class="text-cookie-brown/60 font-medium text-sm">El carrito está vacío.</p>
-                </div>
-                <div x-show="cart.length > 0">
-                    <ul class="space-y-2.5 mb-5">
-                        <template x-for="item in cart" :key="item.product_id">
-                            <li class="flex justify-between items-center bg-white border border-cookie-pink/30 rounded-xl px-4 py-2.5">
-                                <div class="flex items-center gap-3">
-                                    <span class="w-7 h-7 rounded-full bg-cookie-golden text-white flex items-center justify-center font-bold text-xs" x-text="item.quantity"></span>
-                                    <span class="font-medium text-cookie-brown text-sm" x-text="item.name"></span>
-                                </div>
-                                <span class="text-sm font-semibold text-cookie-brown/70">$<span x-text="(item.price * item.quantity).toLocaleString()"></span></span>
-                            </li>
-                        </template>
-                    </ul>
-                    <div class="flex justify-between items-center border-t border-cookie-pink/30 pt-4">
-                        <span class="cv-label uppercase tracking-wider">Total</span>
-                        <span class="font-serif font-bold text-2xl text-cookie-golden">$<span x-text="cartTotal.toLocaleString()"></span></span>
-                    </div>
-                </div>
+                {{ render_cart_summary('El carrito está vacío.', 'Total') }}
             </div>
 
             <!-- Customer Fields -->
@@ -169,10 +140,7 @@
                 :disabled="cart.length === 0 || !hasDate"
                 class="cv-btn w-full py-4 text-base rounded-2xl disabled:opacity-40 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-none">
                 Crear Orden
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
-                        d="M14 5l7 7m0 0l-7 7m7-7H3" />
-                </svg>
+                {{ render_icon("plus") }}
             </button>
         </form>
     </div>

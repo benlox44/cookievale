@@ -1,4 +1,5 @@
 {% macro render_product_picker(products) %}
+{% from "components/ui/icons.html" import render_icon %}
 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 mb-10">
     {% for product in products %}
     <div
@@ -20,10 +21,7 @@
                 style="-moz-appearance: textfield; appearance: textfield;">
             <button type="button" @click="addItem({{ product.id }}, '{{ product.name }}', {{ product.price }})"
                 class="w-9 h-9 flex items-center justify-center rounded-lg bg-cookie-pink/40 text-cookie-brown hover:bg-cookie-golden hover:text-white transition-all active:scale-90 shrink-0">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
-                        d="M12 4v16m8-8H4" />
-                </svg>
+                {{ render_icon("plus") }}
             </button>
         </div>
     </div>
