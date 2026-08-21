@@ -102,16 +102,7 @@ def new_order_form(
         context={
             "products": products,
             "available_dates": available_dates,
-            "weekdays": [
-                "Lunes",
-                "Martes",
-                "Miércoles",
-                "Jueves",
-                "Viernes",
-                "Sábado",
-                "Domingo",
-            ],
-            "OrderStatuses": list(OrderStatus),
+            "OrderStatuses": [e.value for e in OrderStatus],
             "today": datetime.now(tz=TZ).date().strftime("%Y-%m-%d"),
         },
     )
@@ -193,15 +184,6 @@ def get_order_detail(
             "order": order,
             "products": products,
             "available_dates": available_dates,
-            "weekdays": [
-                "Lunes",
-                "Martes",
-                "Miércoles",
-                "Jueves",
-                "Viernes",
-                "Sábado",
-                "Domingo",
-            ],
             "OrderStatuses": [e.value for e in OrderStatus],
             "today": datetime.now(tz=TZ).date().strftime("%Y-%m-%d"),
         },
@@ -214,8 +196,8 @@ def update_order_status(
     status: OrderStatus = Form(...),
     service: OrderService = Depends(get_order_service),
 ) -> RedirectResponse:
-    # Moving an order to an already-occupied slot is rejected by the database;
-    # surface it instead of silently failing.
+    # The repository raises ValueError on IntegrityError (e.g. a concurrent
+    # update), so surface it instead of failing silently.
     try:
         service.change_status(order_id, status)
     except ValueError as exc:

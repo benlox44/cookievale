@@ -35,15 +35,6 @@ def get_new_order_form(
         context={
             "products": products,
             "available_dates": available_dates,
-            "weekdays": [
-                "Lunes",
-                "Martes",
-                "Miércoles",
-                "Jueves",
-                "Viernes",
-                "Sábado",
-                "Domingo",
-            ],
             "today": datetime.now(tz=TZ).date().strftime("%Y-%m-%d"),
         },
     )
