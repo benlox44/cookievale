@@ -53,6 +53,45 @@ jobs:
       - run: pip install -r requirements.txt
       - run: mypy app/
 
+  test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_USER: cookie_user
+          POSTGRES_PASSWORD: cookie_pass
+          POSTGRES_DB: cookievale
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U cookie_user -d cookievale"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Load versions
+        run: . versions.env && echo "PYTHON_VERSION=$PYTHON_VERSION" >> "$GITHUB_ENV"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+      - run: pip install -r requirements.txt -r requirements-dev.txt
+      - name: Run tests
+        env:
+          DATABASE_URL: postgresql://cookie_user:cookie_pass@localhost:5432/cookievale
+          SECRET_KEY: test-secret
+          ADMIN_PASSWORD: test-admin
+          BASE_URL: http://test.local
+          TZ: America/Santiago
+          DEBUG: "True"
+          CONTAINER_MEDIA_PATH: /tmp/cookievale-test-media
+          TRUSTED_PROXY_HOSTS: 127.0.0.1
+          TELEGRAM_BOT_TOKEN: test-token
+          TELEGRAM_CHAT_ID: "123"
+        run: pytest
+
   css-check:
     runs-on: ubuntu-latest
     steps:
@@ -104,7 +143,7 @@ jobs:
 
   docker-build:
     runs-on: ubuntu-latest
-    needs: [lint, format, mypy, css-check, markdown-lint, line-endings]
+    needs: [lint, format, mypy, test, css-check, markdown-lint, line-endings]
     steps:
       - uses: actions/checkout@v4
       - name: Build image
