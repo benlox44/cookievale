@@ -5,4 +5,5 @@ __pycache__/
 docker-compose.override.yml
 .ruff_cache/
 .mypy_cache/
+.coverage
 backup.log
