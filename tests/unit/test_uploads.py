@@ -46,6 +46,16 @@ def test_validate_rejects_unknown_mime() -> None:
     )
 
 
+def test_validate_rejects_short_header() -> None:
+    assert not uploads.validate_upload(
+        make_upload(b"\xff\xd8", name="a.jpg", mime="image/jpeg")
+    )
+
+
+def test_get_safe_extension_bin_for_short_header() -> None:
+    assert uploads.get_safe_extension(make_upload(b"\xff\xd8", name="foto")) == "bin"
+
+
 def test_validate_rejects_empty_filename() -> None:
     assert not uploads.validate_upload(make_upload(JPEG_MAGIC + b"\x00" * 32, name=""))
 
@@ -90,6 +100,18 @@ def test_build_image_order_skips_invalid_tokens() -> None:
         '["/media/missing.jpg","new:9","new:-1","new:0"]', current, new
     )
     assert order == ["/media/n0.jpg"]
+
+
+def test_build_image_order_skips_non_string_tokens() -> None:
+    current = ["/media/a.jpg"]
+    new = ["/media/n0.jpg"]
+    order = uploads.build_image_order('["/media/a.jpg", 7, {"x": 1}]', current, new)
+    assert order == ["/media/a.jpg", "/media/n0.jpg"]
+
+
+def test_build_image_order_rejects_invalid_json() -> None:
+    assert uploads.build_image_order("not-json", ["/media/a.jpg"], []) == []
+    assert uploads.build_image_order("42", ["/media/a.jpg"], []) == []
 
 
 def test_build_image_order_dedupes() -> None:
@@ -143,3 +165,27 @@ def test_update_photo_set_saves_new_and_caps(
     assert len(final) == 2
     assert removed == []
     assert len(list(tmp_path.iterdir())) == 2
+
+
+def test_save_uploads_skips_invalid_files(tmp_path) -> None:
+    photos = [
+        make_upload(JPEG_MAGIC + b"\x00" * 32, name="ok.jpg"),
+        make_upload(b"not an image", name="bad.jpg", mime="image/jpeg"),
+    ]
+    urls = uploads.save_uploads(photos, str(tmp_path), "/media")
+    assert len(urls) == 1
+    assert len(list(tmp_path.iterdir())) == 1
+
+
+def test_delete_media_files_removes_existing_and_ignores_missing(tmp_path) -> None:
+    existing = tmp_path / "a.jpg"
+    existing.write_bytes(b"x")
+    uploads.delete_media_files(str(tmp_path), ["/media/a.jpg", "/media/b.jpg", "/"])
+    assert not existing.exists()
+
+
+def test_delete_media_files_keeps_files_not_listed(tmp_path) -> None:
+    kept = tmp_path / "keep.jpg"
+    kept.write_bytes(b"x")
+    uploads.delete_media_files(str(tmp_path), ["/media/other.jpg"])
+    assert kept.exists()
