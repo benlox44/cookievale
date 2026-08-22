@@ -74,14 +74,13 @@ class SQLAlchemyOrderRepository:
             items=db_items,
         )
 
-        if order.id is None:
-            self.db.add(db_order)
-            self.db.flush()
-        else:
-            db_order = self.db.merge(db_order)
-            self.db.flush()
-
         try:
+            if order.id is None:
+                self.db.add(db_order)
+                self.db.flush()
+            else:
+                db_order = self.db.merge(db_order)
+                self.db.flush()
             self.db.commit()
         except IntegrityError:
             self.db.rollback()
