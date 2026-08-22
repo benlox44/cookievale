@@ -178,3 +178,71 @@ def test_slot_crud_and_purge(db: Session) -> None:
 
     repo.delete(kept.id)
     assert repo.get_all() == []
+
+
+def test_order_save_with_no_items(db: Session) -> None:
+    order = Order(
+        customer_instagram="cliente",
+        delivery_date=datetime.now(tz=TZ) + timedelta(days=2),
+        description="test",
+        delivery_method=DeliveryMethod.PICKUP,
+        availability_slot_id=None,
+        items=[],
+        total_amount=0,
+        amount_paid=0,
+        status=OrderStatus.PENDING,
+    )
+    saved = SQLAlchemyOrderRepository(db).save(order)
+    assert saved.items == []
+
+
+def test_order_list_all_sorts_by_id(db: Session) -> None:
+    product = make_product(db)
+    make_order(db, product, customer="a")
+    make_order(db, product, customer="b")
+
+    repo = SQLAlchemyOrderRepository(db)
+    ids = [o.id for o in repo.list_all(sort_by="id", sort_dir="asc")]
+    assert ids == sorted(ids)
+
+
+def test_order_replace_items_missing_returns_none(db: Session) -> None:
+    assert SQLAlchemyOrderRepository(db).replace_items(999, [], 0, 0) is None
+
+
+def test_product_update_missing_returns_none(db: Session) -> None:
+    repo = SQLAlchemyProductRepository(db)
+    assert repo.update(999, Product(id=None, name="x", price=1, is_active=True)) is None
+
+
+def test_product_update_sets_image_urls(db: Session) -> None:
+    product = make_product(db)
+    repo = SQLAlchemyProductRepository(db)
+    updated = repo.update(
+        product.id,
+        Product(id=None, name="x", price=1, is_active=True),
+        image_urls=["/media/products/1/a.jpg"],
+    )
+    assert updated is not None
+    assert updated.image_urls == ["/media/products/1/a.jpg"]
+
+
+def test_product_reorder_empty_is_noop(db: Session) -> None:
+    assert SQLAlchemyProductRepository(db).reorder([]) is True
+
+
+def test_product_delete_missing_returns_false(db: Session) -> None:
+    assert SQLAlchemyProductRepository(db).delete(999) is False
+
+
+def test_get_db_yields_working_session_and_closes() -> None:
+    from sqlalchemy import text
+
+    from app.core.database import get_db
+
+    gen = get_db()
+    session = next(gen)
+    try:
+        assert session.execute(text("SELECT 1")).scalar() == 1
+    finally:
+        gen.close()
