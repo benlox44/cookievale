@@ -1,5 +1,6 @@
 import io
 import json
+import logging
 import os
 from datetime import datetime, timedelta
 
@@ -7,6 +8,7 @@ import pytest
 from fastapi import UploadFile
 
 from app.core.config import CONTAINER_MEDIA_PATH, TZ
+from app.modules.orders import service as order_service_module
 from app.modules.orders.domain import DeliveryMethod, Order, OrderItem, OrderStatus
 from app.modules.orders.schemas import (
     OrderCreateRequest,
@@ -241,3 +243,87 @@ def test_update_order_returns_none_for_missing_order(service: OrderService) -> N
         photos=None,
     )
     assert result is None
+
+
+def test_telegram_failure_is_logged_but_order_created(
+    service: OrderService,
+    caplog: pytest.LogCaptureFixture,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    class _RaisingNotifier:
+        def __init__(self) -> None:
+            pass
+
+        def send_message(self, text: str) -> None:
+            raise RuntimeError("telegram down")
+
+    monkeypatch.setattr(order_service_module, "TelegramNotifier", _RaisingNotifier)
+    with caplog.at_level(logging.ERROR, logger="app.modules.orders.service"):
+        order = service.create_order(_create_request(), [])
+    assert order.id is not None
+    assert "Failed to send Telegram notification" in caplog.text
+
+
+def test_change_status_missing_order_returns_none(service: OrderService) -> None:
+    assert service.change_status(999, OrderStatus.PAID) is None
+
+
+def test_update_order_items_missing_order_returns_none(service: OrderService) -> None:
+    result = service.update_order_items(
+        999, [OrderItemCreate(product_id=1, quantity=1, unit_price=100)], 100
+    )
+    assert result is None
+
+
+def test_update_order_deletes_dropped_photos(service: OrderService) -> None:
+    order = service.create_order(_create_request(), [make_upload()])
+    existing = order.reference_photos or []
+    order_dir = os.path.join(CONTAINER_MEDIA_PATH, f"orders/{order.id}")
+    dropped_path = os.path.join(order_dir, os.path.basename(existing[0]))
+    assert os.path.isfile(dropped_path)
+
+    updated = service.update_order(
+        order.id,
+        OrderUpdateRequest(
+            delivery_date=order.delivery_date,
+            availability_slot_id=1,
+            description="x",
+            delivery_method=DeliveryMethod.PICKUP,
+            amount_paid=0,
+        ),
+        existing_photos=[],
+        image_order="[]",
+        photos=None,
+    )
+    assert updated is not None
+    assert updated.reference_photos == []
+    assert not os.path.isfile(dropped_path)
+
+
+def test_update_order_logs_warning_on_cleanup_error(
+    service: OrderService,
+    caplog: pytest.LogCaptureFixture,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    order = service.create_order(_create_request(), [make_upload()])
+
+    def boom(media_dir: str, urls: list[str]) -> None:
+        raise OSError("locked")
+
+    monkeypatch.setattr(order_service_module, "delete_media_files", boom)
+    with caplog.at_level(logging.WARNING, logger="app.modules.orders.service"):
+        updated = service.update_order(
+            order.id,
+            OrderUpdateRequest(
+                delivery_date=order.delivery_date,
+                availability_slot_id=1,
+                description="x",
+                delivery_method=DeliveryMethod.PICKUP,
+                amount_paid=0,
+            ),
+            existing_photos=[],
+            image_order="[]",
+            photos=None,
+        )
+    assert updated is not None
+    assert "Failed to remove media files for order" in caplog.text
