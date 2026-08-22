@@ -20,9 +20,11 @@ def _setup(client, db: Session, days: int = 3) -> int:
     return product.id, slot.id
 
 
-def _payload(product_id: int, date: str, cart=None) -> dict[str, str]:
+def _payload(
+    product_id: int, date: str, cart=None, customer_instagram: str = "usuario"
+) -> dict[str, str]:
     return {
-        "customer_instagram": "usuario",
+        "customer_instagram": customer_instagram,
         "cart_items_json": cart
         or json.dumps([{"product_id": product_id, "quantity": 2}]),
         "delivery_date": f"{date}T12:00:00",
@@ -82,3 +84,14 @@ def test_submit_order_is_rate_limited(client, db: Session) -> None:
         client.post("/orders", data=data)
     response = client.post("/orders", data=data)
     assert response.status_code == 429
+
+
+def test_submit_order_with_empty_instagram_toast_error(client, db: Session) -> None:
+    product_id, _ = _setup(client, db)
+    date = (datetime.now(tz=TZ) + timedelta(days=3)).date().isoformat()
+
+    response = client.post(
+        "/orders", data=_payload(product_id, date, customer_instagram="@")
+    )
+    assert response.status_code == 204
+    assert "no puede estar vacío" in _toast_message(response)
