@@ -1,3 +1,4 @@
+import logging
 import os
 import tempfile
 from collections.abc import Generator
@@ -45,10 +46,20 @@ def _ensure_test_database() -> None:
         admin_engine.dispose()
 
 
+def _re_enable_loggers() -> None:
+    # Alembic's env.py calls fileConfig(), which disables every logger not
+    # listed in alembic.ini. Migrations run inside the pytest process, so undo
+    # that or caplog goes silent for the whole session afterwards.
+    for logger in logging.getLogger().manager.loggerDict.values():
+        if isinstance(logger, logging.Logger):
+            logger.disabled = False
+
+
 @pytest.fixture(scope="session", autouse=False)
 def db_ready() -> Generator[None, None, None]:
     _ensure_test_database()
     command.upgrade(Config("alembic.ini"), "head")
+    _re_enable_loggers()
     yield
 
 
