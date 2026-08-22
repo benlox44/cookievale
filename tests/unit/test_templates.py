@@ -1,5 +1,8 @@
 from datetime import date
 
+import pytest
+
+from app.core import templates
 from app.core.templates import (
     clp,
     date_short,
@@ -34,3 +37,17 @@ def test_date_short_in_spanish() -> None:
     assert date_short(date(2026, 8, 21)) == "vie-21-ago-2026"
     assert date_short(date(2026, 1, 1)) == "jue-01-ene-2026"
     assert date_short(date(2026, 12, 31)) == "jue-31-dic-2026"
+
+
+def test_css_version_returns_zero_when_stylesheet_missing(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    class _BrokenPath:
+        def __init__(self, path: str) -> None:
+            pass
+
+        def stat(self) -> object:
+            raise OSError("no such file")
+
+    monkeypatch.setattr(templates, "Path", _BrokenPath)
+    assert templates.css_version() == "0"
