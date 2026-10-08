@@ -111,7 +111,7 @@ jobs:
       - name: Compile and verify no diff
         run: |
           ./tailwindcss-linux-x64 -i public/tailwind.css -o public/styles.css --minify
-          git diff --exit-code public/styles.css || (echo "public/styles.css is stale. Run 'make css' and commit." && exit 1)
+          git diff --exit-code public/styles.css || (echo "public/styles.css is stale. Run 'just css' and commit." && exit 1)
 
   markdown-lint:
     runs-on: ubuntu-latest

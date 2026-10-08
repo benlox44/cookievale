@@ -1,22 +1,22 @@
 # CookieVale — Agent Guide
 
 FastAPI + HTMX + Alpine.js + TailwindCSS + PostgreSQL bakery order management system.
-Everything runs inside Docker. Never run Python commands locally — use `make` targets.
+Everything runs inside Docker. Never run Python commands locally — use `just` recipes.
 
 ## Commands
 
-- `make up` / `make down` — start/stop stack
-- `make build` — rebuild images
-- `make lint` — ruff check (inside container)
-- `make format` — ruff format (inside container)
-- `make migrate` — `alembic upgrade head` (inside container)
-- `make reset-db` — drop volume, recreate, run all migrations. **Development only**: refuses to run if `docker-compose.override.yml` is missing (i.e. on production checkouts).
-- `make shell` — bash into the web container
-- `make backup` — run `backup.py` in a throwaway web container that mounts `$BACKUP_DEST` at `/app_backup` only for the duration of the backup (requires the stack to be up). Exports the database and syncs media files. The app container never mounts the backup destination; `make backup` fails with a clear message when it is unavailable.
-- `make css` — compile `public/styles.css` with `--minify`. Required every time you change `public/tailwind.css`, `tailwind.config.js`, or templates (new Tailwind classes). Must be run before `git push`.
-- `make build` — rebuild Docker images. Only needed when `Dockerfile`, `requirements.txt`, or system dependencies change. Not needed for template/CSS/Python-only changes (volumes sync automatically, uvicorn `--reload` picks up Python changes).
-- `make check-md` — run markdownlint-cli2 on all `.md` files
-- `make check` — run everything the CI checks locally (ruff lint, ruff format check, mypy, compiled-CSS diff, markdown lint). Use before pushing instead of waiting for the pipeline.
+- `just up` / `just down` — start/stop stack
+- `just build` — rebuild images
+- `just lint` — ruff check (inside container)
+- `just format` — ruff format (inside container)
+- `just migrate` — `alembic upgrade head` (inside container)
+- `just reset-db` — drop volume, recreate, run all migrations. **Development only**: refuses to run if `docker-compose.override.yml` is missing (i.e. on production checkouts).
+- `just shell` — bash into the web container
+- `just backup` — run `backup.py` on the host (requires the stack to be up). Exports the database via `docker compose exec` and syncs media files directly to `BACKUP_DEST` (supports local paths and SMB/network shares). Fails with a clear message when unavailable.
+- `just css` — compile `public/styles.css` with `--minify`. Required every time you change `public/tailwind.css`, `tailwind.config.js`, or templates (new Tailwind classes). Must be run before `git push`.
+- `just build` — rebuild Docker images. Only needed when `Dockerfile`, `requirements.txt`, or system dependencies change. Not needed for template/CSS/Python-only changes (volumes sync automatically, uvicorn `--reload` picks up Python changes).
+- `just check-md` — run markdownlint-cli2 on all `.md` files
+- `just check` — run everything the CI checks locally (ruff lint, ruff format check, mypy, compiled-CSS diff, markdown lint). Use before pushing instead of waiting for the pipeline.
 - No test suite exists currently
 
 ## Architecture — Vertical Slicing
@@ -43,7 +43,7 @@ New routers must be registered in `app/main.py` via `app.include_router()`.
 - Migration scripts in `migrations/versions/`.
 - **Critical**: new ORM models must be imported in `migrations/env.py` or autogenerate won't detect them.
 - Generate: `alembic revision --autogenerate -m "description"` (inside container).
-- Apply: `make migrate`.
+- Apply: `just migrate`.
 
 ## Conventions
 
@@ -68,4 +68,4 @@ New routers must be registered in `app/main.py` via `app.include_router()`.
 - Auth is HMAC-based cookie sessions (no JWT or third-party auth library).
 - PostgreSQL connection uses synchronous SQLAlchemy (not async).
 - Migrations use standard Alembic operations (`op.add_column`, `op.drop_column`, `op.create_index`, ...). This project runs Postgres, which supports native `ALTER TABLE`, so the SQLite-oriented `op.batch_alter_table` pattern is deliberately not used (and `render_as_batch=True` is not set in `env.py`/`alembic.ini`).
-- Backup script: single `backup.py` (Python stdlib only), run via `make backup` inside a throwaway web container. Reads env vars fail-fast via `os.environ["KEY"]` (injected by compose `env_file`/`environment`); no fallbacks. Dumps the DB with `pg_dump -h db` (password via `PGPASSWORD`), writes to `CONTAINER_BACKUP_PATH` (`/app_backup`, mounted from `$BACKUP_DEST` only during the backup), and syncs media from `CONTAINER_MEDIA_PATH`. Also copies `.env` into the backup. Database dump is compressed with `gzip` and integrity-verified. Keeps last 7 timestamped backups. The app container never mounts `$BACKUP_DEST`; the Makefile pre-checks the destination exists and `backup.py` verifies the mount is real and writable, exiting with a clear error otherwise.
+- Backup script: single `backup.py` (Python stdlib only), run via `make backup` on the host. Reads config from `.env` (and environment overrides). Dumps the DB with `docker compose exec -T db pg_dump` (password via `PGPASSWORD`), writes directly to `BACKUP_DEST` (supporting local folders and SMB/network shares), and syncs media from `MEDIA_ROOT`. Also copies `.env` into the backup. Database dump is compressed with `gzip` and integrity-verified. Keeps last 7 timestamped backups. Verifies the destination is accessible and writable, exiting with a clear error otherwise.

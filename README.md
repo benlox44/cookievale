@@ -29,7 +29,7 @@
 3. **Start the stack:**
 
    ```bash
-   make up
+   just up
    ```
 
    The first run builds the Docker image, which can take a few minutes. In development the Tailwind watcher and uvicorn `--reload` run automatically.
@@ -42,24 +42,24 @@
 
 ## Development Commands
 
-We rely on a `Makefile` to encapsulate Docker operations.
+We rely on a `justfile` to encapsulate Docker operations.
 
 | Command | Description |
 | --- | --- |
-| `make build` | Rebuild docker images. Only needed when `Dockerfile`, `requirements.txt`, or system dependencies change. |
-| `make up` | Spin up the entire stack in the background |
-| `make down` | Tear down the stack |
-| `make restart` | Restart the web container |
-| `make logs` | Attach to the backend logs |
-| `make shell` | Open a continuous bash session inside the web container |
-| `make lint` | Run Ruff to check code quality |
-| `make format` | Run Ruff to auto-format code |
-| `make migrate` | Apply all pending Alembic migrations (`alembic upgrade head`) |
-| `make reset-db` | Drop the database volume, recreate it, and apply all migrations. **Development only**: refuses to run when `docker-compose.override.yml` is missing (i.e. on production checkouts). |
-| `make backup` | Run `backup.py` in a throwaway web container that mounts `BACKUP_DEST` only for the backup. The app never depends on it. Fails with a clear message if unavailable. |
-| `make check-md` | Run markdownlint-cli2 on all `.md` files |
-| `make css` | Compile `public/styles.css` with `--minify`. Required when changing `public/tailwind.css`, `tailwind.config.js`, or templates (new Tailwind classes). Run before `git push`. |
-| `make check` | Run every check the CI runs locally: ruff lint, ruff format check, mypy, compiled-CSS diff and markdown lint. |
+| `just build` | Rebuild docker images. Only needed when `Dockerfile`, `requirements.txt`, or system dependencies change. |
+| `just up` | Spin up the entire stack in the background |
+| `just down` | Tear down the stack |
+| `just restart` | Restart the web container |
+| `just logs` | Attach to the backend logs |
+| `just shell` | Open a continuous bash session inside the web container |
+| `just lint` | Run Ruff to check code quality |
+| `just format` | Run Ruff to auto-format code |
+| `just migrate` | Apply all pending Alembic migrations (`alembic upgrade head`) |
+| `just reset-db` | Drop the database volume, recreate it, and apply all migrations. **Development only**: refuses to run when `docker-compose.override.yml` is missing (i.e. on production checkouts). |
+| `just backup` | Run `backup.py` on the host to export the database via `docker compose exec` and sync media to `BACKUP_DEST`. Fails with a clear message if unavailable. |
+| `just check-md` | Run markdownlint-cli2 on all `.md` files |
+| `just css` | Compile `public/styles.css` with `--minify`. Required when changing `public/tailwind.css`, `tailwind.config.js`, or templates (new Tailwind classes). Run before `git push`. |
+| `just check` | Run every check the CI runs locally: ruff lint, ruff format check, mypy, compiled-CSS diff and markdown lint. |
 
 ## Stack
 
