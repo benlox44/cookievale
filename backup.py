@@ -24,6 +24,25 @@ logging.basicConfig(
 log = logging.getLogger(__name__)
 
 
+def load_env(env_file: Path) -> dict[str, str]:
+    """Parse .env line by line to avoid shell interpretation of special chars."""
+    env: dict[str, str] = {}
+    if not env_file.exists():
+        log.error("[ERROR] .env file not found: %s", env_file)
+        sys.exit(1)
+    for line in env_file.read_text(encoding="utf-8").splitlines():
+        stripped = line.strip()
+        if not stripped or stripped.startswith("#") or "=" not in stripped:
+            continue
+        key, _, value = stripped.partition("=")
+        key = key.strip()
+        value = value.strip()
+        if len(value) >= 2 and value[0] == value[-1] and value[0] in ('"', "'"):
+            value = value[1:-1]
+        env[key] = value
+    return env
+
+
 def _is_timestamp_dir(name: str) -> bool:
     # "%Y-%m-%d_%H%M%S" is 17 chars (4+1+2+1+2+1+6)
     if len(name) != 17 or "_" not in name:
@@ -48,18 +67,21 @@ def _dir_size(path: Path) -> int:
 
 
 def _verify_backup_destination(dest: Path) -> bool:
-    if not os.path.ismount(dest):
+    try:
+        dest.mkdir(parents=True, exist_ok=True)
+    except OSError as exc:
         log.error(
-            "[ERROR] Backup destination %s is not mounted. "
+            "[ERROR] Backup destination %s is not accessible: %s. "
             "Check that BACKUP_DEST points to an available folder. "
             "No backup was created.",
             dest,
+            exc,
         )
         return False
 
     probe = dest / ".backup_probe"
     try:
-        probe.write_text("ok")
+        probe.write_text("ok", encoding="utf-8")
         probe.unlink()
     except OSError as exc:
         log.error(
@@ -72,18 +94,37 @@ def _verify_backup_destination(dest: Path) -> bool:
     return True
 
 
+def _get_docker_compose_cmd() -> list[str]:
+    if shutil.which("docker"):
+        return ["docker", "compose"]
+    if shutil.which("docker-compose"):
+        return ["docker-compose"]
+    log.error("[ERROR] docker command not found — is Docker installed?")
+    sys.exit(1)
+
+
 def main() -> None:
     log.info("=== CookieVale Backup Started ===")
 
-    db_user = os.environ["POSTGRES_USER"]
-    db_name = os.environ["POSTGRES_DB"]
-    db_password = os.environ["POSTGRES_PASSWORD"]
-    dest = Path(os.environ["CONTAINER_BACKUP_PATH"])
-    media_root = os.environ["CONTAINER_MEDIA_PATH"]
+    env = {**load_env(SCRIPT_DIR / ".env"), **os.environ}
 
+    db_user = env.get("POSTGRES_USER", "")
+    db_name = env.get("POSTGRES_DB", "")
+    db_password = env.get("POSTGRES_PASSWORD", "")
+    backup_dest = env.get("BACKUP_DEST", "").strip()
+    media_root = env.get("MEDIA_ROOT", "").strip()
+
+    if not db_user or not db_name:
+        log.error("[ERROR] POSTGRES_USER and POSTGRES_DB must be declared in .env")
+        sys.exit(1)
+
+    if not backup_dest:
+        log.error("[ERROR] BACKUP_DEST missing in .env")
+        sys.exit(1)
+
+    dest = Path(backup_dest)
     if not _verify_backup_destination(dest):
         sys.exit(1)
-    dest.mkdir(parents=True, exist_ok=True)
 
     timestamp = datetime.now(tz=timezone.utc).strftime("%Y-%m-%d_%H%M%S")
     backup_dir = dest / timestamp
@@ -98,12 +139,18 @@ def main() -> None:
     log.info("[*] Exporting database...")
     dump_path = config_dir / "cookievale_db_dump.sql.gz"
 
+    compose_cmd = _get_docker_compose_cmd()
+    cmd = [*compose_cmd, "exec", "-T"]
+    if db_password:
+        cmd.extend(["-e", f"PGPASSWORD={db_password}"])
+    cmd.extend(["db", "pg_dump", "-U", db_user, "-d", db_name])
+
     try:
         result = subprocess.run(
-            ["pg_dump", "-h", "db", "-U", db_user, "-d", db_name],
-            env={**os.environ, "PGPASSWORD": db_password},
+            cmd,
             capture_output=True,
             timeout=300,
+            cwd=str(SCRIPT_DIR),
             check=False,
         )
         if result.returncode != 0:
@@ -122,9 +169,7 @@ def main() -> None:
         shutil.rmtree(backup_dir, ignore_errors=True)
         sys.exit(1)
     except FileNotFoundError:
-        log.error(
-            "[ERROR] pg_dump not found — is postgresql-client installed in the web container?"
-        )
+        log.error("[ERROR] docker command failed — is Docker installed and in PATH?")
         shutil.rmtree(backup_dir, ignore_errors=True)
         sys.exit(1)
 
@@ -153,18 +198,19 @@ def main() -> None:
         f.write(env_content)
 
     # ---- Media sync ----
-    media_src = Path(media_root)
-    if not media_src.exists():
-        log.warning(
-            "[WARNING] CONTAINER_MEDIA_PATH (%s) does not exist, skipping", media_src
-        )
+    if not media_root:
+        log.warning("[WARNING] MEDIA_ROOT not declared, skipping media files")
     else:
-        log.info("[*] Syncing media from %s...", media_src)
-        if media_dir.exists():
-            shutil.rmtree(media_dir, ignore_errors=True)
-        shutil.copytree(media_src, media_dir, symlinks=True)
-        media_size = _format_size(_dir_size(media_dir))
-        log.info("[OK] Media synced: %s", media_size)
+        media_src = Path(media_root)
+        if not media_src.exists():
+            log.warning("[WARNING] MEDIA_ROOT (%s) does not exist, skipping", media_src)
+        else:
+            log.info("[*] Syncing media from %s...", media_src)
+            if media_dir.exists():
+                shutil.rmtree(media_dir, ignore_errors=True)
+            shutil.copytree(media_src, media_dir, dirs_exist_ok=True)
+            media_size = _format_size(_dir_size(media_dir))
+            log.info("[OK] Media synced: %s", media_size)
 
     # ---- Rotate old backups ----
     log.info("[*] Cleaning old backups (keeping last %d)...", BACKUP_RETENTION)

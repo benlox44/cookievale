@@ -13,7 +13,6 @@ services:
       - .env
     environment:
       - CONTAINER_MEDIA_PATH=/app_media
-      - CONTAINER_BACKUP_PATH=/app_backup
     depends_on:
       db:
         condition: service_healthy
