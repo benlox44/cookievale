@@ -9,7 +9,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 SCRIPT_DIR = Path(__file__).resolve().parent
-BACKUP_RETENTION = 7
+BACKUP_RETENTION = 2
 LOG_FILE = SCRIPT_DIR / "backup.log"
 
 logging.basicConfig(
