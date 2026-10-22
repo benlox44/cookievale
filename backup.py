@@ -135,7 +135,6 @@ def main() -> None:
 
     log.info("[*] Destination: %s", backup_dir)
 
-    # ---- Database dump (compressed) ----
     log.info("[*] Exporting database...")
     dump_path = config_dir / "cookievale_db_dump.sql.gz"
 
@@ -173,7 +172,6 @@ def main() -> None:
         shutil.rmtree(backup_dir, ignore_errors=True)
         sys.exit(1)
 
-    # ---- Verify dump ----
     if dump_path.stat().st_size == 0:
         log.error("[ERROR] Database dump is empty (0 bytes)")
         shutil.rmtree(backup_dir, ignore_errors=True)
@@ -189,7 +187,6 @@ def main() -> None:
 
     log.info("[OK] Dump integrity verified")
 
-    # ---- Copy .env (LF only) ----
     log.info("[*] Copying .env...")
     env_src = SCRIPT_DIR / ".env"
     with env_src.open("r", encoding="utf-8") as f:
@@ -197,7 +194,6 @@ def main() -> None:
     with (config_dir / ".env").open("w", encoding="utf-8", newline="\n") as f:
         f.write(env_content)
 
-    # ---- Media sync ----
     if not media_root:
         log.warning("[WARNING] MEDIA_ROOT not declared, skipping media files")
     else:
@@ -212,7 +208,6 @@ def main() -> None:
             media_size = _format_size(_dir_size(media_dir))
             log.info("[OK] Media synced: %s", media_size)
 
-    # ---- Rotate old backups ----
     log.info("[*] Cleaning old backups (keeping last %d)...", BACKUP_RETENTION)
     backup_dirs = sorted(
         (d for d in dest.iterdir() if d.is_dir() and _is_timestamp_dir(d.name)),
@@ -223,7 +218,6 @@ def main() -> None:
         log.info("  Removing: %s", old_dir)
         shutil.rmtree(old_dir, ignore_errors=True)
 
-    # ---- Summary ----
     total_size = _format_size(_dir_size(backup_dir))
     remaining = min(len(backup_dirs), BACKUP_RETENTION)
     log.info(
