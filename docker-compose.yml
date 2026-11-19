@@ -4,6 +4,7 @@ services:
       context: .
       args:
         PYTHON_VERSION: ${PYTHON_VERSION:-3.11}
+    restart: unless-stopped
     volumes:
       - .:/app
       - ${MEDIA_ROOT}:/app_media
@@ -19,6 +20,7 @@ services:
 
   db:
     image: postgres:${POSTGRES_VERSION:-15}-alpine
+    restart: unless-stopped
     environment:
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
