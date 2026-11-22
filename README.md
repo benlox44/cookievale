@@ -7,132 +7,48 @@
 
 ## Quick Start
 
-**Prerequisites**: Docker with the Compose plugin (v2+) installed and running. This project runs entirely inside Docker — Python, Node, Tailwind and PostgreSQL are never installed on your machine.
+**Prerequisites**: Docker with Compose v2+ and [`just`](https://github.com/casey/just). Everything runs inside Docker.
 
-1. **Clone the repo:**
-
-   ```bash
-   git clone https://github.com/benlox44/cookievale.git
-   cd cookievale
-   ```
-
-2. **Create your environment file:**
+1. **Configure environment:**
 
    ```bash
    cp .env.example .env
    ```
 
-   Then fill in **every** value: the PostgreSQL credentials, `SECRET_KEY`, `ADMIN_PASSWORD`, `BASE_URL`, `TZ`, `MEDIA_ROOT`, `BACKUP_DEST` and the Telegram bot token. The app is fail-fast: if any variable is missing it will refuse to start, so don't skip any.
+   Fill in every value in `.env` (the app is fail-fast and refuses to start if any variable is missing).
 
-   `TRUSTED_PROXY_HOSTS` is a comma-separated list of IPs or CIDRs of the reverse proxy (or Cloudflare Tunnel) that sits in front of the app. Client IPs for rate limiting and HTTPS detection come from the `X-Forwarded-For`/`X-Forwarded-Proto` headers, which are only trusted when the request comes directly from one of these addresses. The example value `127.0.0.1,172.16.0.0/12` covers a proxy running on the same machine and forwarding to `localhost:8000` (e.g. `cloudflared` on the host): the container sees those connections from the Docker bridge gateway, which is why the `172.16.0.0/12` range is included alongside loopback. If the proxy is not listed, every visitor is seen as a single IP and the login rate limit is shared across all of them. Change it on the server's `.env` and restart the stack — do not commit the real `.env`.
-
-3. **Start the stack:**
+2. **Start the stack:**
 
    ```bash
    just up
    ```
 
-   The first run builds the Docker image, which can take a few minutes. In development the Tailwind watcher and uvicorn `--reload` run automatically.
+   Open `http://localhost:8000` (Swagger UI is available at `/docs` when `DEBUG=True`).
 
-4. **Open in your browser:**
+## Commands
 
-   ```text
-   http://localhost:8000
-   ```
-
-## Development Commands
-
-We rely on a `justfile` to encapsulate Docker operations.
+Run `just` to list all available recipes:
 
 | Command | Description |
 | --- | --- |
-| `just build` | Rebuild docker images. Only needed when `Dockerfile`, `requirements.txt`, or system dependencies change. |
-| `just up` | Spin up the entire stack in the background |
-| `just down` | Tear down the stack |
+| `just build` | Build Docker images |
+| `just up` / `just down` | Start or stop the stack |
 | `just restart` | Restart the web container |
-| `just logs` | Attach to the backend logs |
-| `just shell` | Open a continuous bash session inside the web container |
-| `just lint` | Run Ruff to check code quality |
-| `just format` | Run Ruff to auto-format code |
-| `just migrate` | Apply all pending Alembic migrations (`alembic upgrade head`) |
-| `just reset-db` | Drop the database volume, recreate it, and apply all migrations. **Development only**: refuses to run when `docker-compose.override.yml` is missing (i.e. on production checkouts). |
-| `just backup` | Run `backup.py` on the host to export the database via `docker compose exec` and sync media to `BACKUP_DEST`. Fails with a clear message if unavailable. |
-| `just check-md` | Run markdownlint-cli2 on all `.md` files |
-| `just css` | Compile `public/styles.css` with `--minify`. Required when changing `public/tailwind.css`, `tailwind.config.js`, or templates (new Tailwind classes). Run before `git push`. |
-| `just check` | Run every check the CI runs locally: ruff lint, ruff format check, mypy, compiled-CSS diff and markdown lint. |
+| `just logs` | Tail web container logs |
+| `just shell` | Open a bash shell in the web container |
+| `just migrate` | Apply pending Alembic migrations |
+| `just backup` | Export DB dump, `.env`, and media to `BACKUP_DEST` (keeps last 7) |
+| `just css` | Compile `public/styles.css` with Tailwind (`--minify`) |
+| `just css-check` | Verify `public/styles.css` matches Tailwind output |
+| `just format` / `just format-check` | Format or verify formatting with Ruff |
+| `just lint` | Lint Python code with Ruff |
+| `just typecheck` | Type-check `app/` with mypy |
+| `just md-check` | Lint Markdown files with markdownlint-cli2 |
+| `just pre-commit` | Run pre-commit hooks (EOF newline, trailing whitespace, LF, YAML) |
+| `just test` | Run pytest suite |
 
-## Stack
+## Stack & Architecture
 
-- **Backend:** FastAPI (Type-Safe)
-- **Database:** PostgreSQL (with SQLAlchemy ORM & Alembic for migrations)
-- **Data Validation:** Pydantic (DTOs / Schemas) & Python Dataclasses
-- **Frontend:** HTMX + Alpine.js + Jinja2 Templates + TailwindCSS (Lightweight reactivity)
-
-## Architecture
-
-The app is built upon **Vertical Slices**.
-Instead of grouping files by technical concern (e.g. all models together, all routers together), everything related to a specific business feature (e.g., `orders`, `products`, `auth`) lives in its respective folder inside `app/modules/`.
-
-## Routes
-
-### Client
-
-| Method | Path | Description |
-| --- | --- | --- |
-| `GET` | `/` | Landing page with products and order CTA. |
-| `GET` | `/orders/new` | Interactive client form to select products and place orders. |
-| `POST` | `/orders` | Submit a new order. |
-
-### Auth
-
-| Method | Path | Description |
-| --- | --- | --- |
-| `GET` | `/admin/login` | Admin authentication page. |
-| `POST` | `/admin/login` | Authenticate with `ADMIN_PASSWORD` (HMAC cookie session). |
-| `POST` | `/admin/logout` | End the admin session. |
-| `GET` | `/admin` | Admin panel homepage (redirects to login if unauthenticated). |
-
-### Orders (admin)
-
-| Method | Path | Description |
-| --- | --- | --- |
-| `GET` | `/admin/orders` | Main dashboard with HTMX real-time updates and search. |
-| `GET` | `/admin/orders/new` | Admin order creation form. |
-| `POST` | `/admin/orders` | Create an order. |
-| `GET` | `/admin/orders/{order_id}` | Order detail view. |
-| `POST` | `/admin/orders/{order_id}` | Update an order. |
-| `POST` | `/admin/orders/{order_id}/status` | Advance or change order status. |
-| `POST` | `/admin/orders/{order_id}/delete` | Delete an order. |
-
-### Products (admin)
-
-| Method | Path | Description |
-| --- | --- | --- |
-| `GET` | `/admin/products` | Products management dashboard. |
-| `GET` | `/admin/products/new` | Product creation form. |
-| `POST` | `/admin/products` | Create a product. |
-| `POST` | `/admin/products/reorder` | Reorder the products list. |
-| `GET` | `/admin/products/{product_id}` | Product detail/edit form. |
-| `POST` | `/admin/products/{product_id}` | Update a product. |
-| `POST` | `/admin/products/{product_id}/delete` | Delete a product. |
-
-### Delivery dates (admin)
-
-| Method | Path | Description |
-| --- | --- | --- |
-| `GET` | `/admin/dates` | Delivery slots calendar and scheduling. |
-| `POST` | `/admin/dates` | Add an availability slot for a date. |
-| `DELETE` | `/admin/dates/{target_date}` | Delete one free availability slot for a date. |
-
-### System
-
-| Method | Path | Description |
-| --- | --- | --- |
-| `GET` | `/health` | Health check (JSON): app and database connectivity status. |
-
-### Static files
-
-| Method | Path | Description |
-| --- | --- | --- |
-| `GET` | `/public/*` | Compiled CSS, favicons, icons and background images. |
-| `GET` | `/media/*` | Uploaded order media. |
+- **Backend:** FastAPI, SQLAlchemy 2.0 (sync), PostgreSQL, Alembic, Pydantic
+- **Frontend:** Jinja2, HTMX, Alpine.js, TailwindCSS (vendored assets in `public/vendor/`)
+- **Architecture:** Vertical slices under `app/modules/{orders,products,scheduling,auth}` with shared infrastructure in `app/core/`.
