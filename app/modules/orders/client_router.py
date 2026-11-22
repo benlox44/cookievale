@@ -48,7 +48,7 @@ def submit_order(
     cart_items_json: str = Form(...),
     delivery_date: datetime = Form(...),
     delivery_method: DeliveryMethod = Form(...),
-    description: str = Form(...),
+    description: str = Form(""),
     photos: list[UploadFile] | None = File(None),
     order_service: OrderService = Depends(get_order_service),
     product_service: ProductService = Depends(get_product_service),

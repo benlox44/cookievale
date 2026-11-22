@@ -10,6 +10,34 @@ class OrderStatus(str, Enum):
     DELIVERED = "delivered"
 
 
+FULLY_PAID_STATUSES: frozenset[OrderStatus] = frozenset(
+    {OrderStatus.PAID, OrderStatus.DELIVERED}
+)
+
+
+def reconcile_payment(
+    status: OrderStatus,
+    amount_paid: int,
+    total_amount: int,
+) -> tuple[OrderStatus, int]:
+    """Keep order status and paid amount mutually consistent.
+
+    - PAID/DELIVERED always pay the full total.
+    - Otherwise, clamp amount_paid to [0, total_amount]:
+      - Full payment (total_amount > 0 and amount_paid >= total_amount) -> PAID.
+      - Partial payment (amount_paid > 0) on PENDING -> CONFIRMED.
+      - Zero payment keeps PENDING or CONFIRMED as-is.
+    """
+    if status in FULLY_PAID_STATUSES:
+        return status, total_amount
+    clamped = max(0, min(amount_paid, total_amount))
+    if total_amount > 0 and clamped >= total_amount:
+        return OrderStatus.PAID, total_amount
+    if clamped > 0 and status == OrderStatus.PENDING:
+        return OrderStatus.CONFIRMED, clamped
+    return status, clamped
+
+
 class DeliveryMethod(str, Enum):
     PICKUP = "pickup"
     DELIVERY = "delivery"
@@ -29,8 +57,8 @@ class OrderItem:
 class Order:
     customer_instagram: str
     delivery_date: datetime
-    description: str
     delivery_method: DeliveryMethod
+    description: str = ""
     availability_slot_id: int | None = None
     items: list[OrderItem] = field(default_factory=list)
     total_amount: int = 0

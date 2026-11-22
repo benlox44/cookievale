@@ -10,7 +10,13 @@ from app.core.config import CONTAINER_MEDIA_PATH, MAX_ORDER_PHOTOS
 from app.core.telegram import send_message
 from app.core.uploads import delete_media_files, save_uploads, update_photo_set
 from app.modules.orders.cart import ParsedCart
-from app.modules.orders.domain import DeliveryMethod, Order, OrderItem, OrderStatus
+from app.modules.orders.domain import (
+    DeliveryMethod,
+    Order,
+    OrderItem,
+    OrderStatus,
+    reconcile_payment,
+)
 from app.modules.orders.repository import OrderRepository
 from app.modules.orders.schemas import (
     OrderCreateRequest,
@@ -40,10 +46,7 @@ class OrderService:
             for i in data.items
         ]
 
-        if status in (OrderStatus.PAID, OrderStatus.DELIVERED):
-            amount_paid = data.total_amount
-        else:
-            amount_paid = max(0, min(amount_paid, data.total_amount))
+        status, amount_paid = reconcile_payment(status, amount_paid, data.total_amount)
 
         order = Order(
             customer_instagram=data.customer_instagram,
@@ -95,8 +98,8 @@ class OrderService:
         delivery_date: datetime,
         availability_slot_id: int,
         delivery_method: DeliveryMethod,
-        description: str,
         photos: list[UploadFile],
+        description: str = "",
         status: OrderStatus = OrderStatus.PENDING,
         amount_paid: int = 0,
         created_by_admin: bool = False,
@@ -156,7 +159,10 @@ class OrderService:
         order.availability_slot_id = data.availability_slot_id
         order.description = data.description
         order.delivery_method = data.delivery_method
-        order.amount_paid = data.amount_paid
+        target_status = data.status if data.status is not None else order.status
+        order.status, order.amount_paid = reconcile_payment(
+            target_status, data.amount_paid, order.total_amount
+        )
 
         current_photos = order.reference_photos or []
         order_dir = os.path.join(CONTAINER_MEDIA_PATH, f"orders/{order.id}")
@@ -188,9 +194,10 @@ class OrderService:
         if not order:
             return None
 
-        order.status = new_status
-        if new_status in (OrderStatus.PAID, OrderStatus.DELIVERED):
-            order.amount_paid = order.total_amount
+        amount_paid = 0 if new_status == OrderStatus.PENDING else order.amount_paid
+        order.status, order.amount_paid = reconcile_payment(
+            new_status, amount_paid, order.total_amount
+        )
         return self.repository.save(order)
 
     def update_order_items(
@@ -212,9 +219,9 @@ class OrderService:
             for i in items
         ]
 
-        amount_paid = min(order.amount_paid, total_amount)
-        if order.status in (OrderStatus.PAID, OrderStatus.DELIVERED):
-            amount_paid = total_amount
+        _, amount_paid = reconcile_payment(
+            order.status, order.amount_paid, total_amount
+        )
 
         return self.repository.replace_items(
             order_id, domain_items, total_amount, amount_paid

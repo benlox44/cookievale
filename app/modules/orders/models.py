@@ -18,7 +18,7 @@ class OrderModel(Base, TimestampMixin):
     availability_slot_id: Mapped[int | None] = mapped_column(
         ForeignKey("availability_slots.id", ondelete="SET NULL"), nullable=True
     )
-    description: Mapped[str] = mapped_column(String, nullable=False)
+    description: Mapped[str] = mapped_column(String, default="", nullable=False)
     delivery_method: Mapped[DeliveryMethod] = mapped_column(
         SAEnum(DeliveryMethod), default=DeliveryMethod.PICKUP, nullable=False
     )

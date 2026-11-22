@@ -34,7 +34,10 @@ def _payload(
 
 
 def test_order_form_page_renders(client) -> None:
-    assert client.get("/orders/new").status_code == 200
+    response = client.get("/orders/new")
+    assert response.status_code == 200
+    assert ':required="files.length === 0' not in response.text
+    assert 'name="description"' in response.text
 
 
 def test_submit_order_success(client, db: Session) -> None:
@@ -42,6 +45,19 @@ def test_submit_order_success(client, db: Session) -> None:
     date = (datetime.now(tz=TZ) + timedelta(days=3)).date().isoformat()
 
     response = client.post("/orders", data=_payload(product_id, date))
+    assert response.status_code == 200
+    assert "¡Orden Enviada con Éxito!" in response.text
+
+
+def test_submit_order_without_description_or_photos_succeeds(
+    client, db: Session
+) -> None:
+    product_id, _ = _setup(client, db)
+    date = (datetime.now(tz=TZ) + timedelta(days=3)).date().isoformat()
+    payload = _payload(product_id, date)
+    payload.pop("description")
+
+    response = client.post("/orders", data=payload)
     assert response.status_code == 200
     assert "¡Orden Enviada con Éxito!" in response.text
 

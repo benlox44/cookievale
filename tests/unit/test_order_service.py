@@ -126,6 +126,43 @@ def test_create_order_builds_items(service: OrderService) -> None:
 def test_create_order_caps_amount_paid(service: OrderService) -> None:
     order = service.create_order(_create_request(), [], amount_paid=9999)
     assert order.amount_paid == 2000
+    assert order.status == OrderStatus.PAID
+
+
+def test_create_order_auto_promotes_to_paid_at_full_amount(
+    service: OrderService,
+) -> None:
+    order = service.create_order(
+        _create_request(), [], status=OrderStatus.CONFIRMED, amount_paid=2000
+    )
+    assert order.amount_paid == 2000
+    assert order.status == OrderStatus.PAID
+
+
+def test_create_order_auto_confirms_on_partial_payment(
+    service: OrderService,
+) -> None:
+    order = service.create_order(
+        _create_request(), [], status=OrderStatus.PENDING, amount_paid=500
+    )
+    assert order.amount_paid == 500
+    assert order.status == OrderStatus.CONFIRMED
+
+
+def test_create_order_allows_empty_description_and_no_photos(
+    service: OrderService,
+) -> None:
+    req = OrderCreateRequest(
+        customer_instagram="@cliente",
+        delivery_date=_future_date(),
+        availability_slot_id=1,
+        delivery_method=DeliveryMethod.PICKUP,
+        items=[OrderItemCreate(product_id=1, quantity=1, unit_price=1000)],
+        total_amount=1000,
+    )
+    order = service.create_order(req, [])
+    assert order.description == ""
+    assert order.reference_photos in (None, [])
 
 
 def test_create_order_auto_pays_when_paid(service: OrderService) -> None:
@@ -157,7 +194,7 @@ def test_create_order_without_photos_leaves_empty(service: OrderService) -> None
 
 
 def test_update_order_items_clamps_amount_paid(service: OrderService) -> None:
-    order = service.create_order(_create_request(), [], amount_paid=2000)
+    order = service.create_order(_create_request(), [], amount_paid=1500)
     updated = service.update_order_items(
         order.id,
         [OrderItemCreate(product_id=1, quantity=1, unit_price=5000)],
@@ -165,7 +202,40 @@ def test_update_order_items_clamps_amount_paid(service: OrderService) -> None:
     )
     assert updated is not None
     assert updated.total_amount == 5000
+    assert updated.amount_paid == 1500
+
+    shrunk = service.update_order_items(
+        order.id,
+        [OrderItemCreate(product_id=1, quantity=1, unit_price=1000)],
+        total_amount=1000,
+    )
+    assert shrunk is not None
+    assert shrunk.total_amount == 1000
+    assert shrunk.amount_paid == 1000
+
+
+def test_update_order_auto_promotes_to_paid_at_full_amount(
+    service: OrderService,
+) -> None:
+    order = service.create_order(_create_request(), [], amount_paid=500)
+    updated = service.update_order(
+        order.id,
+        OrderUpdateRequest(
+            delivery_date=order.delivery_date,
+            availability_slot_id=1,
+            description="",
+            delivery_method=DeliveryMethod.PICKUP,
+            amount_paid=2000,
+            status=OrderStatus.PENDING,
+        ),
+        existing_photos=[],
+        image_order="[]",
+        photos=None,
+    )
+    assert updated is not None
+    assert updated.status == OrderStatus.PAID
     assert updated.amount_paid == 2000
+    assert updated.description == ""
 
 
 def test_update_order_items_auto_pays_when_delivered(service: OrderService) -> None:
@@ -190,6 +260,36 @@ def test_change_status_keeps_partial_payment(service: OrderService) -> None:
     order = service.create_order(_create_request(), [], amount_paid=500)
     updated = service.change_status(order.id, OrderStatus.CONFIRMED)
     assert updated is not None
+    assert updated.amount_paid == 500
+
+
+def test_change_status_to_pending_resets_amount_paid(service: OrderService) -> None:
+    order = service.create_order(_create_request(), [], amount_paid=500)
+    assert order.status == OrderStatus.CONFIRMED
+    updated = service.change_status(order.id, OrderStatus.PENDING)
+    assert updated is not None
+    assert updated.status == OrderStatus.PENDING
+    assert updated.amount_paid == 0
+
+
+def test_update_order_auto_confirms_on_partial_payment(service: OrderService) -> None:
+    order = service.create_order(_create_request(), [])
+    updated = service.update_order(
+        order.id,
+        OrderUpdateRequest(
+            delivery_date=order.delivery_date,
+            availability_slot_id=1,
+            description="",
+            delivery_method=DeliveryMethod.PICKUP,
+            amount_paid=500,
+            status=OrderStatus.PENDING,
+        ),
+        existing_photos=[],
+        image_order="[]",
+        photos=None,
+    )
+    assert updated is not None
+    assert updated.status == OrderStatus.CONFIRMED
     assert updated.amount_paid == 500
 
 

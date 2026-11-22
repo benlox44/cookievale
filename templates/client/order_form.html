@@ -124,17 +124,17 @@
 
             <!-- Photos -->
             <div class="relative z-10">
-                <label class="cv-label block mb-1.5">Imagen(es) de referencia <span class="text-cookie-brown/40 font-normal">(Máximo {{ MAX_ORDER_PHOTOS }})</span></label>
+                <label class="cv-label block mb-1.5">Imagen(es) de referencia <span class="text-cookie-brown/40 font-normal">(Opcional · Máximo {{ MAX_ORDER_PHOTOS }})</span></label>
                 {% from "components/media/order_uploader.html" import render_uploader_orders %}
-                {{ render_uploader_orders(MAX_ORDER_PHOTOS, True, [], 0.8, 2000) }}
+                {{ render_uploader_orders(MAX_ORDER_PHOTOS, False, [], 0.8, 2000) }}
             </div>
 
             <!-- Notes -->
             <div class="mb-6">
-                <label class="cv-label block mb-1.5">Descripción del diseño</label>
+                <label class="cv-label block mb-1.5">Descripción del diseño <span class="text-cookie-brown/40 font-normal">(Opcional)</span></label>
                 <textarea name="description" rows="3"
                     placeholder="Ej: Quiero un diseño para un bautizo, colores celeste y blanco..."
-                    class="cv-input resize-none" required></textarea>
+                    class="cv-input resize-none"></textarea>
             </div>
 
             <!-- Submit -->
