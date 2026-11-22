@@ -1,0 +1,502 @@
+{% extends "base.html" %}
+{% set is_edit = order is not none %}
+{% block title %}{% if is_edit %}Orden #{{ order.id }} - CookieVale{% else %}Crear Orden - CookieVale Admin{% endif %}{% endblock %}
+
+{% block content %}
+{% from "components/products/picker.html" import render_product_picker %}
+{% from "components/forms/date_calendar.html" import render_date_calendar %}
+{% from "components/forms/dropdown.html" import render_dropdown %}
+{% from "components/forms/tooltip.html" import render_tooltip %}
+{% from "components/ui/icons.html" import render_icon %}
+{% from "components/ui/back_button.html" import render_back_button %}
+{% from "components/orders/cart_summary.html" import render_cart_summary %}
+{% from "components/media/order_uploader.html" import render_uploader_orders %}
+
+{% if request.query_params.get('error') %}
+<script>
+    window.addEventListener('DOMContentLoaded', function () {
+        window.dispatchEvent(new CustomEvent('show-toast', {
+            detail: { message: {{ request.query_params.get('error') | tojson }}, type: 'error' }
+        }));
+    });
+</script>
+{% endif %}
+
+{% set status_options = namespace(items=[]) %}
+{% for s in OrderStatuses %}
+    {% set status_options.items = status_options.items + [{'value': s, 'label': s | status_label}] %}
+{% endfor %}
+
+<div class="w-full" x-data="orderForm()"
+    @photos-changed.window="photosChanged = true"
+    @date-selected.window="onCalendarDate($event.detail)">
+
+    <!-- Header -->
+    <div class="cv-card cv-shadow-card mb-6 flex items-center gap-4 py-4 px-6 md:px-8">
+        {{ render_back_button('/admin/orders') }}
+        <h1 class="cv-h2 mb-0 flex items-center gap-2 m-0">
+            {% if is_edit %}
+            Orden <span class="text-cookie-brown/50 font-normal">#</span>{{ order.id }}
+            {% else %}
+            Crear Orden
+            {% endif %}
+        </h1>
+    </div>
+
+    <!-- Unified Order Form -->
+    {% if is_edit %}
+    <form id="order-form" action="/admin/orders/{{ order.id }}" method="POST"
+        enctype="multipart/form-data"
+        class="grid grid-cols-1 md:grid-cols-2 gap-8 px-2 md:px-4">
+        <input type="hidden" name="cart_items_json" x-model="cartJson" :disabled="!carritoModificado">
+    {% else %}
+    <form id="order-form" hx-post="/admin/orders" hx-swap="none"
+        hx-encoding="multipart/form-data" @submit="prepareCreateSubmit()"
+        class="grid grid-cols-1 md:grid-cols-2 gap-8 px-2 md:px-4">
+        <input type="hidden" name="cart_items_json" x-model="cartJson">
+    {% endif %}
+
+        <!-- ═══ Left Column: Customer, Cart & Payment ═══ -->
+        <div class="space-y-5">
+            <!-- Instagram -->
+            <div>
+                <div class="flex items-center gap-2 mb-1.5">
+                    <label class="cv-label block mb-0">Instagram</label>
+                    {% if not is_edit %}
+                    {{ render_tooltip("Cuenta de Instagram del cliente.") }}
+                    {% endif %}
+                </div>
+                {% if is_edit %}
+                <a href="https://instagram.com/{{ order.customer_instagram | replace('@', '') | lower }}" target="_blank"
+                    class="cv-ig-link text-sm inline-flex items-center gap-1.5 mt-0.5">
+                    {{ render_icon("instagram") }}
+                    @{{ order.customer_instagram | replace('@', '') | lower }}
+                </a>
+                {% else %}
+                <div class="relative">
+                    <span class="absolute inset-y-0 left-0 flex items-center pl-4 text-cookie-brown/40 font-medium pointer-events-none">@</span>
+                    <input type="text" name="customer_instagram" placeholder="cuenta_cliente" required
+                        oninput="this.value = this.value.replace(/@/g, '').toLowerCase()" class="cv-input pl-8">
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Cart Summary -->
+            <div class="bg-cookie-cream/70 rounded-2xl border border-cookie-pink/30 p-4">
+                <div class="flex items-center justify-between mb-3">
+                    <p class="cv-label mb-0">Pedido</p>
+                    <button type="button" @click="cartModal = true"
+                        class="inline-flex items-center gap-1.5 text-xs font-semibold text-cookie-golden hover:text-cookie-brown transition-colors">
+                        {{ render_icon("plus") }}
+                        <span x-text="cartItems.length === 0 ? 'Agregar productos' : 'Editar productos'"></span>
+                    </button>
+                </div>
+                <ul class="space-y-2 mb-3" x-show="cartItems.length > 0">
+                    <template x-for="item in cartItems" :key="item.product_id">
+                        <li class="flex justify-between text-sm">
+                            <span class="text-cookie-brown" x-text="item.quantity + '× ' + item.name"></span>
+                            <span class="text-cookie-brown/60" x-text="fmtClp(item.price * item.quantity)"></span>
+                        </li>
+                    </template>
+                </ul>
+                <div x-show="cartItems.length === 0" class="pb-3">
+                    <p class="text-cookie-brown/60 font-medium text-sm">El carrito está vacío.</p>
+                </div>
+                <div class="border-t border-cookie-pink/30 pt-3 flex justify-between">
+                    <span class="cv-label">Total</span>
+                    <span class="font-bold text-cookie-golden" x-text="fmtClp(nuevoTotal)"></span>
+                </div>
+            </div>
+
+            <!-- Status & Amount Paid -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 relative z-20">
+                <div>
+                    <label class="cv-label block mb-1.5">Estado</label>
+                    {{ render_dropdown(
+                        name=('status' if is_edit else 'order_status'),
+                        options=status_options.items,
+                        selected=(order.status.value if is_edit else 'pending'),
+                        required=True,
+                        model='formData.status',
+                        change_event='setStatus($el.value)'
+                    ) }}
+                </div>
+                <div>
+                    <label class="cv-label block mb-1.5">Abono / Pagado</label>
+                    <div class="relative">
+                        <span class="absolute inset-y-0 left-0 flex items-center pl-4 text-cookie-brown/40 font-medium pointer-events-none">$</span>
+                        <input type="number" step="1" min="0" :max="nuevoTotal"
+                            onkeypress="return event.charCode >= 48 && event.charCode <= 57"
+                            name="amount_paid" x-model="formData.amount_paid"
+                            @input="onAmountPaidInput()"
+                            class="cv-input pl-8 font-bold cv-text-success [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                            style="-moz-appearance: textfield;">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Remaining Balance -->
+            <div class="flex items-center justify-between px-4 py-3 rounded-2xl bg-cookie-cream/50 border border-cookie-pink/30">
+                <span class="cv-label mb-0">Saldo restante</span>
+                <span class="text-base font-bold" :class="saldoRestante === 0 ? 'cv-text-success' : 'cv-text-danger'">
+                    $<span x-text="saldoRestante.toLocaleString()"></span>
+                </span>
+            </div>
+
+            <!-- Delivery Date -->
+            <div class="relative z-10">
+                <div class="flex items-center gap-2 mb-1.5">
+                    <label class="cv-label block mb-0">Fecha de entrega</label>
+                    {{ render_tooltip("Elige una fecha de entrega. Si no tiene cupos disponibles, se creará uno al guardar la orden.") }}
+                </div>
+                {{ render_date_calendar(
+                    'delivery_date',
+                    available_dates,
+                    today,
+                    selected=(order.delivery_date.strftime('%Y-%m-%d') if is_edit else ''),
+                    show_counts=True,
+                    auto_create_notice=True
+                ) }}
+            </div>
+        </div>
+
+        <!-- ═══ Right Column: Delivery Method & Design ═══ -->
+        <div class="space-y-5">
+            <div class="relative z-20">
+                <label class="cv-label block mb-1.5">Método de entrega</label>
+                {{ render_dropdown(
+                    name='delivery_method',
+                    options=delivery_methods,
+                    selected=(order.delivery_method.value if is_edit else ''),
+                    placeholder='Selecciona un método',
+                    required=True,
+                    model='formData.delivery_method'
+                ) }}
+            </div>
+
+            <div class="relative z-10">
+                <label class="cv-label block mb-1.5">Descripción del diseño <span class="text-cookie-brown/40 font-normal">(Opcional)</span></label>
+                <textarea name="description" rows="3" x-model="formData.description"
+                    placeholder="Ej: Diseño para cumpleaños, colores rosa y dorado..."
+                    class="cv-input resize-none"></textarea>
+            </div>
+
+            <div class="relative z-0">
+                <label class="cv-label block mb-1.5">Imagen(es) de referencia <span class="text-cookie-brown/40 font-normal">(Opcional · Máximo {{ MAX_ORDER_PHOTOS }})</span></label>
+                {{ render_uploader_orders(
+                    MAX_ORDER_PHOTOS,
+                    False,
+                    (order.reference_photos or [] if is_edit else []),
+                    0.8,
+                    2000,
+                    form='order-form',
+                    thumb_class='w-24 h-24',
+                    existing_field='existing_photos'
+                ) }}
+            </div>
+        </div>
+
+        <!-- ═══ Submit Footer ═══ -->
+        <div class="md:col-span-2 pt-2">
+            {% if is_edit %}
+            <button type="button" @click="abrirConfirmacion()" :disabled="!isModified || cartItems.length === 0"
+                class="cv-btn w-full py-3.5 text-base rounded-2xl disabled:opacity-40 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-none">
+                Guardar Cambios
+            </button>
+            {% else %}
+            <button type="submit" :disabled="cartItems.length === 0 || !formData.delivery_date"
+                class="cv-btn w-full py-3.5 text-base rounded-2xl disabled:opacity-40 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-none">
+                Crear Orden
+                {{ render_icon("plus") }}
+            </button>
+            {% endif %}
+        </div>
+    </form>
+
+    <!-- ═══ Cart Picker Modal ═══ -->
+    <div x-show="cartModal" style="display: none;"
+        class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm px-4"
+        x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0"
+        x-transition:enter-end="opacity-100" x-transition:leave="transition ease-in duration-200"
+        x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0">
+
+        <div class="relative w-full max-w-5xl max-h-[90vh] overflow-y-auto bg-white rounded-2xl shadow-2xl my-8"
+            @click.away="cartModal = false">
+
+            <div class="sticky top-0 bg-cookie-cream/80 backdrop-blur px-6 py-4 flex items-center justify-between border-b border-cookie-pink/30 rounded-t-2xl z-10">
+                <h2 class="cv-h2 mb-0" x-text="cartItems.length === 0 ? 'Agregar productos' : 'Editar productos'"></h2>
+                <div class="flex items-center gap-2">
+                    <button type="button" @click="cartModal = false" class="cv-btn text-xs px-4 py-2">
+                        Listo
+                    </button>
+                    <button type="button" @click="cartModal = false"
+                        class="w-9 h-9 flex items-center justify-center rounded-full hover:bg-cookie-pink/20 text-cookie-brown transition-colors">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+
+            <div class="p-6" x-data="cookieCart([
+                {% if is_edit %}
+                {% for item in order.items %}
+                { product_id: {{ item.product_id }}, name: {{ (item.product_name or '') | tojson }}, price: {{ item.unit_price }}, quantity: {{ item.quantity }} }{% if not loop.last %},{% endif %}
+                {% endfor %}
+                {% endif %}
+            ], (json, total, items) => setCart(json, total, items))">
+                {{ render_product_picker(products) }}
+
+                <div class="cv-card mb-6 border-cookie-pink/40 bg-cookie-cream/50">
+                    <h3 class="cv-h2 flex items-center gap-2 mb-5">
+                        <svg class="w-5 h-5 text-cookie-golden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+                        </svg>
+                        Carrito
+                    </h3>
+                    {{ render_cart_summary('El carrito está vacío.', 'Total') }}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% if is_edit %}
+    <!-- ═══ Save Changes Confirmation Modal ═══ -->
+    <div x-show="confirmarGuardadoModal" style="display: none;"
+        class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4"
+        x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0"
+        x-transition:enter-end="opacity-100" x-transition:leave="transition ease-in duration-150"
+        x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0">
+
+        <div class="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl"
+            @click.away="confirmarGuardadoModal = false">
+            <h3 class="text-lg font-bold text-cookie-brown mb-1">Confirmar cambios</h3>
+            <ul class="space-y-2.5 mb-6">
+                <template x-for="c in cambiosDetectados" :key="c.label">
+                    <li class="flex items-start justify-between gap-3 text-sm">
+                        <span class="font-semibold text-cookie-brown whitespace-nowrap" x-text="c.label"></span>
+                        <span class="text-right text-cookie-brown/70">
+                            <span x-show="c.from" class="text-cookie-brown/50" x-text="c.from + ' → '"></span>
+                            <span class="font-medium text-cookie-golden" x-text="c.to"></span>
+                        </span>
+                    </li>
+                </template>
+            </ul>
+            <div class="flex justify-end gap-3">
+                <button type="button" @click="confirmarGuardadoModal = false"
+                    class="cv-btn bg-cookie-cream text-cookie-brown border-cookie-pink/40 hover:bg-cookie-pink/10 hover:border-cookie-golden">Cancelar</button>
+                <button type="button" @click="confirmarGuardado()"
+                    class="cv-btn">Guardar</button>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+    document.addEventListener('alpine:init', () => {
+        const STATUS_LABELS = {
+            {% for s in OrderStatuses %}
+            '{{ s }}': {{ (s | status_label) | tojson }}{% if not loop.last %},{% endif %}
+            {% endfor %}
+        };
+        const DELIVERY_LABELS = {
+            'pickup': {{ ('pickup' | delivery_label) | tojson }},
+            'delivery': {{ ('delivery' | delivery_label) | tojson }},
+        };
+
+        Alpine.data('orderForm', () => ({
+            isEdit: {{ 'true' if is_edit else 'false' }},
+            formData: {
+                status: {{ (order.status.value if is_edit else 'pending') | tojson }},
+                amount_paid: {{ ('{:.0f}'.format(order.amount_paid) if is_edit else '0') | tojson }},
+                delivery_date: {{ (order.delivery_date.strftime('%Y-%m-%d') if is_edit else '') | tojson }},
+                delivery_method: {{ (order.delivery_method.value if is_edit else '') | tojson }},
+                description: {{ (order.description or '' if is_edit else '') | tojson }},
+            },
+            initialData: {
+                status: {{ (order.status.value if is_edit else 'pending') | tojson }},
+                amount_paid: {{ ('{:.0f}'.format(order.amount_paid) if is_edit else '0') | tojson }},
+                delivery_date: {{ (order.delivery_date.strftime('%Y-%m-%d') if is_edit else '') | tojson }},
+                delivery_method: {{ (order.delivery_method.value if is_edit else '') | tojson }},
+                description: {{ (order.description or '' if is_edit else '') | tojson }},
+            },
+            initialTotal: {{ order.total_amount if is_edit else 0 }},
+            initialCartJson: JSON.stringify([
+                {% if is_edit %}
+                {% for item in order.items %}
+                { product_id: {{ item.product_id }}, quantity: {{ item.quantity }} }{% if not loop.last %},{% endif %}
+                {% endfor %}
+                {% endif %}
+            ]),
+            cartJson: '[]',
+            cartTotal: {{ order.total_amount if is_edit else 0 }},
+            cartItems: [
+                {% if is_edit %}
+                {% for item in order.items %}
+                { product_id: {{ item.product_id }}, name: {{ (item.product_name or '') | tojson }}, price: {{ item.unit_price }}, quantity: {{ item.quantity }} }{% if not loop.last %},{% endif %}
+                {% endfor %}
+                {% endif %}
+            ],
+            lastUnpaidStatus: {{ (order.status.value if (is_edit and order.status.value not in ('paid', 'delivered')) else 'pending') | tojson }},
+            newDateNeedsSlot: false,
+            cartModal: false,
+            confirmarGuardadoModal: false,
+            photosChanged: false,
+
+            init() {
+                this.cartJson = this.initialCartJson;
+            },
+
+            setStatus(nextStatus) {
+                if (!window.cvPaymentSync.isFullyPaidStatus(nextStatus)) {
+                    this.lastUnpaidStatus = nextStatus;
+                }
+                const initialPaid = Number(this.initialData.amount_paid) || 0;
+                const fallback = this.isEdit && initialPaid < this.nuevoTotal ? initialPaid : 0;
+                const next = window.cvPaymentSync.onStatusChange(
+                    nextStatus,
+                    this.formData.amount_paid,
+                    this.nuevoTotal,
+                    fallback
+                );
+                this.formData.status = next.status;
+                this.formData.amount_paid = String(next.amountPaid);
+            },
+
+            onAmountPaidInput() {
+                const next = window.cvPaymentSync.onAmountInput(
+                    this.formData.amount_paid,
+                    this.formData.status,
+                    this.nuevoTotal,
+                    this.lastUnpaidStatus
+                );
+                this.formData.status = next.status;
+                this.formData.amount_paid = next.amountPaid === '' ? '' : String(next.amountPaid);
+            },
+
+            setCart(json, total, items) {
+                this.cartJson = json;
+                this.cartTotal = total;
+                this.cartItems = items;
+                const next = window.cvPaymentSync.onTotalChange(
+                    total,
+                    this.formData.status,
+                    this.formData.amount_paid
+                );
+                this.formData.status = next.status;
+                this.formData.amount_paid = String(next.amountPaid);
+            },
+
+            onCalendarDate(detail) {
+                if (detail && detail.date) {
+                    this.formData.delivery_date = detail.date;
+                    this.newDateNeedsSlot = !detail.available && detail.date !== this.initialData.delivery_date;
+                } else {
+                    this.formData.delivery_date = '';
+                    this.newDateNeedsSlot = false;
+                }
+            },
+
+            get carritoModificado() {
+                return String(this.cartJson) !== String(this.initialCartJson);
+            },
+
+            get nuevoTotal() {
+                return this.carritoModificado ? this.cartTotal : this.initialTotal;
+            },
+
+            get abonoFinal() {
+                const s = this.formData.status;
+                if (s === 'paid' || s === 'delivered') return this.nuevoTotal;
+                return Math.max(0, Math.min(Number(this.formData.amount_paid) || 0, this.nuevoTotal));
+            },
+
+            get saldoRestante() {
+                return Math.max(0, this.nuevoTotal - this.abonoFinal);
+            },
+
+            get isModified() {
+                return String(this.formData.status) !== String(this.initialData.status) ||
+                    String(this.formData.amount_paid) !== String(this.initialData.amount_paid) ||
+                    String(this.formData.delivery_date) !== String(this.initialData.delivery_date) ||
+                    String(this.formData.delivery_method) !== String(this.initialData.delivery_method) ||
+                    String(this.formData.description) !== String(this.initialData.description) ||
+                    this.carritoModificado ||
+                    this.photosChanged;
+            },
+
+            get cambiosDetectados() {
+                const changes = [];
+                if (String(this.formData.status) !== String(this.initialData.status)) {
+                    changes.push({
+                        label: 'Estado',
+                        from: STATUS_LABELS[this.initialData.status],
+                        to: STATUS_LABELS[this.formData.status]
+                    });
+                }
+                if (this.carritoModificado) {
+                    changes.push({
+                        label: 'Total',
+                        from: this.fmtClp(this.initialTotal),
+                        to: this.fmtClp(this.cartTotal)
+                    });
+                }
+                const abonoAntes = Number(this.initialData.amount_paid) || 0;
+                if (abonoAntes !== this.abonoFinal) {
+                    changes.push({
+                        label: 'Abono',
+                        from: this.fmtClp(abonoAntes),
+                        to: this.fmtClp(this.abonoFinal)
+                    });
+                }
+                if (String(this.formData.delivery_date) !== String(this.initialData.delivery_date)) {
+                    changes.push({
+                        label: 'Fecha',
+                        from: this.initialData.delivery_date,
+                        to: this.formData.delivery_date + (this.newDateNeedsSlot ? ' (se creará cupo)' : '')
+                    });
+                }
+                if (String(this.formData.delivery_method) !== String(this.initialData.delivery_method)) {
+                    changes.push({
+                        label: 'Método',
+                        from: DELIVERY_LABELS[this.initialData.delivery_method],
+                        to: DELIVERY_LABELS[this.formData.delivery_method]
+                    });
+                }
+                if (String(this.formData.description) !== String(this.initialData.description)) {
+                    changes.push({ label: 'Descripción', from: '', to: 'Modificada' });
+                }
+                if (this.photosChanged) {
+                    changes.push({ label: 'Imágenes', from: '', to: 'Modificadas' });
+                }
+                return changes;
+            },
+
+            prepareCreateSubmit() {
+                this.formData.amount_paid = String(this.abonoFinal);
+            },
+
+            abrirConfirmacion() {
+                if (this.isModified) this.confirmarGuardadoModal = true;
+            },
+
+            confirmarGuardado() {
+                this.confirmarGuardadoModal = false;
+                this.formData.amount_paid = String(this.abonoFinal);
+                this.$nextTick(() => {
+                    document.getElementById('order-form').requestSubmit();
+                });
+            },
+
+            fmtClp(v) {
+                return '$' + Number(v || 0).toLocaleString();
+            },
+        }));
+    });
+</script>
+{% endblock %}
+
+{% include "components/orders/payment_sync.html" %}
+{% include "components/orders/cart.html" %}

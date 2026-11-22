@@ -731,6 +731,138 @@ def test_update_order_to_paid_sets_full_amount(admin_client, db: Session) -> Non
     assert fetched.amount_paid == fetched.total_amount
 
 
+def test_create_order_with_paid_status_sets_full_amount_and_allows_empty_description(
+    admin_client, db: Session
+) -> None:
+    admin_client.post(
+        "/admin/products",
+        data={
+            "name": "Casita Navideña",
+            "price": "5000",
+            "description": "d",
+            "is_active": "True",
+        },
+    )
+    product = SQLAlchemyProductRepository(db).list_all()[0]
+    date = _future_date()
+    admin_client.post("/admin/dates", data={"selected_date": date})
+    cart = json.dumps([{"product_id": product.id, "quantity": 2}])
+
+    response = admin_client.post(
+        "/admin/orders",
+        data={
+            "customer_instagram": "@cliente",
+            "cart_items_json": cart,
+            "delivery_date": f"{date}T12:00:00",
+            "delivery_method": "pickup",
+            "description": "",
+            "order_status": "paid",
+            "amount_paid": "0",
+        },
+    )
+    assert response.status_code == 204
+    assert response.headers.get("HX-Redirect") == "/admin/orders"
+    order = SQLAlchemyOrderRepository(db).list_all()[0]
+    assert order.status == OrderStatus.PAID
+    assert order.amount_paid == 10000
+    assert order.description == ""
+    assert order.reference_photos in (None, [])
+
+
+def test_create_order_with_full_amount_paid_auto_marks_paid(
+    admin_client, db: Session
+) -> None:
+    admin_client.post(
+        "/admin/products",
+        data={
+            "name": "Casita Navideña",
+            "price": "5000",
+            "description": "d",
+            "is_active": "True",
+        },
+    )
+    product = SQLAlchemyProductRepository(db).list_all()[0]
+    date = _future_date()
+    admin_client.post("/admin/dates", data={"selected_date": date})
+    cart = json.dumps([{"product_id": product.id, "quantity": 2}])
+
+    response = admin_client.post(
+        "/admin/orders",
+        data={
+            "customer_instagram": "@cliente",
+            "cart_items_json": cart,
+            "delivery_date": f"{date}T12:00:00",
+            "delivery_method": "pickup",
+            "order_status": "pending",
+            "amount_paid": "10000",
+        },
+    )
+    assert response.status_code == 204
+    order = SQLAlchemyOrderRepository(db).list_all()[0]
+    assert order.status == OrderStatus.PAID
+    assert order.amount_paid == 10000
+    assert order.description == ""
+
+
+def test_update_order_with_full_amount_paid_auto_marks_paid(
+    admin_client, db: Session
+) -> None:
+    order_id, date = _make_order(admin_client, db)
+
+    response = admin_client.post(
+        f"/admin/orders/{order_id}",
+        data={
+            "delivery_date": f"{date}T12:00:00",
+            "description": "",
+            "delivery_method": "pickup",
+            "amount_paid": "2000",
+            "status": "pending",
+            "image_order": "[]",
+        },
+        follow_redirects=False,
+    )
+    assert response.status_code == 303
+    fetched = SQLAlchemyOrderRepository(db).get_by_id(order_id)
+    assert fetched is not None
+    assert fetched.status == OrderStatus.PAID
+    assert fetched.amount_paid == 2000
+    assert fetched.description == ""
+
+
+def test_create_order_with_partial_payment_auto_confirms(
+    admin_client, db: Session
+) -> None:
+    admin_client.post(
+        "/admin/products",
+        data={
+            "name": "Casita Navideña",
+            "price": "5000",
+            "description": "d",
+            "is_active": "True",
+        },
+    )
+    product = SQLAlchemyProductRepository(db).list_all()[0]
+    date = _future_date()
+    admin_client.post("/admin/dates", data={"selected_date": date})
+    cart = json.dumps([{"product_id": product.id, "quantity": 2}])
+
+    response = admin_client.post(
+        "/admin/orders",
+        data={
+            "customer_instagram": "@cliente",
+            "cart_items_json": cart,
+            "delivery_date": f"{date}T12:00:00",
+            "delivery_method": "pickup",
+            "order_status": "pending",
+            "amount_paid": "3000",
+        },
+    )
+    assert response.status_code == 204
+    order = SQLAlchemyOrderRepository(db).list_all()[0]
+    assert order.status == OrderStatus.CONFIRMED
+    assert order.amount_paid == 3000
+
+
 def _product_id(db: Session) -> int:
     product = SQLAlchemyProductRepository(db).list_all()[0]
     assert product.id is not None

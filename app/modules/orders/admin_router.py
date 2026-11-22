@@ -96,8 +96,9 @@ def new_order_form(
     available_dates = scheduling_service.get_available_dates()
     return templates.TemplateResponse(
         request=request,
-        name="admin/order_create.html",
+        name="admin/order_form.html",
         context={
+            "order": None,
             "products": products,
             "available_dates": available_dates,
             "OrderStatuses": [e.value for e in OrderStatus],
@@ -113,7 +114,7 @@ def create_order(
     cart_items_json: str = Form(...),
     delivery_date: datetime = Form(...),
     delivery_method: DeliveryMethod = Form(...),
-    description: str = Form(...),
+    description: str = Form(""),
     order_status: OrderStatus = Form(OrderStatus.PENDING),
     amount_paid: int = Form(0),
     photos: list[UploadFile] | None = File(None),
@@ -179,7 +180,7 @@ def get_order_detail(
         ]
     return templates.TemplateResponse(
         request=request,
-        name="admin/order_detail.html",
+        name="admin/order_form.html",
         context={
             "order": order,
             "products": products,
@@ -210,7 +211,7 @@ def update_order_status(
 def update_order_details(
     order_id: int,
     delivery_date: str = Form(...),
-    description: str = Form(...),
+    description: str = Form(""),
     delivery_method: DeliveryMethod = Form(...),
     amount_paid: int = Form(0),
     status: OrderStatus = Form(...),
@@ -260,21 +261,13 @@ def update_order_details(
         # returning to its own past date needs none.
         availability_slot_id = None
 
-    if order.status != status:
-        service.change_status(order_id, status)
-    # change_status auto-pays when moving to paid/delivered, so the
-    # manual amount only applies to the other statuses (still capped).
-    if status in (OrderStatus.PAID, OrderStatus.DELIVERED):
-        amount_paid = order.total_amount
-    else:
-        amount_paid = max(0, min(amount_paid, order.total_amount))
-
     dto = OrderUpdateRequest(
         delivery_date=dt,
         availability_slot_id=availability_slot_id,
         description=description,
         delivery_method=delivery_method,
-        amount_paid=amount_paid,
+        amount_paid=max(0, min(amount_paid, order.total_amount)),
+        status=status,
     )
     try:
         service.update_order(order_id, dto, existing_photos, image_order, photos)
