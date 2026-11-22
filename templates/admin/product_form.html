@@ -74,7 +74,7 @@
             },
             get isModified() {
                 // Return true if new files were selected, an old file was removed, or any text field changed
-                return this.fileChanged || 
+                return this.fileChanged ||
                     String(this.formData.name) !== String(this.initialData.name) ||
                     String(this.formData.price) !== String(this.initialData.price) ||
                     String(this.formData.description) !== String(this.initialData.description) ||

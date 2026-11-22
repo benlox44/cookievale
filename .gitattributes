@@ -1,8 +1,1 @@
-# LF for text files. Explicit eol=lf on files consumed by shell/make/Docker so
-# core.autocrlf never injects CR into values (e.g. versions.env → curl URL).
-* text=auto
-versions.env text eol=lf
-.env.example text eol=lf
-Makefile text eol=lf
-Dockerfile text eol=lf
-docker-compose.yml text eol=lf
+* text=auto eol=lf
