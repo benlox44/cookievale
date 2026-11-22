@@ -5,32 +5,48 @@
 /admin/orders?sort_by={{ col }}&sort_dir={{ 'asc' if (cur_sort_by == col and cur_sort_dir == 'desc') else 'desc' }}{% if include_delivered %}&include_delivered=true{% endif %}
 {%- endmacro -%}
 
+{%- macro sort_icon(col, cur_sort_by, cur_sort_dir) -%}
+{% if cur_sort_by == col %}
+<svg class="w-3.5 h-3.5 text-cookie-golden shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+    {% if cur_sort_dir == 'asc' %}
+    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 15l7-7 7 7" />
+    {% else %}
+    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7" />
+    {% endif %}
+</svg>
+{% else %}
+<svg class="w-3.5 h-3.5 text-cookie-brown/35 group-hover:text-cookie-golden transition-colors shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l4-4 4 4m0 6l-4 4-4-4" />
+</svg>
+{% endif %}
+{%- endmacro -%}
+
 <div class="overflow-x-auto">
     <table class="min-w-full divide-y divide-cookie-pink/20">
         <thead class="bg-cookie-cream/50">
             <tr>
                 <th scope="col"
                     class="px-4 py-3.5 text-left text-xs font-semibold text-cookie-brown uppercase tracking-wider">
+                    <a hx-get="{{ sort_url('id', current_sort_by, current_sort_dir, include_delivered) }}" hx-target="#orders-table-container"
+                        class="group inline-flex items-center gap-1 hover:text-cookie-golden cursor-pointer select-none">
+                        ID
+                        {{ sort_icon('id', current_sort_by, current_sort_dir) }}
+                    </a>
+                </th>
+                <th scope="col"
+                    class="px-4 py-3.5 text-left text-xs font-semibold text-cookie-brown uppercase tracking-wider">
+                    <a hx-get="{{ sort_url('date', current_sort_by, current_sort_dir, include_delivered) }}" hx-target="#orders-table-container"
+                        class="group inline-flex items-center gap-1 hover:text-cookie-golden cursor-pointer select-none">
+                        Fecha
+                        {{ sort_icon('date', current_sort_by, current_sort_dir) }}
+                    </a>
+                </th>
+                <th scope="col"
+                    class="px-4 py-3.5 text-left text-xs font-semibold text-cookie-brown uppercase tracking-wider">
                     IG</th>
                 <th scope="col"
                     class="px-4 py-3.5 text-left text-xs font-semibold text-cookie-brown uppercase tracking-wider">
                     Estado</th>
-                <th scope="col"
-                    class="px-4 py-3.5 text-left text-xs font-semibold text-cookie-brown uppercase tracking-wider">
-                    <a hx-get="{{ sort_url('date', current_sort_by, current_sort_dir, include_delivered) }}" hx-target="#orders-table-container"
-                        class="inline-flex items-center gap-1 hover:text-cookie-golden cursor-pointer select-none">
-                        Fecha
-                        {% if current_sort_by == 'date' %}
-                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                            {% if current_sort_dir == 'asc' %}
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 15l7-7 7 7" />
-                            {% else %}
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7" />
-                            {% endif %}
-                        </svg>
-                        {% endif %}
-                    </a>
-                </th>
                 <th scope="col"
                     class="px-4 py-3.5 text-left text-xs font-semibold text-cookie-brown uppercase tracking-wider">
                     Carrito</th>
@@ -45,6 +61,10 @@
         <tbody class="bg-white divide-y divide-cookie-pink/20">
             {% for order in orders %}
             <tr class="hover:bg-cookie-pink/5 transition-colors">
+                <td class="px-4 py-4 whitespace-nowrap text-sm font-medium text-cookie-golden">#{{ order.id }}</td>
+                <td class="px-4 py-4 whitespace-nowrap text-sm text-cookie-brown/80">
+                    {{ order.delivery_date | date_short }}
+                </td>
                 <td class="px-4 py-4 whitespace-nowrap">
                     <a href="https://instagram.com/{{ order.customer_instagram | replace('@', '') | lower }}"
                         target="_blank"
@@ -61,9 +81,6 @@
                         {% else %} cv-status-neutral {% endif %}">
                         {{ order.status | status_label }}
                     </span>
-                </td>
-                <td class="px-4 py-4 whitespace-nowrap text-sm text-cookie-brown/80">
-                    {{ order.delivery_date | date_short }}
                 </td>
                 <td class="px-4 py-4 whitespace-nowrap text-sm text-cookie-brown">
                     <ul class="space-y-0.5">
@@ -100,7 +117,7 @@
             </tr>
             {% else %}
             <tr>
-                <td colspan="6" class="px-6 py-12 text-center text-cookie-brown/50">
+                <td colspan="7" class="px-6 py-12 text-center text-cookie-brown/50">
                     <div class="flex flex-col items-center justify-center">
                         <div
                             class="w-16 h-16 bg-cookie-pink/20 rounded-full flex items-center justify-center mb-3 border border-cookie-pink/30">

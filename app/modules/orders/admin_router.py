@@ -51,7 +51,7 @@ def admin_dashboard(
     if view not in ("table", "production"):
         view = "table"
     if sort_by not in ("id", "date"):
-        sort_by = "date"
+        sort_by = "id"
     if sort_dir not in ("asc", "desc"):
         sort_dir = "desc"
 
