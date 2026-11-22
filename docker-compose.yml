@@ -3,7 +3,7 @@ services:
     build:
       context: .
       args:
-        PYTHON_VERSION: ${PYTHON_VERSION:-3.11}
+        PYTHON_VERSION: ${PYTHON_VERSION}
     restart: unless-stopped
     volumes:
       - .:/app
@@ -13,13 +13,14 @@ services:
     env_file:
       - .env
     environment:
+      - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
       - CONTAINER_MEDIA_PATH=/app_media
     depends_on:
       db:
         condition: service_healthy
 
   db:
-    image: postgres:${POSTGRES_VERSION:-15}-alpine
+    image: postgres:${POSTGRES_VERSION}-alpine
     restart: unless-stopped
     environment:
       - POSTGRES_USER=${POSTGRES_USER}

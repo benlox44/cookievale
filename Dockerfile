@@ -1,26 +1,21 @@
-ARG PYTHON_VERSION=3.11
+ARG PYTHON_VERSION
 FROM python:${PYTHON_VERSION}-slim
 
-ENV PYTHONDONTWRITEBYTECODE=1
-ENV PYTHONUNBUFFERED=1
+ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1
 
 WORKDIR /app
 
-COPY versions.env .
-
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends gcc libpq-dev postgresql-client make curl \
+    && apt-get install -y --no-install-recommends postgresql-client curl git \
     && rm -rf /var/lib/apt/lists/*
 
-# Drop CR so $TAILWIND_VERSION never carries a trailing \r into the download URL.
-RUN sed -i 's/\r$//' versions.env \
-    && . ./versions.env \
-    && curl -sLO https://github.com/tailwindlabs/tailwindcss/releases/download/v"$TAILWIND_VERSION"/tailwindcss-linux-x64 \
-    && mv tailwindcss-linux-x64 /usr/local/bin/tailwindcss \
+COPY versions.env .
+RUN . ./versions.env \
+    && curl -sSfLo /usr/local/bin/tailwindcss https://github.com/tailwindlabs/tailwindcss/releases/download/v"$TAILWIND_VERSION"/tailwindcss-linux-x64 \
     && chmod +x /usr/local/bin/tailwindcss
 
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+COPY requirements.txt requirements-dev.txt ./
+RUN pip install --no-cache-dir -r requirements.txt -r requirements-dev.txt
 
 COPY . .
 

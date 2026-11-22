@@ -1,9 +1,9 @@
 .env
-__pycache__/
-*.pyc
-*.sql
 docker-compose.override.yml
+__pycache__/
 .ruff_cache/
 .mypy_cache/
+.pytest_cache/
 .coverage
 backup.log
+*.sql
