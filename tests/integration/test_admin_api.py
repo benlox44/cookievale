@@ -328,12 +328,25 @@ def test_order_detail_404_for_missing(admin_client) -> None:
     assert admin_client.get("/admin/orders/999").status_code == 404
 
 
-def test_create_order_on_unavailable_date_toast_error(admin_client) -> None:
+def test_create_order_auto_creates_slot_when_date_missing(
+    admin_client, db: Session
+) -> None:
+    admin_client.post(
+        "/admin/products",
+        data={
+            "name": "Galleta",
+            "price": "1000",
+            "description": "d",
+            "is_active": "True",
+        },
+    )
+    product = SQLAlchemyProductRepository(db).list_all()[0]
+    cart = json.dumps([{"product_id": product.id, "quantity": 1}])
     response = admin_client.post(
         "/admin/orders",
         data={
             "customer_instagram": "@cliente",
-            "cart_items_json": "[]",
+            "cart_items_json": cart,
             "delivery_date": "2099-01-01T12:00:00",
             "delivery_method": "pickup",
             "description": "d",
@@ -342,7 +355,38 @@ def test_create_order_on_unavailable_date_toast_error(admin_client) -> None:
         },
     )
     assert response.status_code == 204
-    assert "no está disponible" in _toast_message(response)
+    assert response.headers["hx-redirect"] == "/admin/orders"
+    orders = SQLAlchemyOrderRepository(db).list_all()
+    assert len(orders) == 1
+    assert orders[0].availability_slot_id is not None
+
+
+def test_create_order_on_past_date_toast_error(admin_client, db: Session) -> None:
+    admin_client.post(
+        "/admin/products",
+        data={
+            "name": "Galleta",
+            "price": "1000",
+            "description": "d",
+            "is_active": "True",
+        },
+    )
+    product = SQLAlchemyProductRepository(db).list_all()[0]
+    cart = json.dumps([{"product_id": product.id, "quantity": 1}])
+    response = admin_client.post(
+        "/admin/orders",
+        data={
+            "customer_instagram": "@cliente",
+            "cart_items_json": cart,
+            "delivery_date": "2020-01-01T12:00:00",
+            "delivery_method": "pickup",
+            "description": "d",
+            "order_status": "pending",
+            "amount_paid": "0",
+        },
+    )
+    assert response.status_code == 204
+    assert "pasadas" in _toast_message(response)
 
 
 def test_orders_dashboard_renders_partial_for_hx(admin_client, db: Session) -> None:
@@ -360,7 +404,7 @@ def test_orders_dashboard_normalizes_sort_params(admin_client) -> None:
     assert response.status_code == 200
 
 
-def test_update_order_with_occupied_date_redirects_with_error(
+def test_update_order_with_occupied_date_auto_creates_slot(
     admin_client, db: Session
 ) -> None:
     admin_client.post(
@@ -392,6 +436,8 @@ def test_update_order_with_occupied_date_redirects_with_error(
             },
         )
     order = SQLAlchemyOrderRepository(db).list_all()[0]
+    old_slot_id = order.availability_slot_id
+    assert old_slot_id is not None
 
     response = admin_client.post(
         f"/admin/orders/{order.id}",
@@ -406,7 +452,8 @@ def test_update_order_with_occupied_date_redirects_with_error(
         follow_redirects=False,
     )
     assert response.status_code == 303
-    assert "error=" in response.headers["location"]
+    assert response.headers["location"] == "/admin/orders"
+    assert SQLAlchemyAvailabilitySlotRepository(db).get_by_id(old_slot_id) is None
 
 
 def test_update_order_to_past_date_succeeds(admin_client, db: Session) -> None:

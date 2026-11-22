@@ -1,9 +1,9 @@
-{% macro render_date_calendar(name, dates, today, selected='', show_counts=False, only_available=False, restrict_months=False) %}
+{% macro render_date_calendar(name, dates, today, selected='', show_counts=False, only_available=False, restrict_months=False, auto_create_notice=False) %}
 {% set state = namespace(entries=[]) %}
 {% for item in dates %}
     {% set state.entries = state.entries + [{'date': item.date.isoformat(), 'free': item.free_slots}] %}
 {% endfor %}
-<div x-data='cvDateCalendar({{ {'name': name, 'dates': state.entries, 'today': today, 'selected': selected, 'showCounts': show_counts, 'onlyAvailable': only_available, 'restrictMonths': restrict_months} | tojson }})'
+<div x-data='cvDateCalendar({{ {'name': name, 'dates': state.entries, 'today': today, 'selected': selected, 'showCounts': show_counts, 'onlyAvailable': only_available, 'restrictMonths': restrict_months, 'autoCreateNotice': auto_create_notice} | tojson }})'
     class="cv-calendar">
     <input type="hidden" :name="name" :value="selected">
 
@@ -43,6 +43,9 @@
     </div>
 
     <p class="cv-calendar-hint" x-show="selected" x-text="fmt(selected)"></p>
+    <p class="cv-calendar-hint text-cookie-golden font-semibold" x-show="willCreateSlot()" x-cloak>
+        Se creará cupo
+    </p>
 </div>
 
 <script>
@@ -63,9 +66,11 @@
                 today: config.today || '',
                 map: {},
                 selected: config.selected || '',
+                initialSelected: config.selected || '',
                 showCounts: config.showCounts !== false,
                 onlyAvailable: !!config.onlyAvailable,
                 restrictMonths: !!config.restrictMonths,
+                autoCreateNotice: !!config.autoCreateNotice,
                 weekdays: ['Lu', 'Ma', 'Mi', 'Ju', 'Vi', 'Sa', 'Do'],
                 year: ty,
                 month: tm - 1,
@@ -100,8 +105,19 @@
                     this.$dispatch('date-selected', { date: this.selected, available: available });
                 },
 
+                willCreateSlot() {
+                    if (!this.autoCreateNotice || !this.selected || this.selected === this.initialSelected) {
+                        return false;
+                    }
+                    const entry = this.map[this.selected];
+                    return !entry || entry.free <= 0;
+                },
+
                 canPrev() {
                     const prevBoundary = new Date(this.year, this.month, 1).getTime();
+                    if (!this.restrictMonths && new Date(ty, tm - 1, 1).getTime() < prevBoundary) {
+                        return true;
+                    }
                     return this.dates.some((entry) => {
                         const [ey, em, ed] = entry.date.split('-').map(Number);
                         return new Date(ey, em - 1, ed).getTime() < prevBoundary;

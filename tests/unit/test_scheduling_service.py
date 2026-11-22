@@ -120,3 +120,20 @@ def test_get_free_slots_purges_past_dates(slots: list[AvailabilitySlot]) -> None
     service, _ = make_service([*slots, stale])
     free = service.get_free_slots()
     assert 99 not in {s.id for s in free}
+
+
+def test_acquire_slot_for_admin_reuses_free_slot(slots: list[AvailabilitySlot]) -> None:
+    service, _ = make_service(slots, occupied={1})
+    slot_id, created = service.acquire_slot_for_admin(slots[0].date)
+    assert slot_id == 2
+    assert created is False
+
+
+def test_acquire_slot_for_admin_creates_when_none_free(
+    slots: list[AvailabilitySlot],
+) -> None:
+    service, slot_repo = make_service(slots, occupied={1, 2, 3})
+    new_date = _today() + timedelta(days=10)
+    slot_id, created = service.acquire_slot_for_admin(new_date)
+    assert created is True
+    assert slot_repo.get_by_id(slot_id) is not None

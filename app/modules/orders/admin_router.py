@@ -47,8 +47,6 @@ def admin_dashboard(
     sort_dir: str = Query("desc"),
     service: OrderService = Depends(get_order_service),
 ) -> HTMLResponse:
-    if sort_by is None:
-        sort_by = "date"
     if sort_by not in ("id", "date"):
         sort_by = "date"
     if sort_dir not in ("asc", "desc"):
@@ -127,16 +125,16 @@ def create_order(
         photos = []
 
     try:
-        availability_slot_id = scheduling_service.get_slot_for_date(
-            delivery_date.date()
-        )
-    except ValueError:
-        return error_toast("La fecha seleccionada no está disponible.")
-
-    try:
         parsed = parse_cart_items(cart_items_json, product_service)
     except CartError as exc:
         return error_toast(exc.message)
+
+    try:
+        availability_slot_id, created_slot = scheduling_service.acquire_slot_for_admin(
+            delivery_date.date()
+        )
+    except ValueError as exc:
+        return error_toast(str(exc))
 
     try:
         order_service.create_from_parsed_cart(
@@ -152,6 +150,8 @@ def create_order(
             created_by_admin=True,
         )
     except ValueError as exc:
+        if created_slot:
+            scheduling_service.remove_slot(availability_slot_id)
         return error_toast(str(exc))
 
     return redirect("/admin/orders")
@@ -196,8 +196,6 @@ def update_order_status(
     status: OrderStatus = Form(...),
     service: OrderService = Depends(get_order_service),
 ) -> RedirectResponse:
-    # The repository raises ValueError on IntegrityError (e.g. a concurrent
-    # update), so surface it instead of failing silently.
     try:
         service.change_status(order_id, status)
     except ValueError as exc:
@@ -236,20 +234,6 @@ def update_order_details(
     if not order:
         return RedirectResponse(url="/admin/orders", status_code=303)
 
-    try:
-        availability_slot_id = scheduling_service.get_slot_for_date(
-            dt.date(), current_slot_id=order.availability_slot_id
-        )
-    except ValueError:
-        if dt.date() >= datetime.now(tz=TZ).date():
-            return RedirectResponse(
-                url=f"/admin/orders/{order_id}?error={quote('La fecha seleccionada no está disponible.')}",
-                status_code=303,
-            )
-        # Past dates have no bookable slots (they are purged), so an order
-        # returning to its own past date needs none.
-        availability_slot_id = None
-
     if cart_items_json:
         stored_prices = {item.product_id: item.unit_price for item in order.items}
         try:
@@ -264,6 +248,17 @@ def update_order_details(
         order = service.update_order_items(order_id, parsed.items, parsed.total_amount)
         if order is None:
             return RedirectResponse(url="/admin/orders", status_code=303)
+
+    old_slot_id = order.availability_slot_id
+    created_slot = False
+    try:
+        availability_slot_id, created_slot = scheduling_service.acquire_slot_for_admin(
+            dt.date(), current_slot_id=old_slot_id
+        )
+    except ValueError:
+        # Past dates have no bookable slots (they are purged), so an order
+        # returning to its own past date needs none.
+        availability_slot_id = None
 
     if order.status != status:
         service.change_status(order_id, status)
@@ -284,9 +279,14 @@ def update_order_details(
     try:
         service.update_order(order_id, dto, existing_photos, image_order, photos)
     except ValueError as exc:
+        if created_slot and availability_slot_id is not None:
+            scheduling_service.remove_slot(availability_slot_id)
         return RedirectResponse(
             url=f"/admin/orders/{order_id}?error={quote(str(exc))}", status_code=303
         )
+
+    if old_slot_id is not None and old_slot_id != availability_slot_id:
+        scheduling_service.remove_slot(old_slot_id)
 
     return RedirectResponse(url="/admin/orders", status_code=303)
 
@@ -294,7 +294,6 @@ def update_order_details(
 @router.post("/{order_id}/delete")
 def delete_order(
     order_id: int,
-    request: Request,
     service: OrderService = Depends(get_order_service),
     scheduling_service: SchedulingService = Depends(get_scheduling_service),
 ) -> RedirectResponse:

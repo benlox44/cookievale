@@ -71,3 +71,11 @@ class SchedulingService:
             if slot.id not in occupied:
                 return slot.id
         raise ValueError("La fecha seleccionada no tiene disponibilidades libres.")
+
+    def acquire_slot_for_admin(
+        self, target_date: date, current_slot_id: int | None = None
+    ) -> tuple[int, bool]:
+        try:
+            return self.get_slot_for_date(target_date, current_slot_id), False
+        except ValueError:
+            return self.add_slot(target_date).id, True

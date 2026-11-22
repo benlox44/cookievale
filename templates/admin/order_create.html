@@ -69,9 +69,9 @@
                 <div>
                     <div class="flex items-center gap-2 mb-1.5">
                         <label class="cv-label block mb-0">Fecha de entrega</label>
-                        {{ render_tooltip("Elige una fecha con disponibilidad para agendar.") }}
+                        {{ render_tooltip("Elige una fecha de entrega. Si no tiene cupos disponibles, se creará uno al guardar la orden.") }}
                     </div>
-                        {{ render_date_calendar('delivery_date', available_dates, today, only_available=True, restrict_months=True) }}
+                        {{ render_date_calendar('delivery_date', available_dates, today, show_counts=True, auto_create_notice=True) }}
                 </div>
                 <div>
                     <div class="flex items-center gap-2 mb-1.5">

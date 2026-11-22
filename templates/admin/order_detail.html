@@ -19,7 +19,7 @@
 {% endif %}
 <div x-data="orderDetail()"
     @photos-changed.window="photosChanged = true"
-    @date-selected.window="onCalendarDate($event.detail.date)">
+    @date-selected.window="onCalendarDate($event.detail)">
     <div class="cv-card cv-shadow-card p-0 overflow-hidden mb-8">
 
         <!-- Header -->
@@ -111,7 +111,7 @@
                 <div class="space-y-4 relative z-10">
                     <div>
                         <label class="cv-label block mb-1.5">Fecha de Entrega</label>
-                        {{ render_date_calendar('delivery_date', available_dates, today, selected=order.delivery_date.strftime('%Y-%m-%d'), only_available=True, restrict_months=True) }}
+                        {{ render_date_calendar('delivery_date', available_dates, today, selected=order.delivery_date.strftime('%Y-%m-%d'), show_counts=True, auto_create_notice=True) }}
                     </div>
                     <div>
                         <label class="cv-label block mb-1.5">Método de Entrega</label>
@@ -267,8 +267,12 @@
                 this.cartTotal = total;
                 this.cartItems = items;
             },
-            onCalendarDate(date) {
-                if (date) this.formData.delivery_date = date;
+            newDateNeedsSlot: false,
+            onCalendarDate(detail) {
+                if (detail && detail.date) {
+                    this.formData.delivery_date = detail.date;
+                    this.newDateNeedsSlot = !detail.available && detail.date !== this.initialData.delivery_date;
+                }
             },
             get carritoModificado() {
                 return String(this.cartJson) !== String(this.initialCartJson);
@@ -321,7 +325,7 @@
                     changes.push({
                         label: 'Fecha',
                         from: this.initialData.delivery_date,
-                        to: this.formData.delivery_date
+                        to: this.formData.delivery_date + (this.newDateNeedsSlot ? ' (se creará cupo)' : '')
                     });
                 }
                 if (String(this.formData.delivery_method) !== String(this.initialData.delivery_method)) {
