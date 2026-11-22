@@ -39,7 +39,7 @@
 
                         <button type="button" x-sort:handle
                             class="absolute top-1 left-1 z-40 w-7 h-7 flex items-center justify-center rounded-full bg-white/90 text-cookie-brown/60 shadow-sm cursor-grab active:cursor-grabbing touch-none select-none transition-colors hover:bg-white hover:text-cookie-golden"
-                            title="Arrastrar para reordenar" aria-label="Reordenar">
+                            aria-label="Reordenar">
                             <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
                                 <path
                                     d="M9 5a2 2 0 11-2-2 2 2 0 012 2zm8 0a2 2 0 11-2-2 2 2 0 012 2zM9 13a2 2 0 11-2-2 2 2 0 012 2zm8 0a2 2 0 11-2-2 2 2 0 012 2zM9 21a2 2 0 11-2-2 2 2 0 012 2zm8 0a2 2 0 11-2-2 2 2 0 012 2z" />
@@ -85,8 +85,9 @@
             </div>
         </div>
 
-        <!-- Hidden input to actually submit the files to the backend -->
-        <input type="file" name="photos" multiple x-ref="photoInput" class="hidden" {% if is_required and
+        <!-- Visually hidden (but focusable) input to submit files and show native required validation -->
+        <input type="file" name="photos" multiple x-ref="photoInput"
+            class="sr-only bottom-2 left-1/2" {% if is_required and
             existing_cnt==0 %} x-bind:required="files.length === 0" {% endif %}>
 
         <!-- Interleaved order (existing URLs + new:<index> placeholders) so the
@@ -116,15 +117,15 @@
 
                 <!-- Zoom buttons -->
                 <div class="absolute bottom-4 right-4 flex gap-2 z-50">
-                    <button type="button" @click="if(cropper) cropper.zoom(-0.1)" title="Alejar"
+                    <button type="button" @click="if(cropper) cropper.zoom(-0.1)" aria-label="Alejar"
                         class="w-10 h-10 bg-black/50 hover:bg-black/70 text-white rounded-full flex items-center justify-center transition-colors backdrop-blur-md shadow-lg">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4" />
                         </svg>
                     </button>
-                    <button type="button" @click="if(cropper) cropper.zoom(0.1)" title="Acercar"
+                    <button type="button" @click="if(cropper) cropper.zoom(0.1)" aria-label="Acercar"
                         class="w-10 h-10 bg-black/50 hover:bg-black/70 text-white rounded-full flex items-center justify-center transition-colors backdrop-blur-md shadow-lg">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
                         </svg>
                     </button>

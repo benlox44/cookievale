@@ -34,7 +34,7 @@
             </div>
             <div>
                 <label class="cv-label mb-1">Descripción</label>
-                <input type="text" name="description" class="cv-input w-full" x-model="formData.description">
+                <input type="text" name="description" class="cv-input w-full" x-model="formData.description" required>
             </div>
             <div @click="fileChanged = true">
                 <!-- Image Submissions -->
@@ -49,8 +49,10 @@
                     Producto activo
                 </label>
                 <div class="pt-4 flex justify-end gap-3">
-                    <button type="submit" :disabled="!isModified"
-                        class="cv-btn disabled:opacity-40 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-none">Guardar Cambios</button>
+                    <button type="submit"{% if product %} :disabled="!isModified"{% endif %}
+                        class="cv-btn disabled:opacity-40 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-none">
+                        {% if product %}Guardar Cambios{% else %}Crear Producto{% endif %}
+                    </button>
                 </div>
         </form>
     </div>

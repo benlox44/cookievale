@@ -1,6 +1,6 @@
 from typing import Protocol
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
@@ -46,11 +46,16 @@ class SQLAlchemyProductRepository:
         return self._to_domain(model)
 
     def create(self, product: Product, image_urls: list[str] | None = None) -> Product:
+        max_order = self.db.execute(
+            select(func.max(ProductModel.display_order))
+        ).scalar_one()
+        next_order = 0 if max_order is None else int(max_order) + 1
         db_product = ProductModel(
             name=product.name,
             description=product.description,
             price=product.price,
             is_active=product.is_active,
+            display_order=next_order,
             image_urls=image_urls,
         )
         self.db.add(db_product)
