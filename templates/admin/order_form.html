@@ -238,13 +238,7 @@
                 </div>
             </div>
 
-            <div class="p-6" x-data="cookieCart([
-                {% if is_edit %}
-                {% for item in order.items %}
-                { product_id: {{ item.product_id }}, name: {{ (item.product_name or '') | tojson }}, price: {{ item.unit_price }}, quantity: {{ item.quantity }} }{% if not loop.last %},{% endif %}
-                {% endfor %}
-                {% endif %}
-            ], (json, total, items) => setCart(json, total, items))">
+            <div class="p-6" x-data="cookieCart(cartItems, (json, total, items) => setCart(json, total, items))">
                 {{ render_product_picker(products) }}
 
                 <div class="cv-card mb-6 border-cookie-pink/40 bg-cookie-cream/50">
