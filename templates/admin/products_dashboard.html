@@ -101,7 +101,7 @@
                 </div>
                 <div class="relative aspect-square w-full overflow-hidden rounded-lg border border-cookie-pink/30 bg-cookie-cream/50">
                     <img src="{{ product.image_urls[0] if product.image_urls else '/public/icons/icon.png' }}" alt="{{ product.name }}"
-                        draggable="false" class="w-full h-full object-cover select-none cv-nodrag">
+                        draggable="false" class="absolute inset-0 w-full h-full object-cover select-none cv-nodrag">
                 </div>
                 <p class="text-[11px] font-semibold text-cookie-brown text-center leading-tight">{{ product.name }}</p>
             </div>

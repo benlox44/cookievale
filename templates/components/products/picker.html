@@ -4,8 +4,10 @@
     {% for product in products %}
     <div
         class="cv-card cv-shadow-card-hover p-4 flex flex-col justify-between hover:-translate-y-1 hover:border-cookie-golden/40 transition-all duration-300 group">
-        {% include "components/products/slider.html" %}
-        {% include "components/products/info.html" %}
+        <div class="flex flex-col flex-1">
+            {% include "components/products/slider.html" %}
+            {% include "components/products/info.html" %}
+        </div>
         <div
             class="flex items-center justify-between bg-cookie-cream rounded-xl p-1.5 border border-cookie-pink/30">
             <button type="button" @click="removeItem({{ product.id }})"

@@ -1,16 +1,15 @@
-<div class="overflow-hidden rounded-xl mb-4 relative group/slider" x-data='{
+<div class="w-full shrink-0 overflow-hidden rounded-xl mb-4 relative group/slider" x-data='{
     activeSlide: 0,
     slides: {{ product.image_urls | tojson if product.image_urls else "[]" | safe }}
 }'>
     <template x-if="slides.length > 0">
         <div class="relative w-full aspect-square overflow-hidden">
-            <!-- Pista animada para las imágenes -->
-            <div class="flex w-full h-full transition-transform duration-500 ease-in-out"
+            <div class="absolute inset-0 flex transition-transform duration-500 ease-in-out"
                 :style="`transform: translateX(-${activeSlide * 100}%)`">
                 <template x-for="(slide, index) in slides" :key="index">
-                    <div class="w-full h-full shrink-0 overflow-hidden relative">
+                    <div class="relative w-full h-full shrink-0 overflow-hidden">
                         <img :src="slide" alt="{{ product.name }}"
-                            class="w-full h-full object-cover transform group-hover/slider:scale-105 transition-transform duration-500">
+                            class="absolute inset-0 w-full h-full object-cover transform group-hover/slider:scale-105 transition-transform duration-500">
                     </div>
                 </template>
             </div>
