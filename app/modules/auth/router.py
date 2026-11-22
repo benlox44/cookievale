@@ -32,7 +32,6 @@ def post_login(request: Request, password: str = Form(...)) -> Response:
             key="admin_session",
             value=token,
             httponly=True,
-            # Secure only when not debugging so plain-HTTP local dev keeps working.
             secure=not DEBUG,
             samesite="lax",
             max_age=SESSION_TTL_SECONDS,

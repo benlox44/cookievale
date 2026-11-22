@@ -7,7 +7,7 @@ from html import escape
 from fastapi import UploadFile
 
 from app.core.config import CONTAINER_MEDIA_PATH, MAX_ORDER_PHOTOS
-from app.core.telegram import TelegramNotifier
+from app.core.telegram import send_message
 from app.core.uploads import delete_media_files, save_uploads, update_photo_set
 from app.modules.orders.cart import ParsedCart
 from app.modules.orders.domain import DeliveryMethod, Order, OrderItem, OrderStatus
@@ -69,18 +69,11 @@ class OrderService:
                 order = self.repository.save(order)
 
         try:
-            notifier = TelegramNotifier()
-            # Dynamic fragments are HTML-parsed by Telegram, so escape them.
             items_str = "\n".join(
-                [
-                    f"• {escape(i.product_name or '')} x {i.quantity}"
-                    for i in order.items
-                ]
+                f"• {escape(i.product_name or '')} x {i.quantity}" for i in order.items
             )
-
             source = "📱 <i>(Creada por admin)</i>\n" if created_by_admin else ""
-
-            notifier.send_message(
+            send_message(
                 f"🛍️ <b>¡Nueva Orden (ID: {order.id})!</b>\n"
                 f"{source}\n"
                 f"👤 <b>Instagram:</b> @{escape(order.customer_instagram)}\n"
@@ -90,7 +83,7 @@ class OrderService:
                 f"💰 <b>Total:</b> ${order.total_amount:,.0f}\n"
                 f"💳 <b>Pagado:</b> ${order.amount_paid:,.0f}"
             )
-        except Exception as e:  # noqa: BLE001 — Telegram is non-critical
+        except Exception as e:  # noqa: BLE001
             logger.error("Failed to send Telegram notification: %s", e)
 
         return order
@@ -176,7 +169,7 @@ class OrderService:
             media_dir=order_dir,
             url_prefix=f"/media/orders/{order.id}",
         )
-        order.reference_photos = final_photos[:MAX_ORDER_PHOTOS]
+        order.reference_photos = final_photos
 
         updated = self.repository.save(order)
         if updated is None:

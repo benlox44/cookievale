@@ -250,14 +250,10 @@ def test_telegram_failure_is_logged_but_order_created(
     caplog: pytest.LogCaptureFixture,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    class _RaisingNotifier:
-        def __init__(self) -> None:
-            pass
+    def _raise(text: str) -> None:
+        raise RuntimeError("telegram down")
 
-        def send_message(self, text: str) -> None:
-            raise RuntimeError("telegram down")
-
-    monkeypatch.setattr(order_service_module, "TelegramNotifier", _RaisingNotifier)
+    monkeypatch.setattr(order_service_module, "send_message", _raise)
     with caplog.at_level(logging.ERROR, logger="app.modules.orders.service"):
         order = service.create_order(_create_request(), [])
     assert order.id is not None

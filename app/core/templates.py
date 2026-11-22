@@ -10,8 +10,6 @@ from app.core.config import BASE_URL, MAX_ORDER_PHOTOS, MAX_PRODUCT_IMAGES
 templates = Jinja2Templates(directory="templates")
 templates.env.globals["base_url"] = BASE_URL
 
-# Cache-bust the compiled stylesheet: the link URL changes whenever the file
-# content changes so stale CSS can never be served to production visitors.
 _css_version_cache: dict[tuple[int, int], str] = {}
 
 
@@ -44,8 +42,6 @@ DELIVERY_LABELS = {
     "delivery": "Delivery",
 }
 
-# Hardcoded Spanish abbreviations so formatting never depends on the
-# container's locale (strftime('%a') could otherwise render in English).
 WEEKDAYS_SHORT = ["lun", "mar", "mié", "jue", "vie", "sáb", "dom"]
 MONTHS_SHORT = [
     "ene",

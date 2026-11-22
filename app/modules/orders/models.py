@@ -38,8 +38,6 @@ class OrderModel(Base, TimestampMixin):
         "OrderItemModel", back_populates="order", cascade="all, delete-orphan"
     )
 
-    # A slot can be held by only one order; the unique index protects the final
-    # reservation against concurrent submissions.
     __table_args__ = (
         Index(
             "uq_orders_availability_slot_active",
@@ -61,8 +59,6 @@ class OrderItemModel(Base, TimestampMixin):
     )
     quantity: Mapped[int] = mapped_column(Integer, nullable=False)
     unit_price: Mapped[int] = mapped_column(Integer, nullable=False)
-    # Historical snapshot of the product name at order time (product can be
-    # renamed or deleted afterwards without corrupting the order history).
     product_name: Mapped[str | None] = mapped_column(String(100), nullable=True)
 
     order: Mapped["OrderModel"] = relationship("OrderModel", back_populates="items")

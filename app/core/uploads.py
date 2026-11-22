@@ -8,13 +8,6 @@ from fastapi import UploadFile
 
 logger = logging.getLogger(__name__)
 
-ALLOWED_MIME_TYPES = {
-    "image/jpeg",
-    "image/png",
-    "image/webp",
-    "image/gif",
-}
-
 MIME_TO_EXT = {
     "image/jpeg": "jpg",
     "image/png": "png",
@@ -49,7 +42,7 @@ def validate_upload(file: UploadFile) -> bool:
         return False
 
     content_type = file.content_type
-    if content_type not in ALLOWED_MIME_TYPES:
+    if content_type not in MIME_TO_EXT:
         return False
 
     detected = _detect_image_type(file)
@@ -60,7 +53,7 @@ def validate_upload(file: UploadFile) -> bool:
     size = file.file.tell()
     file.file.seek(0)
 
-    return not size > MAX_FILE_SIZE
+    return size <= MAX_FILE_SIZE
 
 
 def get_safe_extension(file: UploadFile) -> str:
@@ -157,13 +150,6 @@ def update_photo_set(
     media_dir: str,
     url_prefix: str,
 ) -> tuple[list[str], list[str]]:
-    """Reconcile kept photos, new uploads and ordering into the final set.
-
-    Shared by orders and products (identical edit-photo behavior): keeps the
-    photos the form still references, saves new uploads up to max_images, and
-    applies the drag-and-drop order. Returns (final_urls, removed_urls) so the
-    caller can delete the media files that were dropped.
-    """
     current_set = set(current_urls)
     kept = [url for url in existing_urls if url in current_set]
 

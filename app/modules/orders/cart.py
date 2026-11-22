@@ -22,17 +22,6 @@ def parse_cart_items(
     product_service: ProductService,
     stored_prices: dict[int, int] | None = None,
 ) -> ParsedCart:
-    """Parse and validate the cart JSON sent by the order forms.
-
-    Reused by the client submission, the admin creation and the cart edit
-    endpoint so the validation rules stay in a single place. Raises CartError
-    with a user-facing message when the cart is invalid.
-
-    stored_prices maps product_id -> unit_price for items already present in
-    an order (used by the cart editor). Existing items keep their price
-    snapshot even if the product was deactivated afterwards; only items not
-    already in the order are required to be active and use the current price.
-    """
     try:
         cart_raw = json.loads(cart_json)
     except json.JSONDecodeError as exc:
@@ -64,7 +53,6 @@ def parse_cart_items(
             OrderItemCreate(product_id=prod_id, quantity=qty, unit_price=unit_p)
         )
 
-    # Merge repeated product entries (same product_id sent twice in the JSON).
     merged: dict[int, OrderItemCreate] = {}
     for item in items:
         prev = merged.get(item.product_id)

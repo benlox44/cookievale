@@ -11,16 +11,15 @@ from app.modules.scheduling.service import SchedulingService
 
 
 def get_order_service(db: Session = Depends(get_db)) -> OrderService:
-    repo = SQLAlchemyOrderRepository(db)
-    return OrderService(repo)
+    return OrderService(SQLAlchemyOrderRepository(db))
 
 
 def get_product_service(db: Session = Depends(get_db)) -> ProductService:
-    repo = SQLAlchemyProductRepository(db)
-    return ProductService(repo)
+    return ProductService(SQLAlchemyProductRepository(db))
 
 
 def get_scheduling_service(db: Session = Depends(get_db)) -> SchedulingService:
     return SchedulingService(
-        SQLAlchemyAvailabilitySlotRepository(db), SQLAlchemyOrderRepository(db)
+        SQLAlchemyAvailabilitySlotRepository(db),
+        SQLAlchemyOrderRepository(db),
     )

@@ -36,7 +36,6 @@ logging.basicConfig(
     format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
 )
 
-# Docs/OpenAPI are dev-only: exposing them in production leaks the API surface.
 app = FastAPI(
     title="CookieVale API",
     docs_url="/docs" if DEBUG else None,
@@ -52,8 +51,8 @@ class HttpsRedirectMiddleware(BaseHTTPMiddleware):
         call_next: Callable[[Request], Awaitable[Response]],
     ) -> Response:
         if not DEBUG:
-            proto = request.headers.get("x-forwarded-proto", "")
-            if proto and proto != "https":
+            protocol = request.headers.get("x-forwarded-proto", "")
+            if protocol and protocol != "https":
                 url = request.url.replace(scheme="https")
                 return RedirectResponse(url=str(url), status_code=301)
         return await call_next(request)

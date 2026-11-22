@@ -106,14 +106,7 @@ def _reset_rate_limiter() -> None:
 
 @pytest.fixture(autouse=True)
 def _patch_telegram(monkeypatch: pytest.MonkeyPatch) -> None:
-    class _FakeTelegramNotifier:
-        def __init__(self) -> None:
-            pass
-
-        def send_message(self, text: str) -> None:
-            pass
-
-    monkeypatch.setattr(order_service_module, "TelegramNotifier", _FakeTelegramNotifier)
+    monkeypatch.setattr(order_service_module, "send_message", lambda text: None)
 
 
 @pytest.fixture

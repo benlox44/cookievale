@@ -33,7 +33,7 @@ def test_send_message_posts_payload(
 
     monkeypatch.setattr(telegram.urllib.request, "urlopen", fake_urlopen)
 
-    telegram.TelegramNotifier().send_message("Hola")
+    telegram.send_message("Hola")
 
     assert (
         captured["url"]
@@ -57,6 +57,6 @@ def test_send_message_logs_error_on_urlerror(
     monkeypatch.setattr(telegram.urllib.request, "urlopen", fake_urlopen)
 
     with caplog.at_level(logging.ERROR, logger="app.core.telegram"):
-        telegram.TelegramNotifier().send_message("Hola")
+        telegram.send_message("Hola")
 
     assert "Failed to send Telegram notification" in caplog.text

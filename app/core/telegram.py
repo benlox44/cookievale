@@ -8,22 +8,15 @@ from app.core.config import TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID
 logger = logging.getLogger(__name__)
 
 
-class TelegramNotifier:
-    def __init__(self) -> None:
-        self.bot_token = TELEGRAM_BOT_TOKEN
-        self.chat_id = TELEGRAM_CHAT_ID
-
-    def send_message(self, text: str) -> None:
-        url = f"https://api.telegram.org/bot{self.bot_token}/sendMessage"
-        payload = {"chat_id": self.chat_id, "text": text, "parse_mode": "HTML"}
-        data = json.dumps(payload).encode("utf-8")
-
-        req = urllib.request.Request(
-            url, data=data, headers={"Content-Type": "application/json"}
-        )
-
-        try:
-            with urllib.request.urlopen(req, timeout=5) as response:
-                response.read()
-        except urllib.error.URLError as e:
-            logger.error("Failed to send Telegram notification: %s", e)
+def send_message(text: str) -> None:
+    payload = {"chat_id": TELEGRAM_CHAT_ID, "text": text, "parse_mode": "HTML"}
+    req = urllib.request.Request(
+        f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage",
+        data=json.dumps(payload).encode(),
+        headers={"Content-Type": "application/json"},
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=5) as response:
+            response.read()
+    except (urllib.error.URLError, TimeoutError) as e:
+        logger.error("Failed to send Telegram notification: %s", e)

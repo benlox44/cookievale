@@ -47,17 +47,16 @@ class SQLAlchemyOrderRepository:
     def save(self, order: Order) -> Order:
         names = self._product_names({item.product_id for item in order.items})
 
-        db_items = []
-        for item in order.items:
-            db_items.append(
-                OrderItemModel(
-                    id=item.id,
-                    product_id=item.product_id,
-                    quantity=item.quantity,
-                    unit_price=item.unit_price,
-                    product_name=names.get(item.product_id),
-                )
+        db_items = [
+            OrderItemModel(
+                id=item.id,
+                product_id=item.product_id,
+                quantity=item.quantity,
+                unit_price=item.unit_price,
+                product_name=names.get(item.product_id),
             )
+            for item in order.items
+        ]
 
         db_order = OrderModel(
             id=order.id,
@@ -116,8 +115,6 @@ class SQLAlchemyOrderRepository:
             selectinload(OrderModel.items).selectinload(OrderItemModel.product)
         )
         if not include_delivered:
-            # Delivered orders are closed: hidden from the default dashboard
-            # view and revealed via the "Mostrar entregadas" toggle.
             stmt = stmt.where(OrderModel.status != OrderStatus.DELIVERED)
 
         if sort_by == "date":

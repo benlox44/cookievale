@@ -83,7 +83,6 @@ class SQLAlchemyProductRepository:
     def reorder(self, ordered_ids: list[int]) -> bool:
         if not ordered_ids:
             return True
-        # Single round-trip instead of one SELECT per product.
         models = (
             self.db.execute(
                 select(ProductModel).where(ProductModel.id.in_(ordered_ids))
@@ -92,8 +91,7 @@ class SQLAlchemyProductRepository:
             .all()
         )
         by_id = {m.id: m for m in models}
-        ordered = {pid: index for index, pid in enumerate(ordered_ids)}
-        for pid, index in ordered.items():
+        for index, pid in enumerate(ordered_ids):
             model = by_id.get(pid)
             if model is not None:
                 model.display_order = index

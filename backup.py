@@ -1,11 +1,10 @@
-#!/usr/bin/env python3
 import gzip
 import logging
 import os
 import shutil
 import subprocess
 import sys
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 SCRIPT_DIR = Path(__file__).resolve().parent
@@ -48,7 +47,7 @@ def _is_timestamp_dir(name: str) -> bool:
     if len(name) != 17 or "_" not in name:
         return False
     try:
-        datetime.strptime(name, "%Y-%m-%d_%H%M%S").replace(tzinfo=timezone.utc)
+        datetime.strptime(name, "%Y-%m-%d_%H%M%S").replace(tzinfo=UTC)
         return True
     except ValueError:
         return False
@@ -126,7 +125,7 @@ def main() -> None:
     if not _verify_backup_destination(dest):
         sys.exit(1)
 
-    timestamp = datetime.now(tz=timezone.utc).strftime("%Y-%m-%d_%H%M%S")
+    timestamp = datetime.now(tz=UTC).strftime("%Y-%m-%d_%H%M%S")
     backup_dir = dest / timestamp
     config_dir = backup_dir / "config"
     media_dir = backup_dir / "media"
