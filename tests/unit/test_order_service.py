@@ -2,14 +2,20 @@ import io
 import json
 import logging
 import os
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 
 import pytest
 from fastapi import UploadFile
 
 from app.core.config import CONTAINER_MEDIA_PATH, TZ
 from app.modules.orders import service as order_service_module
-from app.modules.orders.domain import DeliveryMethod, Order, OrderItem, OrderStatus
+from app.modules.orders.domain import (
+    DeliveryMethod,
+    Order,
+    OrderItem,
+    OrderStatus,
+    SalesStats,
+)
 from app.modules.orders.schemas import (
     OrderCreateRequest,
     OrderItemCreate,
@@ -81,6 +87,20 @@ class FakeOrderRepository:
         order.total_amount = total_amount
         order.amount_paid = amount_paid
         return order
+
+    def get_sales_stats(
+        self,
+        date_from: date | None = None,
+        date_to: date | None = None,
+    ) -> SalesStats:
+        self.last_stats_range = (date_from, date_to)
+        return SalesStats()
+
+    def get_order_date_bounds(self) -> tuple[date | None, date | None]:
+        return (None, None)
+
+    def get_best_selling_product_id(self) -> int | None:
+        return None
 
 
 def make_upload(
@@ -423,3 +443,15 @@ def test_update_order_logs_warning_on_cleanup_error(
         )
     assert updated is not None
     assert "Failed to remove media files for order" in caplog.text
+
+
+def test_get_sales_stats_swaps_reversed_date_range() -> None:
+    repo = FakeOrderRepository()
+    svc = OrderService(repo)
+    start = date(2026, 5, 20)
+    end = date(2026, 5, 1)
+
+    stats = svc.get_sales_stats(date_from=start, date_to=end)
+    assert repo.last_stats_range == (end, start)
+    assert stats.average_ticket == 0
+    assert SalesStats(completed_revenue=9000, completed_orders=3).average_ticket == 3000

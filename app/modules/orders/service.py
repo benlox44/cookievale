@@ -1,7 +1,7 @@
 import logging
 import os
 import shutil
-from datetime import datetime
+from datetime import date, datetime
 from html import escape
 
 from fastapi import UploadFile
@@ -15,6 +15,7 @@ from app.modules.orders.domain import (
     Order,
     OrderItem,
     OrderStatus,
+    SalesStats,
     reconcile_payment,
 )
 from app.modules.orders.repository import OrderRepository
@@ -142,6 +143,21 @@ class OrderService:
 
     def count_orders(self, include_delivered: bool = False) -> int:
         return self.repository.count(include_delivered)
+
+    def get_sales_stats(
+        self,
+        date_from: date | None = None,
+        date_to: date | None = None,
+    ) -> SalesStats:
+        if date_from is not None and date_to is not None and date_from > date_to:
+            date_from, date_to = date_to, date_from
+        return self.repository.get_sales_stats(date_from=date_from, date_to=date_to)
+
+    def get_order_date_bounds(self) -> tuple[date | None, date | None]:
+        return self.repository.get_order_date_bounds()
+
+    def get_best_selling_product_id(self) -> int | None:
+        return self.repository.get_best_selling_product_id()
 
     def update_order(
         self,

@@ -246,3 +246,55 @@ def test_get_db_yields_working_session_and_closes() -> None:
         assert session.execute(text("SELECT 1")).scalar() == 1
     finally:
         gen.close()
+
+
+def test_best_selling_product_id_rules_and_tiebreakers(db: Session) -> None:
+    prod_repo = SQLAlchemyProductRepository(db)
+    order_repo = SQLAlchemyOrderRepository(db)
+
+    # No sales -> None
+    assert order_repo.get_best_selling_product_id() is None
+
+    inactive = prod_repo.create(
+        Product(id=None, name="Inactiva", price=5000, is_active=False, display_order=0)
+    )
+    first = prod_repo.create(
+        Product(id=None, name="Primera", price=1000, is_active=True, display_order=1)
+    )
+    second = prod_repo.create(
+        Product(id=None, name="Segunda", price=2000, is_active=True, display_order=2)
+    )
+    assert inactive.id and first.id and second.id
+
+    def _save(product_id: int, qty: int, price: int, status: OrderStatus) -> None:
+        order_repo.save(
+            Order(
+                customer_instagram="cliente",
+                delivery_date=datetime.now(tz=TZ) + timedelta(days=2),
+                delivery_method=DeliveryMethod.PICKUP,
+                items=[
+                    OrderItem(product_id=product_id, quantity=qty, unit_price=price)
+                ],
+                total_amount=qty * price,
+                amount_paid=qty * price
+                if status in (OrderStatus.PAID, OrderStatus.DELIVERED)
+                else 0,
+                status=status,
+            )
+        )
+
+    # Pending/confirmed and inactive sales are ignored
+    _save(first.id, 10, 1000, OrderStatus.PENDING)
+    _save(inactive.id, 50, 5000, OrderStatus.DELIVERED)
+    assert order_repo.get_best_selling_product_id() is None
+
+    # Tie on units (2 each) AND orders (1 each) -> higher revenue wins (second: 4000 vs first: 2000)
+    _save(first.id, 2, 1000, OrderStatus.PAID)
+    _save(second.id, 2, 2000, OrderStatus.DELIVERED)
+    assert order_repo.get_best_selling_product_id() == second.id
+
+    # Tie on units (4 each) -> more distinct orders wins (first: 3 orders vs second: 2 orders)
+    _save(first.id, 1, 1000, OrderStatus.PAID)
+    _save(first.id, 1, 1000, OrderStatus.PAID)
+    _save(second.id, 2, 2000, OrderStatus.PAID)
+    assert order_repo.get_best_selling_product_id() == first.id

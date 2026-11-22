@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+{% block title %}Estadísticas - CookieVale Admin{% endblock %}
+
+{% block content %}
+{% from "components/ui/back_button.html" import render_back_button %}
+{% from "components/forms/dropdown.html" import render_dropdown %}
+{% from "components/forms/tooltip.html" import render_tooltip %}
+
+<div class="w-full"
+    x-data='statsFilters({{ active_preset | tojson }}, {{ date_from | tojson }}, {{ date_to | tojson }})'
+    @stats-synced.window="syncRange($event.detail)">
+
+    <!-- Header -->
+    <div class="cv-card mb-6 flex items-center gap-4 py-4 px-6 md:px-8">
+        {{ render_back_button('/admin') }}
+        <h1 class="cv-h2 m-0">Estadísticas</h1>
+    </div>
+
+    <!-- Period & Date Range Filters -->
+    <div class="cv-card mb-6 py-4 px-6 relative z-20">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+                <div class="flex items-center gap-1.5 mb-1.5">
+                    <label class="cv-label block mb-0">Período</label>
+                    {{ render_tooltip("Filtra las órdenes según su fecha de entrega.") }}
+                </div>
+                {{ render_dropdown(
+                    name='preset',
+                    options=preset_options,
+                    selected=active_preset,
+                    model='preset',
+                    change_event='selectPreset($el.value)'
+                ) }}
+            </div>
+            <div>
+                <label class="cv-label block mb-1.5">Desde</label>
+                <input type="date" name="date_from" x-model="dateFrom" @change="applyCustomRange()"
+                    class="cv-input">
+            </div>
+            <div>
+                <label class="cv-label block mb-1.5">Hasta</label>
+                <input type="date" name="date_to" x-model="dateTo" @change="applyCustomRange()"
+                    class="cv-input">
+            </div>
+        </div>
+    </div>
+
+    <!-- Dynamic Stats Content (HTMX target) -->
+    <div id="stats-content" class="relative z-10">
+        {% include "components/admin/stats_content.html" %}
+    </div>
+</div>
+
+<script>
+document.addEventListener('alpine:init', () => {
+    Alpine.data('statsFilters', (initialPreset, initialFrom, initialTo) => ({
+        preset: initialPreset,
+        dateFrom: initialFrom,
+        dateTo: initialTo,
+
+        selectPreset(nextPreset) {
+            this.preset = nextPreset;
+            if (nextPreset === 'custom') {
+                this.applyCustomRange();
+                return;
+            }
+            htmx.ajax('GET', '/admin/stats?preset=' + encodeURIComponent(nextPreset), {
+                target: '#stats-content',
+                swap: 'innerHTML',
+            });
+        },
+
+        applyCustomRange() {
+            const params = new URLSearchParams({ preset: 'custom' });
+            if (this.dateFrom) params.set('date_from', this.dateFrom);
+            if (this.dateTo) params.set('date_to', this.dateTo);
+            htmx.ajax('GET', '/admin/stats?' + params.toString(), {
+                target: '#stats-content',
+                swap: 'innerHTML',
+            });
+        },
+
+        syncRange(detail) {
+            if (!detail) return;
+            this.preset = detail.preset;
+            this.dateFrom = detail.dateFrom;
+            this.dateTo = detail.dateTo;
+        },
+    }));
+});
+</script>
+{% endblock %}

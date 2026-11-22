@@ -1,0 +1,110 @@
+{% from "components/forms/tooltip.html" import render_tooltip %}
+<div x-init='$dispatch("stats-synced", { preset: {{ active_preset | tojson }}, dateFrom: {{ date_from | tojson }}, dateTo: {{ date_to | tojson }} })'>
+    <!-- KPI Cards -->
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        <div class="cv-card p-5">
+            <div class="flex items-center gap-1.5 mb-1">
+                <p class="cv-label mb-0">Recaudado</p>
+                {{ render_tooltip("Suma de lo pagado en órdenes confirmadas, pagadas y entregadas.") }}
+            </div>
+            <p class="text-2xl font-bold cv-text-success">${{ '{:,.0f}'.format(stats.collected_amount) }}</p>
+            <p class="text-xs text-cookie-brown/60 mt-1">
+                Esperado ${{ '{:,.0f}'.format(stats.collected_amount + stats.pending_balance) }}
+            </p>
+        </div>
+
+        <div class="cv-card p-5">
+            <div class="flex items-center gap-1.5 mb-1">
+                <p class="cv-label mb-0">Por cobrar</p>
+                {{ render_tooltip("Saldo pendiente de pago en órdenes confirmadas.") }}
+            </div>
+            <p class="text-2xl font-bold" :class="{{ stats.pending_balance }} > 0 ? 'cv-text-danger' : 'text-cookie-brown/60'">
+                ${{ '{:,.0f}'.format(stats.pending_balance) }}
+            </p>
+            <p class="text-xs text-cookie-brown/60 mt-1">
+                {{ stats.confirmed_orders }} {{ 'confirmada' if stats.confirmed_orders == 1 else 'confirmadas' }}
+            </p>
+        </div>
+
+        <div class="cv-card p-5">
+            <div class="flex items-center gap-1.5 mb-1">
+                <p class="cv-label mb-0">Órdenes cerradas</p>
+                {{ render_tooltip("Cantidad de órdenes pagadas y entregadas.") }}
+            </div>
+            <p class="text-2xl font-bold text-cookie-golden">{{ stats.completed_orders }}</p>
+            <p class="text-xs text-cookie-brown/60 mt-1">
+                Promedio ${{ '{:,.0f}'.format(stats.average_ticket) }} c/u
+            </p>
+        </div>
+
+        <div class="cv-card p-5">
+            <div class="flex items-center gap-1.5 mb-1">
+                <p class="cv-label mb-0">Unidades vendidas</p>
+                {{ render_tooltip("Total de unidades en órdenes pagadas y entregadas.") }}
+            </div>
+            <p class="text-2xl font-bold text-cookie-brown">{{ stats.total_units_sold }}</p>
+        </div>
+    </div>
+
+    <!-- Sales by Product -->
+    <div class="cv-card p-0 overflow-hidden">
+        <div class="px-6 py-4 border-b border-cookie-pink/20 bg-cookie-cream/50 flex items-center gap-2">
+            <h2 class="cv-h2 text-base m-0">Ventas por producto</h2>
+            {{ render_tooltip("Desglose de órdenes pagadas y entregadas en el período.") }}
+        </div>
+
+        {% if stats.product_sales %}
+        {% set max_units = stats.product_sales[0].units_sold %}
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-cookie-pink/20">
+                <thead class="bg-cookie-cream/30">
+                    <tr>
+                        <th scope="col"
+                            class="w-full px-6 py-3.5 text-left text-xs font-semibold text-cookie-brown uppercase tracking-wider">
+                            Producto
+                        </th>
+                        <th scope="col"
+                            class="px-6 py-3.5 text-right text-xs font-semibold text-cookie-brown uppercase tracking-wider">
+                            Unidades
+                        </th>
+                        <th scope="col"
+                            class="px-6 py-3.5 text-right text-xs font-semibold text-cookie-brown uppercase tracking-wider">
+                            Órdenes
+                        </th>
+                        <th scope="col"
+                            class="px-6 py-3.5 text-right text-xs font-semibold text-cookie-brown uppercase tracking-wider">
+                            Ingresos
+                        </th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-cookie-pink/20">
+                    {% for item in stats.product_sales %}
+                    {% set pct = ((item.units_sold * 100) // max_units) if max_units > 0 else 0 %}
+                    <tr class="hover:bg-cookie-pink/5 transition-colors">
+                        <td class="px-6 py-4">
+                            <div class="text-sm font-medium text-cookie-brown">{{ item.product_name }}</div>
+                            <div class="mt-1.5 h-1.5 w-full max-w-xs bg-cookie-cream rounded-full overflow-hidden">
+                                <div class="h-full bg-cookie-golden rounded-full" style="width: {{ pct }}%;"></div>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-bold text-cookie-brown">
+                            {{ item.units_sold }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm text-cookie-brown/70">
+                            {{ item.order_count }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-semibold text-cookie-golden">
+                            ${{ '{:,.0f}'.format(item.revenue) }}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="px-6 py-12 text-center text-cookie-brown/50">
+            <p class="font-medium text-sm">No hay ventas cerradas en este período.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>

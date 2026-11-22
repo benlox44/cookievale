@@ -25,6 +25,7 @@ def test_admin_pages_render(admin_client) -> None:
         "/admin/products",
         "/admin/products/new",
         "/admin/dates",
+        "/admin/stats",
     ]:
         assert admin_client.get(path).status_code == 200
 
@@ -106,8 +107,8 @@ def test_product_reorder(admin_client, db: Session) -> None:
             },
         )
     repo = SQLAlchemyProductRepository(db)
-    # Default order is display_order asc, id desc → newest (B) first.
-    assert [p.name for p in repo.list_all()][:2] == ["B", "A"]
+    # New products append at the end (display_order = max + 1) → A (0), B (1).
+    assert [p.name for p in repo.list_all()][:2] == ["A", "B"]
 
     ids = [p.id for p in repo.list_all()]
     ids.reverse()
@@ -115,7 +116,7 @@ def test_product_reorder(admin_client, db: Session) -> None:
     assert response.status_code == 200
     assert response.json() == {"status": "success"}
     ordered = [p.name for p in repo.list_all()]
-    assert ordered[:2] == ["A", "B"]
+    assert ordered[:2] == ["B", "A"]
 
 
 def test_product_delete_with_orders_redirects_with_error(
@@ -861,6 +862,114 @@ def test_create_order_with_partial_payment_auto_confirms(
     order = SQLAlchemyOrderRepository(db).list_all()[0]
     assert order.status == OrderStatus.CONFIRMED
     assert order.amount_paid == 3000
+
+
+def test_stats_dashboard_filters_and_htmx_partial(admin_client, db: Session) -> None:
+    admin_client.post(
+        "/admin/products",
+        data={
+            "name": "Casita Navideña",
+            "price": "5000",
+            "description": "d",
+            "is_active": "True",
+        },
+    )
+    admin_client.post(
+        "/admin/products",
+        data={
+            "name": "Galleta Clásica",
+            "price": "1000",
+            "description": "d",
+            "is_active": "True",
+        },
+    )
+    products = {p.name: p for p in SQLAlchemyProductRepository(db).list_all()}
+    d_in = _future_date(days=2)
+    d_out = _future_date(days=40)
+
+    # Paid order inside range: 2x Casita (10000) + 3x Galleta (3000) = 13000
+    admin_client.post(
+        "/admin/orders",
+        data={
+            "customer_instagram": "@cliente1",
+            "cart_items_json": json.dumps(
+                [
+                    {"product_id": products["Casita Navideña"].id, "quantity": 2},
+                    {"product_id": products["Galleta Clásica"].id, "quantity": 3},
+                ]
+            ),
+            "delivery_date": f"{d_in}T12:00:00",
+            "delivery_method": "pickup",
+            "order_status": "paid",
+            "amount_paid": "0",
+        },
+    )
+    # Confirmed order inside range: 1x Casita (5000), partial 2000 -> pending balance 3000
+    admin_client.post(
+        "/admin/orders",
+        data={
+            "customer_instagram": "@cliente2",
+            "cart_items_json": json.dumps(
+                [{"product_id": products["Casita Navideña"].id, "quantity": 1}]
+            ),
+            "delivery_date": f"{d_in}T12:00:00",
+            "delivery_method": "pickup",
+            "order_status": "confirmed",
+            "amount_paid": "2000",
+        },
+    )
+    # Paid order outside custom range
+    admin_client.post(
+        "/admin/orders",
+        data={
+            "customer_instagram": "@cliente3",
+            "cart_items_json": json.dumps(
+                [{"product_id": products["Casita Navideña"].id, "quantity": 5}]
+            ),
+            "delivery_date": f"{d_out}T12:00:00",
+            "delivery_method": "pickup",
+            "order_status": "delivered",
+            "amount_paid": "0",
+        },
+    )
+
+    # Default (all-time) includes both paid & delivered orders and populates date bounds
+    resp_all = admin_client.get("/admin/stats")
+    assert resp_all.status_code == 200
+    assert "Casita Navideña" in resp_all.text
+    assert "$40,000" in resp_all.text  # 38000 + 2000 collected
+    assert "$3,000" in resp_all.text  # pending balance
+    assert d_in in resp_all.text and d_out in resp_all.text
+
+    # HTMX partial with custom range only includes d_in
+    resp_hx = admin_client.get(
+        "/admin/stats",
+        params={"preset": "custom", "date_from": d_in, "date_to": d_in},
+        headers={"HX-Request": "true"},
+    )
+    assert resp_hx.status_code == 200
+    assert "Ventas por producto" in resp_hx.text
+    assert "<html" not in resp_hx.text
+    assert "$15,000" in resp_hx.text  # 13000 paid + 2000 confirmed deposit
+
+    # Manual dates matching the historical bounds resolve back to preset="all"
+    resp_match = admin_client.get(
+        "/admin/stats",
+        params={"preset": "custom", "date_from": d_in, "date_to": d_out},
+        headers={"HX-Request": "true"},
+    )
+    assert resp_match.status_code == 200
+    assert 'preset: "all"' in resp_match.text
+
+    # Presets + malformed / reversed custom dates degrade cleanly
+    for params in [
+        {"preset": "month"},
+        {"preset": "last_month"},
+        {"preset": "year"},
+        {"preset": "bogus", "date_from": d_out, "date_to": d_in},
+        {"preset": "custom", "date_from": "not-a-date", "date_to": ""},
+    ]:
+        assert admin_client.get("/admin/stats", params=params).status_code == 200
 
 
 def _product_id(db: Session) -> int:

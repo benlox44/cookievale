@@ -67,3 +67,29 @@ class Order:
     reference_photos: list[str] | None = None
     status: OrderStatus = OrderStatus.PENDING
     created_at: datetime | None = None
+
+
+@dataclass
+class ProductSalesStat:
+    product_id: int
+    product_name: str
+    units_sold: int
+    order_count: int
+    revenue: int
+
+
+@dataclass
+class SalesStats:
+    completed_revenue: int = 0
+    collected_amount: int = 0
+    pending_balance: int = 0
+    completed_orders: int = 0
+    confirmed_orders: int = 0
+    total_units_sold: int = 0
+    product_sales: list[ProductSalesStat] = field(default_factory=list)
+
+    @property
+    def average_ticket(self) -> int:
+        if self.completed_orders == 0:
+            return 0
+        return self.completed_revenue // self.completed_orders

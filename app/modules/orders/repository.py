@@ -1,10 +1,18 @@
+from datetime import date, datetime, timedelta
 from typing import Protocol
 
-from sqlalchemy import func, select
+from sqlalchemy import case, func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, selectinload
 
-from app.modules.orders.domain import Order, OrderItem, OrderStatus
+from app.modules.orders.domain import (
+    FULLY_PAID_STATUSES,
+    Order,
+    OrderItem,
+    OrderStatus,
+    ProductSalesStat,
+    SalesStats,
+)
 from app.modules.orders.models import OrderItemModel, OrderModel
 from app.modules.products.models import ProductModel
 
@@ -30,6 +38,13 @@ class OrderRepository(Protocol):
         total_amount: int,
         amount_paid: int,
     ) -> Order | None: ...
+    def get_sales_stats(
+        self,
+        date_from: date | None = None,
+        date_to: date | None = None,
+    ) -> SalesStats: ...
+    def get_order_date_bounds(self) -> tuple[date | None, date | None]: ...
+    def get_best_selling_product_id(self) -> int | None: ...
 
 
 class SQLAlchemyOrderRepository:
@@ -184,6 +199,172 @@ class SQLAlchemyOrderRepository:
         return {
             slot_id for slot_id in self.db.scalars(stmt).all() if slot_id is not None
         }
+
+    def get_sales_stats(
+        self,
+        date_from: date | None = None,
+        date_to: date | None = None,
+    ) -> SalesStats:
+        date_filters = []
+        if date_from is not None:
+            date_filters.append(
+                OrderModel.delivery_date
+                >= datetime(date_from.year, date_from.month, date_from.day)
+            )
+        if date_to is not None:
+            next_day = date_to + timedelta(days=1)
+            date_filters.append(
+                OrderModel.delivery_date
+                < datetime(next_day.year, next_day.month, next_day.day)
+            )
+
+        completed_statuses = tuple(FULLY_PAID_STATUSES)
+        active_paid_statuses = (OrderStatus.CONFIRMED, *completed_statuses)
+
+        summary_stmt = select(
+            func.coalesce(
+                func.sum(
+                    case(
+                        (
+                            OrderModel.status.in_(completed_statuses),
+                            OrderModel.total_amount,
+                        ),
+                        else_=0,
+                    )
+                ),
+                0,
+            ),
+            func.coalesce(
+                func.sum(
+                    case(
+                        (
+                            OrderModel.status.in_(active_paid_statuses),
+                            OrderModel.amount_paid,
+                        ),
+                        else_=0,
+                    )
+                ),
+                0,
+            ),
+            func.coalesce(
+                func.sum(
+                    case(
+                        (
+                            OrderModel.status == OrderStatus.CONFIRMED,
+                            OrderModel.total_amount - OrderModel.amount_paid,
+                        ),
+                        else_=0,
+                    )
+                ),
+                0,
+            ),
+            func.coalesce(
+                func.sum(case((OrderModel.status.in_(completed_statuses), 1), else_=0)),
+                0,
+            ),
+            func.coalesce(
+                func.sum(
+                    case((OrderModel.status == OrderStatus.CONFIRMED, 1), else_=0)
+                ),
+                0,
+            ),
+        ).where(*date_filters)
+
+        summary_row = self.db.execute(summary_stmt).one()
+        completed_revenue = int(summary_row[0])
+        collected_amount = int(summary_row[1])
+        pending_balance = int(summary_row[2])
+        completed_orders = int(summary_row[3])
+        confirmed_orders = int(summary_row[4])
+
+        units_expr = func.coalesce(func.sum(OrderItemModel.quantity), 0)
+        revenue_expr = func.coalesce(
+            func.sum(OrderItemModel.quantity * OrderItemModel.unit_price), 0
+        )
+        name_expr = func.coalesce(
+            ProductModel.name,
+            func.max(OrderItemModel.product_name),
+            "Producto",
+        )
+
+        products_stmt = (
+            select(
+                OrderItemModel.product_id,
+                name_expr,
+                units_expr.label("units_sold"),
+                func.count(func.distinct(OrderItemModel.order_id)),
+                revenue_expr.label("revenue"),
+            )
+            .join(OrderModel, OrderItemModel.order_id == OrderModel.id)
+            .outerjoin(ProductModel, OrderItemModel.product_id == ProductModel.id)
+            .where(OrderModel.status.in_(completed_statuses), *date_filters)
+            .group_by(OrderItemModel.product_id, ProductModel.name)
+            .order_by(
+                units_expr.desc(),
+                revenue_expr.desc(),
+                OrderItemModel.product_id.asc(),
+            )
+        )
+
+        product_sales = [
+            ProductSalesStat(
+                product_id=int(row[0]),
+                product_name=str(row[1]),
+                units_sold=int(row[2]),
+                order_count=int(row[3]),
+                revenue=int(row[4]),
+            )
+            for row in self.db.execute(products_stmt).all()
+        ]
+
+        return SalesStats(
+            completed_revenue=completed_revenue,
+            collected_amount=collected_amount,
+            pending_balance=pending_balance,
+            completed_orders=completed_orders,
+            confirmed_orders=confirmed_orders,
+            total_units_sold=sum(p.units_sold for p in product_sales),
+            product_sales=product_sales,
+        )
+
+    def get_order_date_bounds(self) -> tuple[date | None, date | None]:
+        active_statuses = (OrderStatus.CONFIRMED, *FULLY_PAID_STATUSES)
+        stmt = select(
+            func.min(OrderModel.delivery_date),
+            func.max(OrderModel.delivery_date),
+        ).where(OrderModel.status.in_(active_statuses))
+        min_dt, max_dt = self.db.execute(stmt).one()
+        return (
+            min_dt.date() if min_dt is not None else None,
+            max_dt.date() if max_dt is not None else None,
+        )
+
+    def get_best_selling_product_id(self) -> int | None:
+        completed_statuses = tuple(FULLY_PAID_STATUSES)
+        units_expr = func.sum(OrderItemModel.quantity)
+        orders_expr = func.count(func.distinct(OrderItemModel.order_id))
+        revenue_expr = func.sum(OrderItemModel.quantity * OrderItemModel.unit_price)
+
+        stmt = (
+            select(OrderItemModel.product_id)
+            .join(OrderModel, OrderItemModel.order_id == OrderModel.id)
+            .join(ProductModel, OrderItemModel.product_id == ProductModel.id)
+            .where(
+                OrderModel.status.in_(completed_statuses),
+                ProductModel.is_active.is_(True),
+            )
+            .group_by(OrderItemModel.product_id, ProductModel.display_order)
+            .order_by(
+                units_expr.desc(),
+                orders_expr.desc(),
+                revenue_expr.desc(),
+                ProductModel.display_order.asc(),
+                OrderItemModel.product_id.asc(),
+            )
+            .limit(1)
+        )
+        result = self.db.execute(stmt).scalar_one_or_none()
+        return int(result) if result is not None else None
 
     def _to_domain(self, db_model: OrderModel) -> Order:
         domain_items = []
