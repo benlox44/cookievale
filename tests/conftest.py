@@ -106,7 +106,7 @@ def _reset_rate_limiter() -> None:
 
 @pytest.fixture(autouse=True)
 def _patch_telegram(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr(order_service_module, "send_message", lambda text: None)
+    monkeypatch.setattr(order_service_module, "send_message", lambda text, **_: None)
 
 
 @pytest.fixture

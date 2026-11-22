@@ -60,3 +60,32 @@ def test_send_message_logs_error_on_urlerror(
         telegram.send_message("Hola")
 
     assert "Failed to send Telegram notification" in caplog.text
+
+
+def test_send_message_background_spawns_thread(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    spawned: list[object] = []
+
+    class _ImmediateThread:
+        def __init__(
+            self, target: object, args: tuple[object, ...], daemon: bool
+        ) -> None:
+            self.target = target
+            self.args = args
+            self.daemon = daemon
+
+        def start(self) -> None:
+            spawned.append(self.daemon)
+            if callable(self.target):
+                self.target(*self.args)
+
+    monkeypatch.setattr(
+        telegram.urllib.request,
+        "urlopen",
+        lambda req, timeout=5: _FakeResponse(),
+    )
+    monkeypatch.setattr(telegram.threading, "Thread", _ImmediateThread)
+
+    telegram.send_message("Hola", background=True)
+    assert spawned == [True]
