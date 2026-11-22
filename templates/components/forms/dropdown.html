@@ -1,5 +1,6 @@
 {% macro render_dropdown(name, options, selected='', id='', required=False, hx_get='', hx_target='', placeholder='', class='', model='', change_event='') %}
 <div x-data='cvDropdown({{ {'name': name, 'options': options, 'selected': selected, 'placeholder': placeholder, 'model': model, 'changeEvent': change_event, 'hxGet': hx_get, 'hxTarget': hx_target} | tojson }})'
+    {% if model %}x-effect="syncFromModel({{ model }})"{% endif %}
     @click.outside="open = false" class="cv-dropdown {{ class }}">
     <button type="button" @click="toggle()" @keydown.down.prevent="open = true" @keydown.up.prevent="open = false"
         @keydown.escape="open = false" class="cv-dropdown-trigger" aria-hidden="true" tabindex="-1"
@@ -60,6 +61,15 @@
                 this.$refs.native.addEventListener('change', () => {
                     this.value = this.$refs.native.value;
                 });
+            },
+            syncFromModel(val) {
+                const next = val ?? '';
+                if (this.value !== next) {
+                    this.value = next;
+                }
+                if (this.$refs.native && this.$refs.native.value !== next) {
+                    this.$refs.native.value = next;
+                }
             },
             get label() {
                 const option = this.options.find((item) => item.value === this.value);

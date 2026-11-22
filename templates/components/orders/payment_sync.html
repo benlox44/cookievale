@@ -1,0 +1,70 @@
+<script>
+(function () {
+    if (window.cvPaymentSync) return;
+
+    const FULLY_PAID_STATUSES = new Set(['paid', 'delivered']);
+
+    window.cvPaymentSync = {
+        isFullyPaidStatus(status) {
+            return FULLY_PAID_STATUSES.has(status);
+        },
+
+        onStatusChange(nextStatus, currentAmount, total, fallbackAmount = 0) {
+            if (FULLY_PAID_STATUSES.has(nextStatus)) {
+                return { status: nextStatus, amountPaid: total };
+            }
+            if (nextStatus === 'pending') {
+                return { status: 'pending', amountPaid: 0 };
+            }
+            const parsed = Number(currentAmount) || 0;
+            if (total > 0 && parsed >= total) {
+                const safeFallback = Math.max(0, Math.min(Number(fallbackAmount) || 0, Math.max(0, total - 1)));
+                return { status: nextStatus, amountPaid: safeFallback };
+            }
+            return { status: nextStatus, amountPaid: Math.max(0, parsed) };
+        },
+
+        onAmountInput(rawAmount, currentStatus, total, lastUnpaidStatus = 'pending') {
+            if (rawAmount === '' || rawAmount === null || rawAmount === undefined) {
+                const nextStatus = (FULLY_PAID_STATUSES.has(currentStatus) || currentStatus === 'confirmed')
+                    ? lastUnpaidStatus
+                    : currentStatus;
+                return { status: nextStatus, amountPaid: '' };
+            }
+            let val = parseInt(rawAmount, 10);
+            if (isNaN(val) || val < 0) val = 0;
+
+            if (total > 0 && val >= total) {
+                const nextStatus = FULLY_PAID_STATUSES.has(currentStatus) ? currentStatus : 'paid';
+                return { status: nextStatus, amountPaid: total };
+            }
+
+            if (val > 0) {
+                return { status: 'confirmed', amountPaid: val };
+            }
+
+            const nextStatus = (FULLY_PAID_STATUSES.has(currentStatus) || currentStatus === 'confirmed')
+                ? lastUnpaidStatus
+                : currentStatus;
+            return { status: nextStatus, amountPaid: 0 };
+        },
+
+        onTotalChange(newTotal, currentStatus, currentAmount) {
+            if (FULLY_PAID_STATUSES.has(currentStatus)) {
+                return { status: currentStatus, amountPaid: newTotal };
+            }
+            const parsed = Number(currentAmount) || 0;
+            if (newTotal <= 0) {
+                return { status: currentStatus, amountPaid: 0 };
+            }
+            if (parsed >= newTotal) {
+                return { status: 'paid', amountPaid: newTotal };
+            }
+            if (parsed > 0 && currentStatus === 'pending') {
+                return { status: 'confirmed', amountPaid: parsed };
+            }
+            return { status: currentStatus, amountPaid: Math.max(0, parsed) };
+        },
+    };
+})();
+</script>
