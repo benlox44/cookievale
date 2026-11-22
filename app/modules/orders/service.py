@@ -171,6 +171,8 @@ class OrderService:
         if not order:
             return None
 
+        if data.customer_instagram is not None:
+            order.customer_instagram = data.customer_instagram
         order.delivery_date = data.delivery_date
         order.availability_slot_id = data.availability_slot_id
         order.description = data.description

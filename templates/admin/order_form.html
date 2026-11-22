@@ -60,25 +60,28 @@
         <div class="space-y-5">
             <!-- Instagram -->
             <div>
-                <div class="flex items-center gap-2 mb-1.5">
-                    <label class="cv-label block mb-0">Instagram</label>
-                    {% if not is_edit %}
-                    {{ render_tooltip("Cuenta de Instagram del cliente.") }}
-                    {% endif %}
+                <div class="flex items-center justify-between gap-2 mb-1.5">
+                    <div class="flex items-center gap-2">
+                        <label class="cv-label block mb-0">Instagram</label>
+                        {% if not is_edit %}
+                        {{ render_tooltip("Cuenta de Instagram del cliente.") }}
+                        {% endif %}
+                    </div>
+                    <a x-show="formData.customer_instagram.trim().length > 0"
+                        :href="'https://instagram.com/' + formData.customer_instagram.trim()"
+                        target="_blank"
+                        class="cv-ig-link text-xs inline-flex items-center gap-1">
+                        {{ render_icon("instagram") }}
+                        Ver perfil
+                    </a>
                 </div>
-                {% if is_edit %}
-                <a href="https://instagram.com/{{ order.customer_instagram | replace('@', '') | lower }}" target="_blank"
-                    class="cv-ig-link text-sm inline-flex items-center gap-1.5 mt-0.5">
-                    {{ render_icon("instagram") }}
-                    @{{ order.customer_instagram | replace('@', '') | lower }}
-                </a>
-                {% else %}
                 <div class="relative">
                     <span class="absolute inset-y-0 left-0 flex items-center pl-4 text-cookie-brown/40 font-medium pointer-events-none">@</span>
                     <input type="text" name="customer_instagram" placeholder="cuenta_cliente" required
-                        oninput="this.value = this.value.replace(/@/g, '').toLowerCase()" class="cv-input pl-8">
+                        x-model="formData.customer_instagram"
+                        @input="formData.customer_instagram = formData.customer_instagram.replace(/@/g, '').toLowerCase()"
+                        class="cv-input pl-8">
                 </div>
-                {% endif %}
             </div>
 
             <!-- Cart Summary -->
@@ -196,12 +199,12 @@
         <!-- ═══ Submit Footer ═══ -->
         <div class="md:col-span-2 pt-2">
             {% if is_edit %}
-            <button type="button" @click="abrirConfirmacion()" :disabled="!isModified || cartItems.length === 0"
+            <button type="button" @click="abrirConfirmacion()" :disabled="!isModified || cartItems.length === 0 || !formData.customer_instagram.trim()"
                 class="cv-btn w-full py-3.5 text-base rounded-2xl disabled:opacity-40 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-none">
                 Guardar Cambios
             </button>
             {% else %}
-            <button type="submit" :disabled="cartItems.length === 0 || !formData.delivery_date"
+            <button type="submit" :disabled="cartItems.length === 0 || !formData.delivery_date || !formData.customer_instagram.trim()"
                 class="cv-btn w-full py-3.5 text-base rounded-2xl disabled:opacity-40 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-none">
                 Crear Orden
                 {{ render_icon("plus") }}
@@ -306,6 +309,7 @@
         Alpine.data('orderForm', () => ({
             isEdit: {{ 'true' if is_edit else 'false' }},
             formData: {
+                customer_instagram: {{ ((order.customer_instagram | replace('@', '') | lower) if is_edit else '') | tojson }},
                 status: {{ (order.status.value if is_edit else 'pending') | tojson }},
                 amount_paid: {{ ('{:.0f}'.format(order.amount_paid) if is_edit else '0') | tojson }},
                 delivery_date: {{ (order.delivery_date.strftime('%Y-%m-%d') if is_edit else '') | tojson }},
@@ -313,6 +317,7 @@
                 description: {{ (order.description or '' if is_edit else '') | tojson }},
             },
             initialData: {
+                customer_instagram: {{ ((order.customer_instagram | replace('@', '') | lower) if is_edit else '') | tojson }},
                 status: {{ (order.status.value if is_edit else 'pending') | tojson }},
                 amount_paid: {{ ('{:.0f}'.format(order.amount_paid) if is_edit else '0') | tojson }},
                 delivery_date: {{ (order.delivery_date.strftime('%Y-%m-%d') if is_edit else '') | tojson }},
@@ -415,7 +420,8 @@
             },
 
             get isModified() {
-                return String(this.formData.status) !== String(this.initialData.status) ||
+                return String(this.formData.customer_instagram) !== String(this.initialData.customer_instagram) ||
+                    String(this.formData.status) !== String(this.initialData.status) ||
                     String(this.formData.amount_paid) !== String(this.initialData.amount_paid) ||
                     String(this.formData.delivery_date) !== String(this.initialData.delivery_date) ||
                     String(this.formData.delivery_method) !== String(this.initialData.delivery_method) ||
@@ -426,6 +432,13 @@
 
             get cambiosDetectados() {
                 const changes = [];
+                if (String(this.formData.customer_instagram) !== String(this.initialData.customer_instagram)) {
+                    changes.push({
+                        label: 'Instagram',
+                        from: '@' + this.initialData.customer_instagram,
+                        to: '@' + this.formData.customer_instagram
+                    });
+                }
                 if (String(this.formData.status) !== String(this.initialData.status)) {
                     changes.push({
                         label: 'Estado',

@@ -813,6 +813,7 @@ def test_update_order_with_full_amount_paid_auto_marks_paid(
     response = admin_client.post(
         f"/admin/orders/{order_id}",
         data={
+            "customer_instagram": "@Nuevo_Usuario",
             "delivery_date": f"{date}T12:00:00",
             "description": "",
             "delivery_method": "pickup",
@@ -825,6 +826,7 @@ def test_update_order_with_full_amount_paid_auto_marks_paid(
     assert response.status_code == 303
     fetched = SQLAlchemyOrderRepository(db).get_by_id(order_id)
     assert fetched is not None
+    assert fetched.customer_instagram == "nuevo_usuario"
     assert fetched.status == OrderStatus.PAID
     assert fetched.amount_paid == 2000
     assert fetched.description == ""

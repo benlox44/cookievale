@@ -215,6 +215,7 @@ def update_order_details(
     delivery_method: DeliveryMethod = Form(...),
     amount_paid: int = Form(0),
     status: OrderStatus = Form(...),
+    customer_instagram: str | None = Form(None),
     cart_items_json: str | None = Form(None),
     existing_photos: list[str] = Form([]),
     image_order: str = Form("[]"),
@@ -261,15 +262,16 @@ def update_order_details(
         # returning to its own past date needs none.
         availability_slot_id = None
 
-    dto = OrderUpdateRequest(
-        delivery_date=dt,
-        availability_slot_id=availability_slot_id,
-        description=description,
-        delivery_method=delivery_method,
-        amount_paid=max(0, min(amount_paid, order.total_amount)),
-        status=status,
-    )
     try:
+        dto = OrderUpdateRequest(
+            delivery_date=dt,
+            availability_slot_id=availability_slot_id,
+            description=description,
+            delivery_method=delivery_method,
+            amount_paid=max(0, min(amount_paid, order.total_amount)),
+            status=status,
+            customer_instagram=customer_instagram,
+        )
         service.update_order(order_id, dto, existing_photos, image_order, photos)
     except ValueError as exc:
         if created_slot and availability_slot_id is not None:
