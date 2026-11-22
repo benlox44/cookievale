@@ -38,6 +38,48 @@ def test_order_form_page_renders(client) -> None:
     assert response.status_code == 200
     assert ':required="files.length === 0' not in response.text
     assert 'name="description"' in response.text
+    assert "Más vendido" not in response.text
+
+
+def test_order_form_highlights_best_seller_without_reordering(
+    client, db: Session
+) -> None:
+    from app.modules.orders.domain import DeliveryMethod, Order, OrderItem, OrderStatus
+    from app.modules.orders.repository import SQLAlchemyOrderRepository
+
+    prod_repo = SQLAlchemyProductRepository(db)
+    first = prod_repo.create(
+        Product(
+            id=None, name="Casita Navideña", price=5000, is_active=True, display_order=0
+        )
+    )
+    second = prod_repo.create(
+        Product(
+            id=None, name="Galleta Clásica", price=1200, is_active=True, display_order=1
+        )
+    )
+    assert first.id and second.id
+    prod_repo.reorder([first.id, second.id])
+
+    SQLAlchemyOrderRepository(db).save(
+        Order(
+            customer_instagram="cliente",
+            delivery_date=datetime.now(tz=TZ) + timedelta(days=2),
+            delivery_method=DeliveryMethod.PICKUP,
+            items=[OrderItem(product_id=second.id, quantity=3, unit_price=1200)],
+            total_amount=3600,
+            amount_paid=3600,
+            status=OrderStatus.DELIVERED,
+        )
+    )
+
+    response = client.get("/orders/new")
+    assert response.status_code == 200
+    assert response.text.count("Más vendido") == 1
+    # Manual display_order preserved: Casita Navideña still renders before Galleta Clásica
+    assert response.text.index("Casita Navideña") < response.text.index(
+        "Galleta Clásica"
+    )
 
 
 def test_submit_order_success(client, db: Session) -> None:

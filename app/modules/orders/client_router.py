@@ -24,17 +24,20 @@ router = APIRouter(prefix="/orders", tags=["Orders"])
 @router.get("/new", response_class=HTMLResponse)
 def get_new_order_form(
     request: Request,
+    order_service: OrderService = Depends(get_order_service),
     product_service: ProductService = Depends(get_product_service),
     scheduling_service: SchedulingService = Depends(get_scheduling_service),
 ) -> HTMLResponse:
     products = product_service.list_products(only_active=True)
     available_dates = scheduling_service.get_available_dates()
+    best_seller_id = order_service.get_best_selling_product_id()
     return templates.TemplateResponse(
         request=request,
         name="client/order_form.html",
         context={
             "products": products,
             "available_dates": available_dates,
+            "best_seller_id": best_seller_id,
             "today": datetime.now(tz=TZ).date().strftime("%Y-%m-%d"),
         },
     )

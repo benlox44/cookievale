@@ -61,7 +61,7 @@
             <h1 class="cv-h2">Productos</h1>
         </div>
 
-        {{ render_product_picker(products) }}
+        {{ render_product_picker(products, best_seller_id=best_seller_id) }}
 
         <!-- ═══ Order Form ═══ -->
         <form @submit.prevent="submitOrder">
