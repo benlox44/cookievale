@@ -141,7 +141,7 @@
             <button type="submit"
                 x-data="{ hasDate: false }"
                 @date-selected.window="hasDate = !!$event.detail.date"
-                :disabled="cart.length === 0 || {{ 'true' if not available_dates else 'false' }} || !hasDate"
+                :disabled="submitting || cart.length === 0 || {{ 'true' if not available_dates else 'false' }} || !hasDate"
                 class="cv-btn w-full py-4 text-base rounded-2xl disabled:opacity-40 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-none">
                 Enviar mi Orden
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

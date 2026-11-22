@@ -9,6 +9,7 @@ document.addEventListener('alpine:init', () => {
         })),
         cartJson: '[]',
         pendingFiles: [],
+        submitting: false,
 
         init() {
             this.updateJson();
@@ -60,6 +61,8 @@ document.addEventListener('alpine:init', () => {
 
         async submitOrder(event) {
             event.preventDefault();
+            if (this.submitting) return;
+            this.submitting = true;
             this.updateJson();
 
             const form = event.target;
@@ -74,6 +77,7 @@ document.addEventListener('alpine:init', () => {
             const button = form.querySelector('button[type="submit"]');
             if (button) button.disabled = true;
 
+            let succeeded = false;
             try {
                 const response = await fetch('/orders', { method: 'POST', body: formData });
 
@@ -109,13 +113,17 @@ document.addEventListener('alpine:init', () => {
                 const node = template.content.firstElementChild;
                 if (!node) return;
 
+                succeeded = true;
                 node.style.opacity = '0';
                 node.style.transition = 'opacity 300ms ease';
                 container.replaceWith(node);
                 if (window.Alpine) Alpine.initTree(node);
                 requestAnimationFrame(() => { node.style.opacity = '1'; });
             } finally {
-                if (button) button.disabled = false;
+                if (!succeeded) {
+                    this.submitting = false;
+                    if (button) button.disabled = false;
+                }
             }
         },
     }));
