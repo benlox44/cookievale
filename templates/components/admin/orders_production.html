@@ -1,0 +1,125 @@
+{% from "components/ui/icons.html" import render_icon %}
+
+{% macro render_order_row(order) %}
+<li class="py-3 flex flex-wrap items-center justify-between gap-3">
+    <div class="flex flex-wrap items-center gap-3 min-w-0 text-sm">
+        <a href="https://instagram.com/{{ order.customer_instagram | replace('@', '') | lower }}"
+            target="_blank"
+            class="cv-ig-link text-sm inline-flex items-center gap-1">
+            {{ render_icon("instagram") }}
+            @{{ order.customer_instagram | replace('@', '') | lower }}
+        </a>
+        <span class="cv-status-badge
+            {% if order.status.value == 'pending' %} cv-status-warning
+            {% elif order.status.value == 'confirmed' %} cv-status-info
+            {% else %} cv-status-success {% endif %}">
+            {{ order.status | status_label }}
+        </span>
+        <span class="text-sm font-medium text-cookie-brown">
+            {{ order.delivery_method | delivery_label }}
+        </span>
+        <span class="text-sm text-cookie-brown">
+            ·
+            {% for item in order.items %}
+            <strong class="text-cookie-golden">{{ item.quantity }} x</strong> {{ item.product_name }}{% if not loop.last %}, {% endif %}
+            {% endfor %}
+        </span>
+    </div>
+
+    <a href="/admin/orders/{{ order.id }}"
+        class="text-sm font-medium text-cookie-golden hover:text-cookie-brown bg-cookie-cream px-4 py-2 rounded-full border border-cookie-pink/40 hover:border-cookie-golden transition-all shrink-0">
+        Ver / Editar
+    </a>
+</li>
+{% endmacro %}
+
+{% macro render_days_block(days) %}
+<div class="space-y-5">
+    {% for day in days %}
+    <div class="{% if not loop.first %}pt-4 border-t border-cookie-pink/20{% endif %}">
+        <div class="flex flex-wrap items-center justify-between gap-2 mb-2 text-sm">
+            <h3 class="text-sm font-bold text-cookie-brown m-0">{{ day.label }}</h3>
+            <div class="flex flex-wrap items-center gap-1.5 text-sm font-medium text-cookie-brown">
+                {% for p in day.product_totals %}
+                <span><strong class="text-cookie-golden">{{ p.quantity }} x</strong> {{ p.product_name }}{% if not loop.last %} ·{% endif %}</span>
+                {% endfor %}
+            </div>
+        </div>
+
+        <ul class="divide-y divide-cookie-pink/15">
+            {% for order in day.orders %}
+            {{ render_order_row(order) }}
+            {% endfor %}
+        </ul>
+    </div>
+    {% endfor %}
+</div>
+{% endmacro %}
+
+{% if schedule %}
+{% set total_weeks = schedule | length %}
+<div x-data="{ weekIndex: 0, totalWeeks: {{ total_weeks }} }">
+    {% for week in schedule %}
+    <div class="space-y-6" x-show="weekIndex === {{ loop.index0 }}" {% if not loop.first %}style="display: none;"{% endif %}>
+        <!-- Confirmed / Paid Week Container -->
+        <div class="cv-card p-6">
+            <div class="{% if week.days %}pb-4 mb-5 border-b border-cookie-pink/30{% endif %}">
+                <div class="flex items-center justify-between gap-3 {% if week.product_totals %}mb-3{% endif %}">
+                    <button type="button" @click="if (weekIndex > 0) weekIndex--" :disabled="weekIndex === 0"
+                        class="cv-calendar-nav" aria-label="Semana anterior">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7" />
+                        </svg>
+                    </button>
+                    <h2 class="cv-h2 m-0 text-center">{{ week.title }}</h2>
+                    <button type="button" @click="if (weekIndex < totalWeeks - 1) weekIndex++" :disabled="weekIndex >= totalWeeks - 1"
+                        class="cv-calendar-nav" aria-label="Semana siguiente">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7" />
+                        </svg>
+                    </button>
+                </div>
+
+                {% if week.product_totals %}
+                <div class="flex flex-wrap items-center justify-center gap-2">
+                    {% for p in week.product_totals %}
+                    <span class="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-cookie-cream border border-cookie-pink/40 text-sm font-medium text-cookie-brown">
+                        <strong class="text-cookie-golden">{{ p.quantity }} x</strong> {{ p.product_name }}
+                    </span>
+                    {% endfor %}
+                </div>
+                {% endif %}
+            </div>
+
+            {% if week.days %}
+            {{ render_days_block(week.days) }}
+            {% else %}
+            <p class="text-sm text-cookie-brown/50 text-center pt-4 m-0">Sin órdenes confirmadas esta semana.</p>
+            {% endif %}
+        </div>
+
+        <!-- Separate Por confirmar Container (same card style & format) -->
+        {% if week.pending_days %}
+        <div class="cv-card p-6">
+            <div class="pb-4 mb-5 border-b border-cookie-pink/30">
+                <h2 class="cv-h2 text-center mb-3">Por confirmar</h2>
+                <div class="flex flex-wrap items-center justify-center gap-2">
+                    {% for p in week.pending_totals %}
+                    <span class="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-cookie-cream border border-cookie-pink/40 text-sm font-medium text-cookie-brown">
+                        <strong class="text-cookie-golden">{{ p.quantity }} x</strong> {{ p.product_name }}
+                    </span>
+                    {% endfor %}
+                </div>
+            </div>
+
+            {{ render_days_block(week.pending_days) }}
+        </div>
+        {% endif %}
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="cv-card px-6 py-12 text-center text-cookie-brown/50">
+    <p class="font-medium text-sm">No hay órdenes pendientes de entrega.</p>
+</div>
+{% endif %}

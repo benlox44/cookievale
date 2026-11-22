@@ -400,9 +400,29 @@ def test_orders_dashboard_renders_partial_for_hx(admin_client, db: Session) -> N
 
 def test_orders_dashboard_normalizes_sort_params(admin_client) -> None:
     response = admin_client.get(
-        "/admin/orders", params={"sort_by": "bogus", "sort_dir": "bogus"}
+        "/admin/orders",
+        params={"sort_by": "bogus", "sort_dir": "bogus", "view": "bogus"},
     )
     assert response.status_code == 200
+
+
+def test_orders_dashboard_production_view_full_and_hx(
+    admin_client, db: Session
+) -> None:
+    _make_order(admin_client, db)
+
+    full = admin_client.get("/admin/orders", params={"view": "production"})
+    assert full.status_code == 200
+    assert "Por confirmar" in full.text
+
+    partial = admin_client.get(
+        "/admin/orders",
+        params={"view": "production"},
+        headers={"HX-Request": "true"},
+    )
+    assert partial.status_code == 200
+    assert "Por confirmar" in partial.text
+    assert "<html" not in partial.text
 
 
 def test_update_order_with_occupied_date_auto_creates_slot(

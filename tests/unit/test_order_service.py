@@ -15,6 +15,7 @@ from app.modules.orders.domain import (
     OrderItem,
     OrderStatus,
     SalesStats,
+    build_production_schedule,
 )
 from app.modules.orders.schemas import (
     OrderCreateRequest,
@@ -370,7 +371,7 @@ def test_telegram_failure_is_logged_but_order_created(
     caplog: pytest.LogCaptureFixture,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    def _raise(text: str) -> None:
+    def _raise(text: str, **_: object) -> None:
         raise RuntimeError("telegram down")
 
     monkeypatch.setattr(order_service_module, "send_message", _raise)
@@ -455,3 +456,71 @@ def test_get_sales_stats_swaps_reversed_date_range() -> None:
     assert repo.last_stats_range == (end, start)
     assert stats.average_ticket == 0
     assert SalesStats(completed_revenue=9000, completed_orders=3).average_ticket == 3000
+
+
+def test_build_production_schedule_groups_weeks_and_separates_pending() -> None:
+    orders = [
+        Order(
+            id=1,
+            customer_instagram="pasada",
+            delivery_date=datetime(2026, 11, 20, 12, 0),
+            delivery_method=DeliveryMethod.PICKUP,
+            status=OrderStatus.CONFIRMED,
+            items=[
+                OrderItem(
+                    product_id=1, quantity=2, unit_price=1000, product_name="Casita"
+                )
+            ],
+        ),
+        Order(
+            id=2,
+            customer_instagram="hoy_pagada",
+            delivery_date=datetime(2026, 11, 23, 12, 0),
+            delivery_method=DeliveryMethod.PICKUP,
+            status=OrderStatus.PAID,
+            items=[
+                OrderItem(
+                    product_id=1, quantity=3, unit_price=1000, product_name="Casita"
+                )
+            ],
+        ),
+        Order(
+            id=3,
+            customer_instagram="hoy_pendiente",
+            delivery_date=datetime(2026, 11, 23, 12, 0),
+            delivery_method=DeliveryMethod.DELIVERY,
+            status=OrderStatus.PENDING,
+            items=[
+                OrderItem(
+                    product_id=1, quantity=10, unit_price=1000, product_name="Casita"
+                )
+            ],
+        ),
+        Order(
+            id=4,
+            customer_instagram="manana",
+            delivery_date=datetime(2026, 11, 24, 12, 0),
+            delivery_method=DeliveryMethod.DELIVERY,
+            status=OrderStatus.CONFIRMED,
+            items=[
+                OrderItem(
+                    product_id=1, quantity=1, unit_price=1000, product_name="Casita"
+                ),
+                OrderItem(
+                    product_id=2, quantity=2, unit_price=2000, product_name="Caja 6"
+                ),
+            ],
+        ),
+    ]
+
+    weeks = build_production_schedule(orders)
+    assert len(weeks) == 2
+    assert weeks[0].title == "Semana 16 Nov – 22 Nov"
+    assert weeks[1].title == "Semana 23 Nov – 29 Nov"
+    totals_map = {p.product_name: p.quantity for p in weeks[1].product_totals}
+    assert totals_map == {"Casita": 4, "Caja 6": 2}
+    pending_map = {p.product_name: p.quantity for p in weeks[1].pending_totals}
+    assert pending_map == {"Casita": 10}
+    assert len(weeks[1].days) == 2
+    assert len(weeks[1].pending_days) == 1
+    assert weeks[1].pending_days[0].orders[0].customer_instagram == "hoy_pendiente"

@@ -41,16 +41,38 @@ router = APIRouter(
 @router.get("", response_class=HTMLResponse)
 def admin_dashboard(
     request: Request,
+    view: str = Query("table"),
     include_delivered: bool = Query(False),
     page: int = Query(1, ge=1),
     sort_by: str | None = Query(None),
     sort_dir: str = Query("desc"),
     service: OrderService = Depends(get_order_service),
 ) -> HTMLResponse:
+    if view not in ("table", "production"):
+        view = "table"
     if sort_by not in ("id", "date"):
         sort_by = "date"
     if sort_dir not in ("asc", "desc"):
         sort_dir = "desc"
+
+    if view == "production":
+        schedule = service.get_production_schedule()
+        context: dict[str, object] = {
+            "view": "production",
+            "schedule": schedule,
+            "include_delivered": include_delivered,
+        }
+        if "hx-request" in request.headers:
+            return templates.TemplateResponse(
+                request=request,
+                name="components/admin/orders_production.html",
+                context=context,
+            )
+        return templates.TemplateResponse(
+            request=request,
+            name="admin/orders_dashboard.html",
+            context=context,
+        )
 
     page_size = 50
     orders = service.list_orders(
@@ -64,6 +86,7 @@ def admin_dashboard(
     total_pages = max(1, (total + page_size - 1) // page_size)
 
     context = {
+        "view": "table",
         "orders": orders,
         "include_delivered": include_delivered,
         "current_sort_by": sort_by,

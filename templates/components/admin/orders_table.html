@@ -10,37 +10,18 @@
         <thead class="bg-cookie-cream/50">
             <tr>
                 <th scope="col"
-                    class="px-6 py-4 text-left text-xs font-semibold text-cookie-brown uppercase tracking-wider">
-                    <a hx-get="{{ sort_url('id', current_sort_by, current_sort_dir, include_delivered) }}" hx-target="#orders-table-container"
-                        class="inline-flex items-center gap-1 hover:text-cookie-golden cursor-pointer select-none">
-                        ID
-                        {% if current_sort_by == 'id' %}
-                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            {% if current_sort_dir == 'asc' %}
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 15l7-7 7 7" />
-                            {% else %}
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7" />
-                            {% endif %}
-                        </svg>
-                        {% endif %}
-                    </a>
-                </th>
+                    class="px-4 py-3.5 text-left text-xs font-semibold text-cookie-brown uppercase tracking-wider">
+                    IG</th>
                 <th scope="col"
-                    class="px-6 py-4 text-left text-xs font-semibold text-cookie-brown uppercase tracking-wider">
-                    Cliente</th>
-                <th scope="col"
-                    class="px-6 py-4 text-left text-xs font-semibold text-cookie-brown uppercase tracking-wider">
+                    class="px-4 py-3.5 text-left text-xs font-semibold text-cookie-brown uppercase tracking-wider">
                     Estado</th>
                 <th scope="col"
-                    class="px-6 py-4 text-left text-xs font-semibold text-cookie-brown uppercase tracking-wider">
-                    Método</th>
-                <th scope="col"
-                    class="px-6 py-4 text-left text-xs font-semibold text-cookie-brown uppercase tracking-wider">
+                    class="px-4 py-3.5 text-left text-xs font-semibold text-cookie-brown uppercase tracking-wider">
                     <a hx-get="{{ sort_url('date', current_sort_by, current_sort_dir, include_delivered) }}" hx-target="#orders-table-container"
                         class="inline-flex items-center gap-1 hover:text-cookie-golden cursor-pointer select-none">
                         Fecha
                         {% if current_sort_by == 'date' %}
-                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                             {% if current_sort_dir == 'asc' %}
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 15l7-7 7 7" />
                             {% else %}
@@ -51,15 +32,20 @@
                     </a>
                 </th>
                 <th scope="col"
-                    class="px-6 py-4 text-center text-xs font-semibold text-cookie-brown uppercase tracking-wider">
+                    class="px-4 py-3.5 text-left text-xs font-semibold text-cookie-brown uppercase tracking-wider">
+                    Carrito</th>
+                <th scope="col"
+                    class="px-4 py-3.5 text-left text-xs font-semibold text-cookie-brown uppercase tracking-wider">
+                    Método</th>
+                <th scope="col"
+                    class="px-4 py-3.5 text-center text-xs font-semibold text-cookie-brown uppercase tracking-wider">
                     Acción</th>
             </tr>
         </thead>
         <tbody class="bg-white divide-y divide-cookie-pink/20">
             {% for order in orders %}
             <tr class="hover:bg-cookie-pink/5 transition-colors">
-                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-cookie-golden">#{{ order.id }}</td>
-                <td class="px-6 py-4 whitespace-nowrap">
+                <td class="px-4 py-4 whitespace-nowrap">
                     <a href="https://instagram.com/{{ order.customer_instagram | replace('@', '') | lower }}"
                         target="_blank"
                         class="cv-ig-link text-sm inline-flex items-center gap-1">
@@ -67,7 +53,7 @@
                         @{{ order.customer_instagram | replace('@', '') | lower }}
                     </a>
                 </td>
-                <td class="px-6 py-4 whitespace-nowrap">
+                <td class="px-4 py-4 whitespace-nowrap">
                     <span class="cv-status-badge
                         {% if order.status.value == 'pending' %} cv-status-warning
                         {% elif order.status.value == 'confirmed' %} cv-status-info
@@ -76,15 +62,22 @@
                         {{ order.status | status_label }}
                     </span>
                 </td>
-                <td class="px-6 py-4 whitespace-nowrap">
+                <td class="px-4 py-4 whitespace-nowrap text-sm text-cookie-brown/80">
+                    {{ order.delivery_date | date_short }}
+                </td>
+                <td class="px-4 py-4 whitespace-nowrap text-sm text-cookie-brown">
+                    <ul class="space-y-0.5">
+                        {% for item in order.items %}
+                        <li><span class="font-semibold text-cookie-golden">{{ item.quantity }} x</span> {{ item.product_name }}</li>
+                        {% endfor %}
+                    </ul>
+                </td>
+                <td class="px-4 py-4 whitespace-nowrap">
                     <span class="text-sm font-medium text-cookie-brown">
                         {{ order.delivery_method | delivery_label }}
                     </span>
                 </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-cookie-brown/80">
-                    {{ order.delivery_date | date_short }}
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
+                <td class="px-4 py-4 whitespace-nowrap text-center text-sm font-medium">
                     <div class="flex items-center justify-center gap-2">
                         <a href="/admin/orders/{{ order.id }}"
                             class="text-cookie-golden hover:text-cookie-brown bg-cookie-cream px-4 py-2 rounded-full border border-cookie-pink/40 hover:border-cookie-golden transition-all inline-block">Ver
@@ -92,9 +85,9 @@
 
                         <form action="/admin/orders/{{ order.id }}/delete" method="POST" x-data="{ showConfirm: false }"
                             @submit.prevent="if(showConfirm) { $el.submit() } else { showConfirm = true }" class="m-0">
-                            <button type="submit"
+                            <button type="submit" aria-label="Eliminar orden"
                                 class="cv-icon-btn-danger w-8 h-8 rounded-full flex items-center justify-center transition-colors">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                         d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                                 </svg>

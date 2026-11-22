@@ -15,7 +15,9 @@ from app.modules.orders.domain import (
     Order,
     OrderItem,
     OrderStatus,
+    ProductionWeek,
     SalesStats,
+    build_production_schedule,
     reconcile_payment,
 )
 from app.modules.orders.repository import OrderRepository
@@ -85,7 +87,8 @@ class OrderService:
                 f"📦 <b>Método:</b> {'Retiro' if order.delivery_method.value == 'pickup' else 'Delivery'}\n"
                 f"📋 <b>Productos:</b>\n{items_str}\n"
                 f"💰 <b>Total:</b> ${order.total_amount:,.0f}\n"
-                f"💳 <b>Pagado:</b> ${order.amount_paid:,.0f}"
+                f"💳 <b>Pagado:</b> ${order.amount_paid:,.0f}",
+                background=True,
             )
         except Exception as e:  # noqa: BLE001
             logger.error("Failed to send Telegram notification: %s", e)
@@ -158,6 +161,16 @@ class OrderService:
 
     def get_best_selling_product_id(self) -> int | None:
         return self.repository.get_best_selling_product_id()
+
+    def get_production_schedule(self) -> list[ProductionWeek]:
+        orders = self.repository.list_all(
+            include_delivered=False,
+            limit=500,
+            offset=0,
+            sort_by="date",
+            sort_dir="asc",
+        )
+        return build_production_schedule(orders)
 
     def update_order(
         self,
