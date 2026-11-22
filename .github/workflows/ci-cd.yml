@@ -166,10 +166,11 @@ jobs:
           Write-Host "=== Starting deploy ==="
           Set-Location "${{ secrets.PROJECT_PATH }}" -ErrorAction Stop
 
-          # Anonymous docker config: pulls never depend on the host credential helper.
+          # Anonymous docker config: explicit empty credHelpers override Docker CLI's
+          # default desktop credential store (which fails under OpenSSH sessions on Windows).
           $cfgDir = Join-Path $env:TEMP 'cookievale-docker-config'
           New-Item -ItemType Directory -Force $cfgDir | Out-Null
-          '{"auths":{}}' | Set-Content (Join-Path $cfgDir 'config.json')
+          '{"auths":{},"credHelpers":{"docker.io":"","registry-1.docker.io":"","index.docker.io":"","https://index.docker.io/v1/":""}}' | Set-Content (Join-Path $cfgDir 'config.json')
           $env:DOCKER_CONFIG = $cfgDir
 
           $before = git rev-parse HEAD
