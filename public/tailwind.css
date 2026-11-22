@@ -449,6 +449,18 @@
     color: var(--accent-hover);
   }
 
+  .cv-icon-btn {
+    color: var(--text-body);
+    background: var(--cookie-cream);
+    border: 1px solid var(--border);
+  }
+
+  .cv-icon-btn:hover {
+    color: var(--bg-inverse);
+    background: var(--accent);
+    border-color: var(--accent);
+  }
+
   .cv-icon-btn-danger {
     color: var(--danger);
     background: var(--danger-bg);

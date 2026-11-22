@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Disponibilidades - CookieVale{% endblock %}
+{% block title %}Fechas - CookieVale{% endblock %}
 
 {% block content %}
 {% from "components/forms/date_calendar.html" import render_date_calendar %}
@@ -9,17 +9,17 @@
     <div class="cv-card mb-6 flex flex-col md:flex-row justify-between items-center py-4 px-6 md:px-8 gap-4">
         <div class="flex items-center gap-4">
             {{ render_back_button('/admin') }}
-            <h1 class="cv-h2 m-0">Disponibilidades</h1>
+            <h1 class="cv-h2 m-0">Fechas</h1>
         </div>
         <div class="flex items-center gap-2">
             <button type="button" @click="addSlot()" :disabled="!selectedDate"
                 class="cv-btn w-9 h-9 p-0 rounded-full disabled:opacity-40 disabled:cursor-not-allowed"
-                title="Agregar un cupo en la fecha seleccionada" aria-label="Agregar cupo">
+                aria-label="Agregar cupo">
                 {{ render_icon("plus") }}
             </button>
             <button type="button" @click="removeSlot()" :disabled="!canRemove"
                 class="cv-icon-btn-danger w-9 h-9 rounded-full disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center transition-colors"
-                title="Eliminar un cupo de la fecha seleccionada" aria-label="Eliminar cupo">
+                aria-label="Eliminar cupo">
                 {{ render_icon("trash") }}
             </button>
         </div>

@@ -145,10 +145,7 @@
 
             <!-- Delivery Date -->
             <div class="relative z-10">
-                <div class="flex items-center gap-2 mb-1.5">
-                    <label class="cv-label block mb-0">Fecha de entrega</label>
-                    {{ render_tooltip("Elige una fecha de entrega. Si no tiene cupos disponibles, se creará uno al guardar la orden.") }}
-                </div>
+                <label class="cv-label block mb-1.5">Fecha de entrega</label>
                 {{ render_date_calendar(
                     'delivery_date',
                     available_dates,

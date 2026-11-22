@@ -3,9 +3,8 @@
     <div class="cv-header-inner max-w-4xl mx-auto px-4 md:px-8 py-3.5 flex items-center justify-between gap-4">
         {{ render_brand('/admin', 'Admin') }}
         <div class="flex items-center gap-2">
-            <a href="/" target="_blank"
-                class="cv-header-action rounded-full text-cookie-brown/60 hover:text-cookie-brown hover:bg-cookie-brown/5 transition-colors"
-                title="Ver sitio">
+            <a href="/" target="_blank" aria-label="Ver sitio"
+                class="cv-header-action rounded-full cv-icon-btn transition-colors">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                         d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9">
@@ -13,9 +12,8 @@
                 </svg>
             </a>
             <form action="/admin/logout" method="POST" class="contents">
-                <button type="submit"
-                    class="cv-header-action cv-icon-btn-danger rounded-full transition-colors"
-                    title="Cerrar sesión">
+                <button type="submit" aria-label="Cerrar sesión"
+                    class="cv-header-action cv-icon-btn-danger rounded-full transition-colors">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                             d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />

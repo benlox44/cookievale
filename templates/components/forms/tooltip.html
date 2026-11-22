@@ -1,17 +1,72 @@
 {% macro render_tooltip(text) %}
-<div class="relative group flex items-center">
-    <svg class="w-4 h-4 text-cookie-brown/50 hover:text-cookie-golden cursor-help transition-colors" fill="none"
-        stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-            d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-    </svg>
-    <div
-        class="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 w-48 p-2 bg-cookie-brown text-white text-xs rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-10 text-center pointer-events-none fade-in">
-        {{ text }}
-        <svg class="absolute top-full left-1/2 -translate-x-1/2 text-cookie-brown h-2 w-full" x="0px" y="0px"
-            viewBox="0 0 255 255" xml:space="preserve">
-            <polygon fill="currentColor" points="0,0 127.5,127.5 255,0" />
+<span class="inline-flex items-center"
+    x-data="cvTooltip()"
+    @mouseenter="show()"
+    @mouseleave="hide()"
+    @click.stop="toggle()"
+    @click.outside="hide()"
+    @scroll.window="hide()">
+    <button type="button" x-ref="trigger" aria-label="Información"
+        class="inline-flex items-center justify-center text-cookie-brown/50 hover:text-cookie-golden cursor-help transition-colors focus:outline-none">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
         </svg>
-    </div>
-</div>
+    </button>
+    <template x-teleport="body">
+        <div x-show="open" style="display: none;"
+            x-transition:enter="transition ease-out duration-150"
+            x-transition:enter-start="opacity-0 translate-y-1"
+            x-transition:enter-end="opacity-100 translate-y-0"
+            x-transition:leave="transition ease-in duration-100"
+            x-transition:leave-start="opacity-100"
+            x-transition:leave-end="opacity-0"
+            :style="style"
+            class="fixed z-[90] w-52 px-3 py-2 bg-cookie-brown text-white text-xs leading-snug rounded-lg shadow-lg text-center pointer-events-none">
+            {{ text }}
+        </div>
+    </template>
+</span>
+<script>
+(function () {
+    if (window.__cvTooltipLoaded) return;
+    window.__cvTooltipLoaded = true;
+    const register = () => {
+        Alpine.data('cvTooltip', () => ({
+            open: false,
+            style: '',
+            updatePosition() {
+                const rect = this.$refs.trigger.getBoundingClientRect();
+                const width = 208;
+                const margin = 12;
+                const center = rect.left + rect.width / 2;
+                const left = Math.max(margin, Math.min(center - width / 2, window.innerWidth - width - margin));
+                const showBelow = rect.top < 80;
+                this.style = showBelow
+                    ? `left: ${left}px; top: ${rect.bottom + 8}px;`
+                    : `left: ${left}px; bottom: ${window.innerHeight - rect.top + 8}px;`;
+            },
+            show() {
+                this.updatePosition();
+                this.open = true;
+            },
+            hide() {
+                this.open = false;
+            },
+            toggle() {
+                if (this.open) {
+                    this.hide();
+                } else {
+                    this.show();
+                }
+            },
+        }));
+    };
+    if (window.Alpine) {
+        register();
+    } else {
+        document.addEventListener('alpine:init', register);
+    }
+})();
+</script>
 {% endmacro %}

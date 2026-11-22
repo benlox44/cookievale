@@ -13,8 +13,8 @@ endblock %}
         class="relative cv-glass-card backdrop-blur-sm border border-cookie-pink/40 rounded-[2.5rem] cv-shadow-card-strong p-8 sm:p-12 w-full max-w-lg text-center mx-auto z-10">
 
     <div class="absolute top-5 right-5 flex items-center gap-2">
-        <a href="/" target="_blank"
-            class="flex items-center justify-center p-2 rounded-full text-cookie-brown/40 hover:text-cookie-brown hover:bg-cookie-brown/5 transition-colors">
+        <a href="/" target="_blank" aria-label="Ver sitio"
+            class="flex items-center justify-center p-2 rounded-full cv-icon-btn transition-colors">
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"
                 xmlns="http://www.w3.org/2000/svg">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -23,9 +23,8 @@ endblock %}
             </svg>
         </a>
         <form action="/admin/logout" method="POST">
-            <button type="submit"
-                class="flex items-center justify-center p-2 rounded-full cv-icon-btn-danger transition-colors"
-                title="Cerrar sesión">
+            <button type="submit" aria-label="Cerrar sesión"
+                class="flex items-center justify-center p-2 rounded-full cv-icon-btn-danger transition-colors">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                         d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
@@ -45,23 +44,17 @@ endblock %}
     </p>
 
     <div class="flex flex-col gap-3">
-        <a href="/admin/dates" class="cv-btn-ghost w-full text-base py-3.5 flex items-center justify-center gap-2">
-            <svg class="w-5 h-5 text-cookie-pink" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-            </svg>
-            Disponibilidad
-        </a>
-        <a href="/admin/orders" class="cv-btn w-full text-base py-3.5 flex justify-center items-center">
+        <a href="/admin/orders" class="cv-btn-ghost w-full text-base py-3.5 flex items-center justify-center">
             Órdenes
-            <svg class="w-5 h-5 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7" />
-            </svg>
         </a>
-        <a href="/admin/products" class="cv-btn-ghost w-full text-base py-3.5 flex items-center justify-center gap-2">
-            <svg class="w-5 h-5 text-cookie-golden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M12 4v16m8-8H4" />
-            </svg>
+        <a href="/admin/dates" class="cv-btn-ghost w-full text-base py-3.5 flex items-center justify-center">
+            Fechas
+        </a>
+        <a href="/admin/products" class="cv-btn-ghost w-full text-base py-3.5 flex items-center justify-center">
             Productos
+        </a>
+        <a href="/admin/stats" class="cv-btn-ghost w-full text-base py-3.5 flex items-center justify-center">
+            Estadísticas
         </a>
     </div>
 </div>
