@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Panel de Administración - CookieVale{% endblock %}
+{% block title %}Panel de administración - CookieVale{% endblock %}
 {% block body_class %}h-[100dvh] w-screen overflow-hidden bg-cookie-cream flex flex-col m-0 p-0{% endblock %}
 {% block header %}{% endblock %}
 
@@ -38,19 +38,19 @@ endblock %}
         <img src="/public/icons/icon.png" alt="CookieVale" class="w-14 h-14 sm:w-16 sm:h-16 object-contain drop-shadow">
     </div>
 
-    <h1 class="cv-h1 mb-2 sm:mb-3 text-[2rem] sm:text-[2.5rem] leading-tight">CookieVale</h1>
-    <p class="text-cookie-brown/70 mb-8 sm:mb-10 text-sm sm:text-base font-normal leading-relaxed px-2">
-        Panel de control de administración.
+    <h1 class="cv-h1 mb-1 text-[2rem] sm:text-[2.5rem] leading-tight">CookieVale</h1>
+    <p class="font-serif text-cookie-brown/50 mb-8 sm:mb-10 text-xl sm:text-2xl font-medium tracking-tight">
+        Admin
     </p>
 
     <div class="flex flex-col gap-3">
-        <a href="/admin/orders" class="cv-btn-ghost w-full text-base py-3.5 flex items-center justify-center">
+        <a href="/admin/orders" class="cv-btn w-full text-base py-3.5 flex items-center justify-center">
             Órdenes
         </a>
         <a href="/admin/dates" class="cv-btn-ghost w-full text-base py-3.5 flex items-center justify-center">
             Fechas
         </a>
-        <a href="/admin/products" class="cv-btn-ghost w-full text-base py-3.5 flex items-center justify-center">
+        <a href="/admin/products" class="cv-btn w-full text-base py-3.5 flex items-center justify-center">
             Productos
         </a>
         <a href="/admin/stats" class="cv-btn-ghost w-full text-base py-3.5 flex items-center justify-center">

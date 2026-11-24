@@ -25,10 +25,10 @@ def parse_cart_items(
     try:
         cart_raw = json.loads(cart_json)
     except json.JSONDecodeError as exc:
-        raise CartError("Formato de carrito inválido.") from exc
+        raise CartError("Formato de productos inválido.") from exc
 
     if not cart_raw:
-        raise CartError("El carrito no puede estar vacío.")
+        raise CartError("Debes seleccionar al menos un producto.")
 
     items: list[OrderItemCreate] = []
     for item in cart_raw:
@@ -36,7 +36,7 @@ def parse_cart_items(
             prod_id = int(item.get("product_id"))
             qty = int(item.get("quantity"))
         except (TypeError, ValueError) as exc:
-            raise CartError("Formato de carrito inválido.") from exc
+            raise CartError("Formato de productos inválido.") from exc
         if qty <= 0:
             continue
 
@@ -67,7 +67,7 @@ def parse_cart_items(
     items = list(merged.values())
 
     if not items:
-        raise CartError("El carrito no puede estar vacío.")
+        raise CartError("Debes seleccionar al menos un producto.")
 
     total = sum(item.unit_price * item.quantity for item in items)
     return ParsedCart(items=items, total_amount=total)

@@ -1,4 +1,4 @@
-{% macro render_cart_summary(empty_message='Tu carrito está vacío.', total_label='Total') %}
+{% macro render_cart_summary(empty_message='Sin productos seleccionados.', total_label='Total') %}
 <div x-show="cart.length === 0" class="py-8 text-center flex flex-col items-center">
     <div
         class="w-16 h-16 bg-cookie-pink/20 rounded-full flex items-center justify-center mb-3 border border-cookie-pink/30">

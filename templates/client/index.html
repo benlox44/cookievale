@@ -22,29 +22,29 @@ endblock %}
         Galletas artesanales personalizadas para tus momentos especiales.
     </p>
 
-    <!-- Location snippet -->
-    <div class="flex items-center justify-center gap-1.5 mb-8 sm:mb-10 text-cookie-brown font-medium">
-        <svg class="w-5 h-5 text-cookie-brown" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.243-4.243a8 8 0 1111.314 0z"></path>
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z">
-            </path>
-        </svg>
-        Coquimbo / La Serena
+    <!-- Location & Instagram -->
+    <div class="flex flex-col items-center gap-2.5 mb-8 sm:mb-10">
+        <div class="flex items-center justify-center gap-1.5 text-cookie-brown font-medium">
+            <svg class="w-5 h-5 text-cookie-brown" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.243-4.243a8 8 0 1111.314 0z"></path>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z">
+                </path>
+            </svg>
+            Coquimbo / La Serena
+        </div>
+        <a href="https://instagram.com/cookievale.ls" target="_blank"
+            class="inline-flex items-center gap-1.5 text-sm sm:text-base font-medium cv-ig-link transition-colors">
+            {{ render_icon("instagram", "w-5 h-5") }}
+            @cookievale.ls
+        </a>
     </div>
 
-    <div class="flex flex-col gap-3">
-        <a href="/orders/new" class="cv-btn w-full text-base py-3.5 flex justify-center items-center">
-            Realizar orden
-            <svg class="w-5 h-5 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M14 5l7 7m0 0l-7 7m7-7H3" />
-            </svg>
-        </a>
-        <a href="https://instagram.com/cookievale.ls" target="_blank"
-            class="cv-btn-ghost w-full text-base py-3.5 flex items-center justify-center gap-2">
-            {{ render_icon("instagram", "w-5 h-5 cv-ig-link") }}
-            Instagram
-        </a>
-    </div>
+    <a href="/orders/new" class="cv-btn w-full text-base py-3.5 flex justify-center items-center">
+        Realizar orden
+        <svg class="w-5 h-5 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+        </svg>
+    </a>
 </div>
 {% endblock %}
