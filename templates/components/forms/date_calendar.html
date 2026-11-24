@@ -4,6 +4,7 @@
     {% set state.entries = state.entries + [{'date': item.date.isoformat(), 'free': item.free_slots}] %}
 {% endfor %}
 <div x-data='cvDateCalendar({{ {'name': name, 'dates': state.entries, 'today': today, 'selected': selected, 'showCounts': show_counts, 'onlyAvailable': only_available, 'restrictMonths': restrict_months, 'autoCreateNotice': auto_create_notice} | tojson }})'
+    @calendar-slot-delta.window="adjustSlot($event.detail.date, $event.detail.delta)"
     class="cv-calendar">
     <input type="hidden" :name="name" :value="selected">
 
@@ -103,6 +104,21 @@
                     const entry = this.map[date];
                     const available = !!entry && entry.free > 0;
                     this.$dispatch('date-selected', { date: this.selected, available: available });
+                },
+
+                adjustSlot(date, delta) {
+                    if (!date) return;
+                    let entry = this.map[date];
+                    if (!entry) {
+                        entry = { date: date, free: 0 };
+                        this.dates.push(entry);
+                        this.map[date] = entry;
+                    }
+                    entry.free = Math.max(0, entry.free + delta);
+                    this.build();
+                    if (this.selected === date) {
+                        this.$dispatch('date-selected', { date: this.selected, available: entry.free > 0 });
+                    }
                 },
 
                 willCreateSlot() {

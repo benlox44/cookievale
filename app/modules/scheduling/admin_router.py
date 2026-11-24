@@ -34,6 +34,7 @@ def dates_dashboard(
 
 @router.post("", response_model=None)
 def add_date(
+    request: Request,
     selected_date: date = Form(...),
     service: SchedulingService = Depends(get_scheduling_service),
 ) -> RedirectResponse | JSONResponse:
@@ -41,6 +42,8 @@ def add_date(
         service.add_slot(selected_date)
     except ValueError as e:
         return JSONResponse({"detail": str(e)}, status_code=409)
+    if "application/json" in request.headers.get("accept", ""):
+        return JSONResponse({"status": "ok"})
     return RedirectResponse("/admin/dates", status_code=303)
 
 

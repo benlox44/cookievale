@@ -12,12 +12,12 @@
             <h1 class="cv-h2 m-0">Fechas</h1>
         </div>
         <div class="flex items-center gap-2">
-            <button type="button" @click="addSlot()" :disabled="!selectedDate"
+            <button type="button" @click="addSlot()" :disabled="!selectedDate || busy"
                 class="cv-btn w-9 h-9 p-0 rounded-full disabled:opacity-40 disabled:cursor-not-allowed"
                 aria-label="Agregar cupo">
                 {{ render_icon("plus") }}
             </button>
-            <button type="button" @click="removeSlot()" :disabled="!canRemove"
+            <button type="button" @click="removeSlot()" :disabled="!canRemove || busy"
                 class="cv-icon-btn-danger w-9 h-9 rounded-full disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center transition-colors"
                 aria-label="Eliminar cupo">
                 {{ render_icon("trash") }}
@@ -35,6 +35,7 @@ function datesPage() {
     return {
         selectedDate: '',
         selectedHasSlot: false,
+        busy: false,
         get canRemove() {
             return !!this.selectedDate && this.selectedHasSlot;
         },
@@ -45,21 +46,33 @@ function datesPage() {
             this.selectedDate = detail.date || '';
             this.selectedHasSlot = !!detail.available;
         },
+        notifySlotDelta(date, delta) {
+            window.dispatchEvent(new CustomEvent('calendar-slot-delta', { detail: { date: date, delta: delta } }));
+        },
         addSlot() {
+            if (this.busy) return;
             if (!this.selectedDate) {
                 this.toast('Primero selecciona una fecha en el calendario.');
                 return;
             }
+            const target = this.selectedDate;
             const formData = new FormData();
-            formData.append('selected_date', this.selectedDate);
-            fetch('/admin/dates', { method: 'POST', body: formData })
+            formData.append('selected_date', target);
+            this.busy = true;
+            fetch('/admin/dates', {
+                method: 'POST',
+                body: formData,
+                headers: { Accept: 'application/json' },
+            })
                 .then((r) => {
-                    if (r.ok) { window.location.reload(); return; }
+                    if (r.ok) { this.notifySlotDelta(target, 1); return; }
                     return r.json().then((data) => this.toast(data.detail || 'No se pudo agregar el cupo.'));
                 })
-                .catch(() => this.toast('Error de conexión.'));
+                .catch(() => this.toast('Error de conexión.'))
+                .finally(() => { this.busy = false; });
         },
         removeSlot() {
+            if (this.busy) return;
             if (!this.selectedDate) {
                 this.toast('Primero selecciona una fecha en el calendario.');
                 return;
@@ -68,12 +81,18 @@ function datesPage() {
                 this.toast('No hay cupos para eliminar en la fecha seleccionada.');
                 return;
             }
-            fetch('/admin/dates/' + this.selectedDate, { method: 'DELETE' })
+            const target = this.selectedDate;
+            this.busy = true;
+            fetch('/admin/dates/' + target, {
+                method: 'DELETE',
+                headers: { Accept: 'application/json' },
+            })
                 .then((r) => {
-                    if (r.ok) { window.location.reload(); return; }
+                    if (r.ok) { this.notifySlotDelta(target, -1); return; }
                     return r.json().then((data) => this.toast(data.detail || 'No se pudo eliminar el cupo.'));
                 })
-                .catch(() => this.toast('Error de conexión.'));
+                .catch(() => this.toast('Error de conexión.'))
+                .finally(() => { this.busy = false; });
         }
     };
 }
