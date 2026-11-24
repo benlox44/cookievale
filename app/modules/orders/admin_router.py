@@ -105,6 +105,9 @@ def admin_dashboard(
         "search_query": cleaned_q,
         "page": page,
         "total_pages": total_pages,
+        "total_orders": total,
+        "range_start": (page - 1) * page_size + 1 if total > 0 else 0,
+        "range_end": min(page * page_size, total),
     }
 
     if "hx-request" in request.headers:

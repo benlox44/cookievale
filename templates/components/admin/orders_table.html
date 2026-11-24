@@ -146,7 +146,7 @@
     </table>
 </div>
 
-{% if total_pages > 1 %}
+{% if orders %}
 <div class="flex items-center justify-between px-6 py-3 border-t border-cookie-pink/20">
     <button type="button"
         {% if page > 1 %}
@@ -158,7 +158,7 @@
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7" />
         </svg>
     </button>
-    <span class="text-xs font-medium text-cookie-brown/60">Página {{ page }} de {{ total_pages }}</span>
+    <span class="text-xs font-semibold text-cookie-brown tracking-wider">{{ range_start }}-{{ range_end }} de {{ total_orders }}</span>
     <button type="button"
         {% if page < total_pages %}
         hx-get="/admin/orders?page={{ page + 1 }}&sort_by={{ current_sort_by }}&sort_dir={{ current_sort_dir }}{% if include_delivered %}&include_delivered=true{% endif %}{% if search_query %}&q={{ search_query | urlencode }}{% endif %}"
