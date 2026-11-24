@@ -1,12 +1,11 @@
 {% extends "base.html" %}
 {% set is_edit = order is not none %}
-{% block title %}{% if is_edit %}Orden #{{ order.id }} - CookieVale{% else %}Crear Orden - CookieVale Admin{% endif %}{% endblock %}
+{% block title %}{% if is_edit %}Orden #{{ order.id }} - CookieVale{% else %}Crear orden - CookieVale Admin{% endif %}{% endblock %}
 
 {% block content %}
 {% from "components/products/picker.html" import render_product_picker %}
 {% from "components/forms/date_calendar.html" import render_date_calendar %}
 {% from "components/forms/dropdown.html" import render_dropdown %}
-{% from "components/forms/tooltip.html" import render_tooltip %}
 {% from "components/ui/icons.html" import render_icon %}
 {% from "components/ui/back_button.html" import render_back_button %}
 {% from "components/orders/cart_summary.html" import render_cart_summary %}
@@ -38,7 +37,7 @@
             {% if is_edit %}
             Orden <span class="text-cookie-brown/50 font-normal">#</span>{{ order.id }}
             {% else %}
-            Crear Orden
+            Crear orden
             {% endif %}
         </h1>
     </div>
@@ -46,7 +45,10 @@
     <!-- Unified Order Form -->
     {% if is_edit %}
     <form id="order-form" action="/admin/orders/{{ order.id }}" method="POST"
+        hx-post="/admin/orders/{{ order.id }}" hx-swap="none"
+        hx-encoding="multipart/form-data"
         enctype="multipart/form-data"
+        @htmx:after-request="onSubmitAfterRequest($event)"
         class="grid grid-cols-1 md:grid-cols-2 gap-8 px-2 md:px-4">
         <input type="hidden" name="cart_items_json" x-model="cartJson" :disabled="!carritoModificado">
     {% else %}
@@ -54,7 +56,7 @@
         hx-encoding="multipart/form-data"
         hx-disabled-elt="find button[type='submit']"
         @submit="if (submitting) { $event.preventDefault(); return; } prepareCreateSubmit()"
-        @htmx:after-request="onCreateAfterRequest($event)"
+        @htmx:after-request="onSubmitAfterRequest($event)"
         class="grid grid-cols-1 md:grid-cols-2 gap-8 px-2 md:px-4">
         <input type="hidden" name="cart_items_json" x-model="cartJson">
     {% endif %}
@@ -64,12 +66,7 @@
             <!-- Instagram -->
             <div>
                 <div class="flex items-center justify-between gap-2 mb-1.5">
-                    <div class="flex items-center gap-2">
-                        <label class="cv-label block mb-0">Instagram</label>
-                        {% if not is_edit %}
-                        {{ render_tooltip("Cuenta de Instagram del cliente.") }}
-                        {% endif %}
-                    </div>
+                    <label class="cv-label block mb-0">Instagram</label>
                     <a x-show="formData.customer_instagram.trim().length > 0"
                         :href="'https://instagram.com/' + formData.customer_instagram.trim()"
                         target="_blank"
@@ -78,12 +75,43 @@
                         Ver perfil
                     </a>
                 </div>
-                <div class="relative">
+                <div class="relative z-30" @click.outside="igOpen = false">
                     <span class="absolute inset-y-0 left-0 flex items-center pl-4 text-cookie-brown/40 font-medium pointer-events-none">@</span>
-                    <input type="text" name="customer_instagram" placeholder="cuenta_cliente" required
+                    <input type="text" name="customer_instagram" placeholder="usuario" required
+                        maxlength="30"
+                        pattern="(?!.*\.\.)[a-z0-9_](?:[a-z0-9_.]{0,28}[a-z0-9_])?"
+                        title="Solo letras, números, puntos y guiones bajos (sin espacios ni puntos al inicio, final o seguidos)."
+                        autocomplete="off" autocapitalize="off" spellcheck="false"
+                        role="combobox" aria-autocomplete="list" aria-controls="ig-suggestions-listbox"
+                        :aria-expanded="igOpen && igSuggestions.length > 0"
                         x-model="formData.customer_instagram"
-                        @input="formData.customer_instagram = formData.customer_instagram.replace(/@/g, '').toLowerCase()"
+                        @focus="onInstagramFocus()"
+                        @input="onInstagramInput()"
+                        @keydown.arrow-down.prevent="moveIgHighlight(1)"
+                        @keydown.arrow-up.prevent="moveIgHighlight(-1)"
+                        @keydown.enter="onInstagramEnter($event)"
+                        @keydown.escape="igOpen = false"
                         class="cv-input pl-8">
+                    <div id="ig-suggestions-listbox" role="listbox"
+                        x-show="igOpen && igSuggestions.length > 0" style="display: none;"
+                        x-transition:enter="cv-dropdown-menu-enter" x-transition:enter-start="cv-dropdown-menu-enter-start"
+                        x-transition:enter-end="cv-dropdown-menu-enter-end"
+                        x-transition:leave="cv-dropdown-menu-leave" x-transition:leave-start="cv-dropdown-menu-leave-start"
+                        x-transition:leave-end="cv-dropdown-menu-leave-end"
+                        class="cv-dropdown-menu">
+                        <template x-for="(item, idx) in igSuggestions" :key="item.handle">
+                            <button type="button" role="option"
+                                @mousedown.prevent="selectInstagram(item.handle)"
+                                @mouseenter="igActiveIndex = idx"
+                                class="cv-dropdown-option"
+                                :class="{ 'is-selected': idx === igActiveIndex || item.handle === formData.customer_instagram }"
+                                :aria-selected="idx === igActiveIndex || item.handle === formData.customer_instagram">
+                                <span class="truncate font-medium" x-text="'@' + item.handle"></span>
+                                <span class="text-xs text-cookie-brown/50 shrink-0"
+                                    x-text="item.order_count === 1 ? '1 pedido' : item.order_count + ' pedidos'"></span>
+                            </button>
+                        </template>
+                    </div>
                 </div>
             </div>
 
@@ -106,7 +134,7 @@
                     </template>
                 </ul>
                 <div x-show="cartItems.length === 0" class="pb-3">
-                    <p class="text-cookie-brown/60 font-medium text-sm">El carrito está vacío.</p>
+                    <p class="text-cookie-brown/60 font-medium text-sm">Sin productos seleccionados.</p>
                 </div>
                 <div class="border-t border-cookie-pink/30 pt-3 flex justify-between items-center">
                     <span class="cv-label mb-0">Total</span>
@@ -128,7 +156,7 @@
                     ) }}
                 </div>
                 <div>
-                    <label class="cv-label block mb-1.5">Abono / Pagado</label>
+                    <label class="cv-label block mb-1.5">Abono</label>
                     <div class="relative">
                         <span class="absolute inset-y-0 left-0 flex items-center pl-4 text-cookie-brown/40 font-medium pointer-events-none">$</span>
                         <input type="number" step="1" min="0" :max="nuevoTotal"
@@ -180,7 +208,6 @@
             <div class="relative z-10">
                 <label class="cv-label block mb-1.5">Descripción del diseño <span class="text-cookie-brown/40 font-normal">(Opcional)</span></label>
                 <textarea name="description" rows="3" x-model="formData.description"
-                    placeholder="Ej: Diseño para cumpleaños, colores rosa y dorado..."
                     class="cv-input resize-none"></textarea>
             </div>
 
@@ -204,12 +231,12 @@
             {% if is_edit %}
             <button type="button" @click="abrirConfirmacion()" :disabled="submitting || !isModified || cartItems.length === 0 || !formData.customer_instagram.trim()"
                 class="cv-btn w-full py-3.5 text-base rounded-2xl disabled:opacity-40 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-none">
-                Guardar Cambios
+                Guardar cambios
             </button>
             {% else %}
             <button type="submit" :disabled="submitting || cartItems.length === 0 || !formData.delivery_date || !formData.customer_instagram.trim()"
                 class="cv-btn w-full py-3.5 text-base rounded-2xl disabled:opacity-40 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-none">
-                Crear Orden
+                Crear orden
                 {{ render_icon("plus") }}
             </button>
             {% endif %}
@@ -250,9 +277,9 @@
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                 d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
                         </svg>
-                        Carrito
+                        Productos
                     </h3>
-                    {{ render_cart_summary('El carrito está vacío.', 'Total') }}
+                    {{ render_cart_summary('Sin productos seleccionados.', 'Total') }}
                 </div>
             </div>
         </div>
@@ -344,9 +371,85 @@
             confirmarGuardadoModal: false,
             photosChanged: false,
             submitting: false,
+            igSuggestions: [],
+            igOpen: false,
+            igActiveIndex: -1,
+            igDebounceTimer: null,
+            igAbortController: null,
+            igCache: new Map(),
 
             init() {
                 this.cartJson = this.initialCartJson;
+            },
+
+            onInstagramFocus() {
+                this.igOpen = true;
+                this.fetchInstagramSuggestions(this.formData.customer_instagram.trim());
+            },
+
+            onInstagramInput() {
+                this.formData.customer_instagram = this.formData.customer_instagram
+                    .toLowerCase()
+                    .replace(/[^a-z0-9_.]/g, '')
+                    .slice(0, 30);
+                this.igOpen = true;
+                this.igActiveIndex = -1;
+                const q = this.formData.customer_instagram.trim();
+                clearTimeout(this.igDebounceTimer);
+                this.igDebounceTimer = setTimeout(() => {
+                    this.fetchInstagramSuggestions(q);
+                }, 180);
+            },
+
+            async fetchInstagramSuggestions(q) {
+                if (this.igCache.has(q)) {
+                    this.igSuggestions = this.igCache.get(q);
+                    this.igActiveIndex = -1;
+                    return;
+                }
+                if (this.igAbortController) {
+                    this.igAbortController.abort();
+                }
+                const controller = new AbortController();
+                this.igAbortController = controller;
+                try {
+                    const res = await fetch('/admin/orders/instagram-suggestions?q=' + encodeURIComponent(q), {
+                        signal: controller.signal,
+                        headers: { 'Accept': 'application/json' },
+                    });
+                    if (!res.ok) return;
+                    const data = await res.json();
+                    this.igCache.set(q, data);
+                    this.igSuggestions = data;
+                    this.igActiveIndex = -1;
+                } catch (err) {
+                    if (err && err.name !== 'AbortError') {
+                        this.igSuggestions = [];
+                    }
+                }
+            },
+
+            moveIgHighlight(delta) {
+                if (!this.igOpen || this.igSuggestions.length === 0) return;
+                const len = this.igSuggestions.length;
+                if (this.igActiveIndex === -1) {
+                    this.igActiveIndex = delta > 0 ? 0 : len - 1;
+                } else {
+                    this.igActiveIndex = (this.igActiveIndex + delta + len) % len;
+                }
+            },
+
+            onInstagramEnter(event) {
+                if (this.igOpen && this.igActiveIndex >= 0 && this.igSuggestions[this.igActiveIndex]) {
+                    event.preventDefault();
+                    this.selectInstagram(this.igSuggestions[this.igActiveIndex].handle);
+                }
+            },
+
+            selectInstagram(handle) {
+                this.formData.customer_instagram = handle;
+                this.igOpen = false;
+                this.igActiveIndex = -1;
             },
 
             setStatus(nextStatus) {
@@ -487,7 +590,7 @@
                 this.formData.amount_paid = String(this.abonoFinal);
             },
 
-            onCreateAfterRequest(event) {
+            onSubmitAfterRequest(event) {
                 const xhr = event.detail && event.detail.xhr;
                 const redirected = xhr && xhr.getResponseHeader && xhr.getResponseHeader('HX-Redirect');
                 if (!redirected) {

@@ -394,7 +394,7 @@ def test_orders_dashboard_renders_partial_for_hx(admin_client, db: Session) -> N
     response = admin_client.get("/admin/orders", headers={"HX-Request": "true"})
     assert response.status_code == 200
     assert "<table" in response.text
-    assert "Crear Orden" not in response.text
+    assert "Crear orden" not in response.text
     assert "Mostrar entregadas" not in response.text
 
 
@@ -998,3 +998,213 @@ def _product_id(db: Session) -> int:
     product = SQLAlchemyProductRepository(db).list_all()[0]
     assert product.id is not None
     return product.id
+
+
+def test_instagram_suggestions_requires_admin(client) -> None:
+    resp = client.get(
+        "/admin/orders/instagram-suggestions",
+        params={"q": "vale"},
+        follow_redirects=False,
+    )
+    assert resp.status_code == 303
+    assert "/admin/login" in resp.headers["location"]
+
+
+def test_instagram_suggestions_endpoint(admin_client, db: Session) -> None:
+    admin_client.post(
+        "/admin/products",
+        data={
+            "name": "Galleta",
+            "price": "1000",
+            "description": "d",
+            "is_active": "True",
+        },
+    )
+    pid = _product_id(db)
+    cart = json.dumps([{"product_id": pid, "quantity": 1}])
+
+    for idx, handle in enumerate(["@Vale_Shop", "@vale_shop", "@cookie_vale", "@ana"]):
+        d = _future_date(days=2 + idx)
+        admin_client.post("/admin/dates", data={"selected_date": d})
+        admin_client.post(
+            "/admin/orders",
+            data={
+                "customer_instagram": handle,
+                "cart_items_json": cart,
+                "delivery_date": f"{d}T12:00:00",
+                "delivery_method": "pickup",
+                "order_status": "pending",
+                "amount_paid": "0",
+            },
+        )
+
+    resp = admin_client.get(
+        "/admin/orders/instagram-suggestions", params={"q": "@VALE"}
+    )
+    assert resp.status_code == 200
+    assert resp.json() == [
+        {"handle": "vale_shop", "order_count": 2},
+        {"handle": "cookie_vale", "order_count": 1},
+    ]
+
+    # Empty query returns recent customers, limit bounds are validated
+    resp_empty = admin_client.get(
+        "/admin/orders/instagram-suggestions", params={"q": "", "limit": 2}
+    )
+    assert resp_empty.status_code == 200
+    assert len(resp_empty.json()) == 2
+    assert (
+        admin_client.get(
+            "/admin/orders/instagram-suggestions",
+            params={"limit": 0},
+            follow_redirects=False,
+        ).status_code
+        == 303
+    )
+    assert (
+        admin_client.get(
+            "/admin/orders/instagram-suggestions",
+            params={"limit": 50},
+            follow_redirects=False,
+        ).status_code
+        == 303
+    )
+
+
+def test_admin_orders_search_and_customer_history(admin_client, db: Session) -> None:
+    admin_client.post(
+        "/admin/products",
+        data={
+            "name": "Galleta",
+            "price": "1000",
+            "description": "d",
+            "is_active": "True",
+        },
+    )
+    pid = _product_id(db)
+    cart = json.dumps([{"product_id": pid, "quantity": 1}])
+
+    entries = [
+        ("@vale_shop", "pending", 2),
+        ("@vale_shop", "delivered", 3),
+        ("@maria_p", "pending", 4),
+    ]
+    for handle, status_val, days in entries:
+        d = _future_date(days=days)
+        admin_client.post("/admin/dates", data={"selected_date": d})
+        admin_client.post(
+            "/admin/orders",
+            data={
+                "customer_instagram": handle,
+                "cart_items_json": cart,
+                "delivery_date": f"{d}T12:00:00",
+                "delivery_method": "pickup",
+                "order_status": status_val,
+                "amount_paid": "0",
+            },
+        )
+
+    # Search active orders only
+    resp = admin_client.get(
+        "/admin/orders",
+        params={"q": "@VALE"},
+        headers={"HX-Request": "true"},
+    )
+    assert resp.status_code == 200
+    assert resp.text.count("@vale_shop") == 1
+    assert "@maria_p" not in resp.text
+
+    # Search including delivered orders
+    resp_hist = admin_client.get(
+        "/admin/orders",
+        params={"q": "vale_shop", "include_delivered": "true"},
+        headers={"HX-Request": "true"},
+    )
+    assert resp_hist.status_code == 200
+    assert resp_hist.text.count("@vale_shop") == 2
+    assert "@maria_p" not in resp_hist.text
+
+
+def test_update_order_htmx_toast_and_redirect(admin_client, db: Session) -> None:
+    admin_client.post(
+        "/admin/products",
+        data={
+            "name": "Galleta",
+            "price": "1000",
+            "description": "d",
+            "is_active": "True",
+        },
+    )
+    pid = _product_id(db)
+    d = _future_date(days=2)
+    admin_client.post("/admin/dates", data={"selected_date": d})
+    admin_client.post(
+        "/admin/orders",
+        data={
+            "customer_instagram": "@cliente",
+            "cart_items_json": json.dumps([{"product_id": pid, "quantity": 1}]),
+            "delivery_date": f"{d}T12:00:00",
+            "delivery_method": "pickup",
+            "order_status": "pending",
+            "amount_paid": "0",
+        },
+    )
+    order = SQLAlchemyOrderRepository(db).list_all()[0]
+
+    # Invalid date via HTMX returns toast instead of 303 redirect
+    bad_resp = admin_client.post(
+        f"/admin/orders/{order.id}",
+        data={
+            "delivery_date": "not-a-date",
+            "delivery_method": "pickup",
+            "amount_paid": "0",
+            "status": "pending",
+        },
+        headers={"HX-Request": "true"},
+    )
+    assert bad_resp.status_code == 204
+    assert "fecha" in _toast_message(bad_resp).lower()
+
+    # Valid update via HTMX returns HX-Redirect
+    ok_resp = admin_client.post(
+        f"/admin/orders/{order.id}",
+        data={
+            "delivery_date": f"{d}T12:00:00",
+            "delivery_method": "delivery",
+            "amount_paid": "500",
+            "status": "confirmed",
+            "customer_instagram": "@cliente",
+        },
+        headers={"HX-Request": "true"},
+    )
+    assert ok_resp.status_code == 204
+    assert ok_resp.headers["HX-Redirect"] == "/admin/orders"
+
+
+def test_admin_mutation_rejects_cross_origin(admin_client) -> None:
+    resp = admin_client.post(
+        "/admin/products",
+        data={"name": "X", "price": "1000", "description": "d", "is_active": "True"},
+        headers={"Origin": "https://evil.example.com"},
+    )
+    assert resp.status_code == 403
+
+    # Same-origin Origin header is allowed
+    ok = admin_client.post(
+        "/admin/products",
+        data={"name": "OK", "price": "1000", "description": "d", "is_active": "True"},
+        headers={"Origin": "http://testserver"},
+        follow_redirects=False,
+    )
+    assert ok.status_code == 303
+
+
+def test_add_date_returns_json_when_requested(admin_client) -> None:
+    d = _future_date(days=5)
+    resp = admin_client.post(
+        "/admin/dates",
+        data={"selected_date": d},
+        headers={"Accept": "application/json"},
+    )
+    assert resp.status_code == 200
+    assert resp.json() == {"status": "ok"}

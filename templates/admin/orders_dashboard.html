@@ -1,30 +1,11 @@
 {% extends "base.html" %}
-{% block title %}Panel de Órdenes - CookieVale{% endblock %}
+{% block title %}Panel de órdenes - CookieVale{% endblock %}
 
 {% block content %}
 {% from "components/ui/icons.html" import render_icon %}
 {% from "components/ui/back_button.html" import render_back_button %}
 
-<div class="w-full"
-    x-data='{
-        view: {{ (view or "table") | tojson }},
-        showDelivered: {{ "true" if include_delivered else "false" }},
-        setView(nextView) {
-            if (this.view === nextView) return;
-            this.view = nextView;
-            const url = nextView === "production"
-                ? "/admin/orders?view=production"
-                : "/admin/orders?view=table&include_delivered=" + this.showDelivered;
-            htmx.ajax("GET", url, { target: "#orders-table-container", swap: "innerHTML" });
-        },
-        toggleDelivered() {
-            this.showDelivered = !this.showDelivered;
-            htmx.ajax("GET", "/admin/orders?view=table&include_delivered=" + this.showDelivered, {
-                target: "#orders-table-container",
-                swap: "innerHTML",
-            });
-        }
-    }'>
+<div class="w-full" x-data="ordersDashboard()">
     <!-- Header -->
     <div class="cv-card mb-6 flex flex-wrap items-center justify-between gap-4 py-4 px-6 md:px-8">
         <div class="flex items-center gap-4">
@@ -41,7 +22,7 @@
                 <span x-text="showDelivered ? 'Ocultar entregadas' : 'Mostrar entregadas'"></span>
             </button>
 
-            <!-- View Switch: Tabla | Producción -->
+            <!-- View Switch: Tabla | Semanal -->
             <div class="inline-flex rounded-full bg-cookie-cream p-1 border border-cookie-pink/40">
                 <button type="button" @click="setView('table')"
                     :class="view === 'table'
@@ -55,15 +36,66 @@
                         ? 'bg-cookie-golden text-white shadow-sm'
                         : 'text-cookie-brown hover:text-cookie-golden'"
                     class="text-xs px-3.5 py-1.5 rounded-full font-medium transition-all select-none">
-                    Producción
+                    Semanal
                 </button>
             </div>
 
             <a href="/admin/orders/new"
                 class="cv-btn text-xs px-4 py-2 flex items-center gap-1.5 flex-shrink-0">
                 {{ render_icon("plus") }}
-                Crear Orden
+                Crear orden
             </a>
+        </div>
+    </div>
+
+    <!-- Centered IG Search Combobox (same style & 8 suggestions as order form) -->
+    <div x-show="view === 'table' && (searchOpen || searchQuery.length > 0)" style="display: none;"
+        x-transition:enter="cv-dropdown-menu-enter" x-transition:enter-start="cv-dropdown-menu-enter-start"
+        x-transition:enter-end="cv-dropdown-menu-enter-end"
+        x-transition:leave="cv-dropdown-menu-leave" x-transition:leave-start="cv-dropdown-menu-leave-start"
+        x-transition:leave-end="cv-dropdown-menu-leave-end"
+        class="max-w-md mx-auto mb-6 relative z-30" @click.outside="igOpen = false">
+        <div class="relative">
+            <span class="absolute inset-y-0 left-0 flex items-center pl-4 text-cookie-brown/40 font-medium pointer-events-none">@</span>
+            <input type="text" x-ref="searchInput" x-model="searchQuery"
+                placeholder="usuario"
+                autocomplete="off" autocapitalize="off" spellcheck="false"
+                role="combobox" aria-autocomplete="list" aria-controls="orders-search-listbox"
+                :aria-expanded="igOpen && igSuggestions.length > 0"
+                aria-label="Buscar por Instagram"
+                @focus="onSearchFocus()"
+                @input="onSearchInput()"
+                @keydown.arrow-down.prevent="moveIgHighlight(1)"
+                @keydown.arrow-up.prevent="moveIgHighlight(-1)"
+                @keydown.enter.prevent="onSearchEnter()"
+                @keydown.escape="closeSearch()"
+                class="cv-input pl-8 pr-10 bg-white">
+            <button type="button" @click="closeSearch()" aria-label="Cerrar búsqueda"
+                class="absolute inset-y-0 right-0 flex items-center pr-3.5 text-cookie-brown/40 hover:text-cookie-brown transition-colors">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+            <div id="orders-search-listbox" role="listbox"
+                x-show="igOpen && igSuggestions.length > 0" style="display: none;"
+                x-transition:enter="cv-dropdown-menu-enter" x-transition:enter-start="cv-dropdown-menu-enter-start"
+                x-transition:enter-end="cv-dropdown-menu-enter-end"
+                x-transition:leave="cv-dropdown-menu-leave" x-transition:leave-start="cv-dropdown-menu-leave-start"
+                x-transition:leave-end="cv-dropdown-menu-leave-end"
+                class="cv-dropdown-menu">
+                <template x-for="(item, idx) in igSuggestions" :key="item.handle">
+                    <button type="button" role="option"
+                        @mousedown.prevent="selectSuggestion(item.handle)"
+                        @mouseenter="igActiveIndex = idx"
+                        class="cv-dropdown-option"
+                        :class="{ 'is-selected': idx === igActiveIndex || item.handle === searchQuery }"
+                        :aria-selected="idx === igActiveIndex || item.handle === searchQuery">
+                        <span class="truncate font-medium" x-text="'@' + item.handle"></span>
+                        <span class="text-xs text-cookie-brown/50 shrink-0"
+                            x-text="item.order_count === 1 ? '1 pedido' : item.order_count + ' pedidos'"></span>
+                    </button>
+                </template>
+            </div>
         </div>
     </div>
 
@@ -76,4 +108,148 @@
         {% endif %}
     </div>
 </div>
+
+<script>
+document.addEventListener('alpine:init', () => {
+    Alpine.data('ordersDashboard', () => ({
+        view: {{ (view or 'table') | tojson }},
+        showDelivered: {{ 'true' if include_delivered else 'false' }},
+        searchQuery: {{ (search_query or '') | tojson }},
+        searchOpen: {{ 'true' if search_query else 'false' }},
+        searchTimer: null,
+        igSuggestions: [],
+        igOpen: false,
+        igActiveIndex: -1,
+        igAbortController: null,
+        igCache: new Map(),
+
+        tableUrl() {
+            const params = new URLSearchParams({
+                view: 'table',
+                include_delivered: String(this.showDelivered),
+            });
+            const q = this.searchQuery.trim().replace(/^@+/, '').toLowerCase();
+            if (q) params.set('q', q);
+            return '/admin/orders?' + params.toString();
+        },
+
+        loadTable() {
+            htmx.ajax('GET', this.tableUrl(), {
+                target: '#orders-table-container',
+                swap: 'innerHTML',
+            });
+        },
+
+        setView(nextView) {
+            if (this.view === nextView) return;
+            this.view = nextView;
+            this.igOpen = false;
+            const url = nextView === 'production'
+                ? '/admin/orders?view=production'
+                : this.tableUrl();
+            htmx.ajax('GET', url, { target: '#orders-table-container', swap: 'innerHTML' });
+        },
+
+        toggleDelivered() {
+            this.showDelivered = !this.showDelivered;
+            this.loadTable();
+        },
+
+        toggleSearch() {
+            if (this.searchOpen && !this.searchQuery) {
+                this.searchOpen = false;
+                this.igOpen = false;
+                return;
+            }
+            this.searchOpen = true;
+            this.$nextTick(() => {
+                if (this.$refs.searchInput) this.$refs.searchInput.focus();
+            });
+        },
+
+        onSearchFocus() {
+            this.igOpen = true;
+            this.fetchSuggestions(this.searchQuery.trim());
+        },
+
+        onSearchInput() {
+            this.searchQuery = this.searchQuery.replace(/@/g, '').toLowerCase();
+            this.igOpen = true;
+            this.igActiveIndex = -1;
+            const q = this.searchQuery.trim();
+            clearTimeout(this.searchTimer);
+            this.searchTimer = setTimeout(() => {
+                this.fetchSuggestions(q);
+                this.loadTable();
+            }, 180);
+        },
+
+        async fetchSuggestions(q) {
+            if (this.igCache.has(q)) {
+                this.igSuggestions = this.igCache.get(q);
+                this.igActiveIndex = -1;
+                return;
+            }
+            if (this.igAbortController) {
+                this.igAbortController.abort();
+            }
+            const controller = new AbortController();
+            this.igAbortController = controller;
+            try {
+                const res = await fetch('/admin/orders/instagram-suggestions?q=' + encodeURIComponent(q), {
+                    signal: controller.signal,
+                    headers: { Accept: 'application/json' },
+                });
+                if (!res.ok) return;
+                const data = await res.json();
+                this.igCache.set(q, data);
+                this.igSuggestions = data;
+                this.igActiveIndex = -1;
+            } catch (err) {
+                if (err && err.name !== 'AbortError') {
+                    this.igSuggestions = [];
+                }
+            }
+        },
+
+        moveIgHighlight(delta) {
+            if (!this.igOpen || this.igSuggestions.length === 0) return;
+            const len = this.igSuggestions.length;
+            if (this.igActiveIndex === -1) {
+                this.igActiveIndex = delta > 0 ? 0 : len - 1;
+            } else {
+                this.igActiveIndex = (this.igActiveIndex + delta + len) % len;
+            }
+        },
+
+        onSearchEnter() {
+            if (this.igOpen && this.igActiveIndex >= 0 && this.igSuggestions[this.igActiveIndex]) {
+                this.selectSuggestion(this.igSuggestions[this.igActiveIndex].handle);
+            } else {
+                this.igOpen = false;
+                clearTimeout(this.searchTimer);
+                this.loadTable();
+            }
+        },
+
+        selectSuggestion(handle) {
+            this.searchQuery = handle;
+            this.igOpen = false;
+            this.igActiveIndex = -1;
+            clearTimeout(this.searchTimer);
+            this.loadTable();
+        },
+
+        closeSearch() {
+            const hadQuery = this.searchQuery.length > 0;
+            this.searchQuery = '';
+            this.searchOpen = false;
+            this.igOpen = false;
+            this.igActiveIndex = -1;
+            clearTimeout(this.searchTimer);
+            if (hadQuery) this.loadTable();
+        },
+    }));
+});
+</script>
 {% endblock %}

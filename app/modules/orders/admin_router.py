@@ -25,7 +25,10 @@ from app.core.security import require_admin
 from app.core.templates import templates
 from app.modules.orders.cart import CartError, parse_cart_items
 from app.modules.orders.domain import DeliveryMethod, OrderStatus
-from app.modules.orders.schemas import OrderUpdateRequest
+from app.modules.orders.schemas import (
+    InstagramSuggestionResponse,
+    OrderUpdateRequest,
+)
 from app.modules.orders.service import OrderService
 from app.modules.products.service import ProductService
 from app.modules.scheduling.domain import AvailableSlotOption
@@ -46,6 +49,7 @@ def admin_dashboard(
     page: int = Query(1, ge=1),
     sort_by: str | None = Query(None),
     sort_dir: str = Query("desc"),
+    q: str = Query("", max_length=100),
     service: OrderService = Depends(get_order_service),
 ) -> HTMLResponse:
     if view not in ("table", "production"):
@@ -54,6 +58,7 @@ def admin_dashboard(
         sort_by = "id"
     if sort_dir not in ("asc", "desc"):
         sort_dir = "desc"
+    cleaned_q = q.strip().lstrip("@").lower()
 
     if view == "production":
         schedule = service.get_production_schedule()
@@ -61,6 +66,7 @@ def admin_dashboard(
             "view": "production",
             "schedule": schedule,
             "include_delivered": include_delivered,
+            "search_query": cleaned_q,
         }
         if "hx-request" in request.headers:
             return templates.TemplateResponse(
@@ -74,16 +80,21 @@ def admin_dashboard(
             context=context,
         )
 
-    page_size = 50
+    page_size = 10
+    total = service.count_orders(
+        include_delivered=include_delivered,
+        customer_query=cleaned_q or None,
+    )
+    total_pages = max(1, (total + page_size - 1) // page_size)
+    page = min(page, total_pages)
     orders = service.list_orders(
         include_delivered=include_delivered,
         limit=page_size,
         offset=(page - 1) * page_size,
         sort_by=sort_by,
         sort_dir=sort_dir,
+        customer_query=cleaned_q or None,
     )
-    total = service.count_orders(include_delivered=include_delivered)
-    total_pages = max(1, (total + page_size - 1) // page_size)
 
     context = {
         "view": "table",
@@ -91,6 +102,7 @@ def admin_dashboard(
         "include_delivered": include_delivered,
         "current_sort_by": sort_by,
         "current_sort_dir": sort_dir,
+        "search_query": cleaned_q,
         "page": page,
         "total_pages": total_pages,
     }
@@ -181,6 +193,22 @@ def create_order(
     return redirect("/admin/orders")
 
 
+@router.get(
+    "/instagram-suggestions",
+    response_model=list[InstagramSuggestionResponse],
+)
+def suggest_customer_instagrams(
+    q: str = Query("", max_length=100),
+    limit: int = Query(8, ge=1, le=15),
+    service: OrderService = Depends(get_order_service),
+) -> list[InstagramSuggestionResponse]:
+    suggestions = service.suggest_instagrams(query=q, limit=limit)
+    return [
+        InstagramSuggestionResponse(handle=item.handle, order_count=item.order_count)
+        for item in suggestions
+    ]
+
+
 @router.get("/{order_id}", response_class=HTMLResponse)
 def get_order_detail(
     request: Request,
@@ -232,6 +260,7 @@ def update_order_status(
 
 @router.post("/{order_id}")
 def update_order_details(
+    request: Request,
     order_id: int,
     delivery_date: str = Form(...),
     description: str = Form(""),
@@ -246,18 +275,30 @@ def update_order_details(
     service: OrderService = Depends(get_order_service),
     product_service: ProductService = Depends(get_product_service),
     scheduling_service: SchedulingService = Depends(get_scheduling_service),
-) -> RedirectResponse:
-    try:
-        dt = datetime.fromisoformat(delivery_date)
-    except ValueError:
+) -> Response:
+    is_htmx = "hx-request" in request.headers
+
+    def _error(message: str) -> Response:
+        if is_htmx:
+            return error_toast(message)
         return RedirectResponse(
-            url=f"/admin/orders/{order_id}?error={quote('La fecha de entrega no es válida.')}",
+            url=f"/admin/orders/{order_id}?error={quote(message)}",
             status_code=303,
         )
 
+    def _done() -> Response:
+        if is_htmx:
+            return redirect("/admin/orders")
+        return RedirectResponse(url="/admin/orders", status_code=303)
+
+    try:
+        dt = datetime.fromisoformat(delivery_date)
+    except ValueError:
+        return _error("La fecha de entrega no es válida.")
+
     order = service.get_order(order_id)
     if not order:
-        return RedirectResponse(url="/admin/orders", status_code=303)
+        return _done()
 
     if cart_items_json:
         stored_prices = {item.product_id: item.unit_price for item in order.items}
@@ -266,13 +307,10 @@ def update_order_details(
                 cart_items_json, product_service, stored_prices=stored_prices
             )
         except CartError as exc:
-            return RedirectResponse(
-                url=f"/admin/orders/{order_id}?error={quote(exc.message)}",
-                status_code=303,
-            )
+            return _error(exc.message)
         order = service.update_order_items(order_id, parsed.items, parsed.total_amount)
         if order is None:
-            return RedirectResponse(url="/admin/orders", status_code=303)
+            return _done()
 
     old_slot_id = order.availability_slot_id
     created_slot = False
@@ -299,14 +337,12 @@ def update_order_details(
     except ValueError as exc:
         if created_slot and availability_slot_id is not None:
             scheduling_service.remove_slot(availability_slot_id)
-        return RedirectResponse(
-            url=f"/admin/orders/{order_id}?error={quote(str(exc))}", status_code=303
-        )
+        return _error(str(exc))
 
     if old_slot_id is not None and old_slot_id != availability_slot_id:
         scheduling_service.remove_slot(old_slot_id)
 
-    return RedirectResponse(url="/admin/orders", status_code=303)
+    return _done()
 
 
 @router.post("/{order_id}/delete")

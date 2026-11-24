@@ -1,8 +1,8 @@
 {% from "components/feedback/confirm_modal.html" import render_confirm_modal %}
 {% from "components/ui/icons.html" import render_icon %}
 
-{%- macro sort_url(col, cur_sort_by, cur_sort_dir, include_delivered) -%}
-/admin/orders?sort_by={{ col }}&sort_dir={{ 'asc' if (cur_sort_by == col and cur_sort_dir == 'desc') else 'desc' }}{% if include_delivered %}&include_delivered=true{% endif %}
+{%- macro sort_url(col, cur_sort_by, cur_sort_dir, include_delivered, search_query='') -%}
+/admin/orders?sort_by={{ col }}&sort_dir={{ 'asc' if (cur_sort_by == col and cur_sort_dir == 'desc') else 'desc' }}{% if include_delivered %}&include_delivered=true{% endif %}{% if search_query %}&q={{ search_query | urlencode }}{% endif %}
 {%- endmacro -%}
 
 {%- macro sort_icon(col, cur_sort_by, cur_sort_dir) -%}
@@ -27,7 +27,7 @@
             <tr>
                 <th scope="col"
                     class="px-4 py-3.5 text-left text-xs font-semibold text-cookie-brown uppercase tracking-wider">
-                    <a hx-get="{{ sort_url('id', current_sort_by, current_sort_dir, include_delivered) }}" hx-target="#orders-table-container"
+                    <a hx-get="{{ sort_url('id', current_sort_by, current_sort_dir, include_delivered, search_query) }}" hx-target="#orders-table-container"
                         class="group inline-flex items-center gap-1 hover:text-cookie-golden cursor-pointer select-none">
                         ID
                         {{ sort_icon('id', current_sort_by, current_sort_dir) }}
@@ -35,7 +35,7 @@
                 </th>
                 <th scope="col"
                     class="px-4 py-3.5 text-left text-xs font-semibold text-cookie-brown uppercase tracking-wider">
-                    <a hx-get="{{ sort_url('date', current_sort_by, current_sort_dir, include_delivered) }}" hx-target="#orders-table-container"
+                    <a hx-get="{{ sort_url('date', current_sort_by, current_sort_dir, include_delivered, search_query) }}" hx-target="#orders-table-container"
                         class="group inline-flex items-center gap-1 hover:text-cookie-golden cursor-pointer select-none">
                         Fecha
                         {{ sort_icon('date', current_sort_by, current_sort_dir) }}
@@ -43,13 +43,24 @@
                 </th>
                 <th scope="col"
                     class="px-4 py-3.5 text-left text-xs font-semibold text-cookie-brown uppercase tracking-wider">
-                    IG</th>
+                    <button type="button" @click="toggleSearch()"
+                        class="group inline-flex items-center gap-1.5 hover:text-cookie-golden cursor-pointer select-none uppercase"
+                        title="Buscar por Instagram" aria-label="Buscar por Instagram">
+                        IG
+                        <svg class="w-3.5 h-3.5 shrink-0 transition-colors"
+                            :class="(searchOpen || searchQuery.length > 0) ? 'text-cookie-golden' : 'text-cookie-brown/40 group-hover:text-cookie-golden'"
+                            fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M21 21l-4.35-4.35m1.85-5.15a7 7 0 11-14 0 7 7 0 0114 0z" />
+                        </svg>
+                    </button>
+                </th>
                 <th scope="col"
                     class="px-4 py-3.5 text-left text-xs font-semibold text-cookie-brown uppercase tracking-wider">
                     Estado</th>
                 <th scope="col"
                     class="px-4 py-3.5 text-left text-xs font-semibold text-cookie-brown uppercase tracking-wider">
-                    Carrito</th>
+                    Productos</th>
                 <th scope="col"
                     class="px-4 py-3.5 text-left text-xs font-semibold text-cookie-brown uppercase tracking-wider">
                     Método</th>
@@ -97,8 +108,7 @@
                 <td class="px-4 py-4 whitespace-nowrap text-center text-sm font-medium">
                     <div class="flex items-center justify-center gap-2">
                         <a href="/admin/orders/{{ order.id }}"
-                            class="text-cookie-golden hover:text-cookie-brown bg-cookie-cream px-4 py-2 rounded-full border border-cookie-pink/40 hover:border-cookie-golden transition-all inline-block">Ver
-                            / Editar</a>
+                            class="text-cookie-golden hover:text-cookie-brown bg-cookie-cream px-4 py-2 rounded-full border border-cookie-pink/40 hover:border-cookie-golden transition-all inline-block">Editar</a>
 
                         <form action="/admin/orders/{{ order.id }}/delete" method="POST" x-data="{ showConfirm: false }"
                             @submit.prevent="if(showConfirm) { $el.submit() } else { showConfirm = true }" class="m-0">
@@ -110,7 +120,7 @@
                                 </svg>
                             </button>
 
-                            {{ render_confirm_modal("Eliminar Orden", "¿Estás seguro de eliminar esta orden?") }}
+                            {{ render_confirm_modal("Eliminar orden", "¿Estás seguro de eliminar esta orden?") }}
                         </form>
                     </div>
                 </td>
@@ -138,22 +148,26 @@
 
 {% if total_pages > 1 %}
 <div class="flex items-center justify-between px-6 py-3 border-t border-cookie-pink/20">
-    <span class="text-xs text-cookie-brown/60">Página {{ page }} de {{ total_pages }}</span>
-    <div class="flex items-center gap-2">
+    <button type="button"
         {% if page > 1 %}
-        <a hx-get="/admin/orders?page={{ page - 1 }}&sort_by={{ current_sort_by }}&sort_dir={{ current_sort_dir }}{% if include_delivered %}&include_delivered=true{% endif %}"
-            hx-target="#orders-table-container"
-            class="text-xs px-3 py-1.5 rounded-full border border-cookie-pink/40 text-cookie-brown hover:border-cookie-golden transition-all select-none">
-            Anterior
-        </a>
-        {% endif %}
+        hx-get="/admin/orders?page={{ page - 1 }}&sort_by={{ current_sort_by }}&sort_dir={{ current_sort_dir }}{% if include_delivered %}&include_delivered=true{% endif %}{% if search_query %}&q={{ search_query | urlencode }}{% endif %}"
+        hx-target="#orders-table-container"
+        {% else %}disabled{% endif %}
+        class="cv-calendar-nav" aria-label="Página anterior">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7" />
+        </svg>
+    </button>
+    <span class="text-xs font-medium text-cookie-brown/60">Página {{ page }} de {{ total_pages }}</span>
+    <button type="button"
         {% if page < total_pages %}
-        <a hx-get="/admin/orders?page={{ page + 1 }}&sort_by={{ current_sort_by }}&sort_dir={{ current_sort_dir }}{% if include_delivered %}&include_delivered=true{% endif %}"
-            hx-target="#orders-table-container"
-            class="text-xs px-3 py-1.5 rounded-full border border-cookie-pink/40 text-cookie-brown hover:border-cookie-golden transition-all select-none">
-            Siguiente
-        </a>
-        {% endif %}
-    </div>
+        hx-get="/admin/orders?page={{ page + 1 }}&sort_by={{ current_sort_by }}&sort_dir={{ current_sort_dir }}{% if include_delivered %}&include_delivered=true{% endif %}{% if search_query %}&q={{ search_query | urlencode }}{% endif %}"
+        hx-target="#orders-table-container"
+        {% else %}disabled{% endif %}
+        class="cv-calendar-nav" aria-label="Página siguiente">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7" />
+        </svg>
+    </button>
 </div>
 {% endif %}

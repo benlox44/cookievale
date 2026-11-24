@@ -79,7 +79,7 @@
                     </svg>
                     Tu pedido
                 </h2>
-                {{ render_cart_summary('Tu carrito está vacío.', 'Total a pagar') }}
+                {{ render_cart_summary('Sin productos seleccionados.', 'Total a pagar') }}
             </div>
 
             <!-- Customer Fields -->
@@ -91,8 +91,12 @@
                     </div>
                     <div class="relative">
                         <span class="absolute inset-y-0 left-0 flex items-center pl-4 text-cookie-brown/40 font-medium pointer-events-none">@</span>
-                        <input type="text" name="customer_instagram" placeholder="tu_cuenta" required
-                            oninput="this.value = this.value.replace(/@/g, '').toLowerCase()" class="cv-input pl-8">
+                        <input type="text" name="customer_instagram" placeholder="usuario" required
+                            maxlength="30"
+                            pattern="(?!.*\.\.)[a-z0-9_](?:[a-z0-9_.]{0,28}[a-z0-9_])?"
+                            title="Solo letras, números, puntos y guiones bajos (sin espacios ni puntos al inicio, final o seguidos)."
+                            autocomplete="off" autocapitalize="off" spellcheck="false"
+                            oninput="this.value = this.value.toLowerCase().replace(/[^a-z0-9_.]/g, '').slice(0, 30)" class="cv-input pl-8">
                     </div>
                 </div>
                 <div>
@@ -133,7 +137,7 @@
             <div class="mb-6">
                 <label class="cv-label block mb-1.5">Descripción del diseño <span class="text-cookie-brown/40 font-normal">(Opcional)</span></label>
                 <textarea name="description" rows="3"
-                    placeholder="Ej: Quiero un diseño para un bautizo, colores celeste y blanco..."
+                    placeholder="Ej: Cumpleaños, colores rosa y dorado"
                     class="cv-input resize-none"></textarea>
             </div>
 
@@ -143,7 +147,7 @@
                 @date-selected.window="hasDate = !!$event.detail.date"
                 :disabled="submitting || cart.length === 0 || {{ 'true' if not available_dates else 'false' }} || !hasDate"
                 class="cv-btn w-full py-4 text-base rounded-2xl disabled:opacity-40 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-none">
-                Enviar mi Orden
+                Enviar mi orden
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
                         d="M14 5l7 7m0 0l-7 7m7-7H3" />

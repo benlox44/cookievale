@@ -298,3 +298,58 @@ def test_best_selling_product_id_rules_and_tiebreakers(db: Session) -> None:
     _save(first.id, 1, 1000, OrderStatus.PAID)
     _save(second.id, 2, 2000, OrderStatus.PAID)
     assert order_repo.get_best_selling_product_id() == first.id
+
+
+def test_suggest_instagrams_ranking_aggregation_and_escaping(db: Session) -> None:
+    product = make_product(db)
+    repo = SQLAlchemyOrderRepository(db)
+
+    now = datetime.now(tz=TZ)
+
+    def _create(customer: str, minutes_ago: int) -> None:
+        repo.save(
+            Order(
+                customer_instagram=customer,
+                delivery_date=now + timedelta(days=2),
+                delivery_method=DeliveryMethod.PICKUP,
+                items=[
+                    OrderItem(
+                        product_id=product.id, quantity=1, unit_price=product.price
+                    )
+                ],
+                total_amount=product.price,
+                amount_paid=0,
+                created_at=now - timedelta(minutes=minutes_ago),
+            )
+        )
+
+    _create("vale_cookies", minutes_ago=30)
+    _create("vale_cookies", minutes_ago=5)
+    _create("cookie_vale", minutes_ago=1)
+    _create("maria_perez", minutes_ago=10)
+    _create("user_100%", minutes_ago=20)
+
+    # Empty query returns unique handles ordered by recency with aggregated counts
+    recent = repo.suggest_instagrams("")
+    assert [s.handle for s in recent] == [
+        "cookie_vale",
+        "vale_cookies",
+        "maria_perez",
+        "user_100%",
+    ]
+    assert recent[1].order_count == 2
+
+    # Prefix matches rank before substring matches (even when substring is newer),
+    # and '@' / uppercase / whitespace are normalized
+    matched = repo.suggest_instagrams("  @VALE ")
+    assert [(s.handle, s.order_count) for s in matched] == [
+        ("vale_cookies", 2),
+        ("cookie_vale", 1),
+    ]
+
+    # SQL LIKE wildcards ('%' and '_') are escaped literally
+    assert [s.handle for s in repo.suggest_instagrams("%")] == ["user_100%"]
+    assert [s.handle for s in repo.suggest_instagrams("_p")] == ["maria_perez"]
+
+    # Limit is respected
+    assert len(repo.suggest_instagrams("", limit=2)) == 2

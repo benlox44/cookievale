@@ -88,7 +88,7 @@ def test_submit_order_success(client, db: Session) -> None:
 
     response = client.post("/orders", data=_payload(product_id, date))
     assert response.status_code == 200
-    assert "¡Orden Enviada con Éxito!" in response.text
+    assert "¡Orden enviada con éxito!" in response.text
 
 
 def test_submit_order_without_description_or_photos_succeeds(
@@ -101,7 +101,7 @@ def test_submit_order_without_description_or_photos_succeeds(
 
     response = client.post("/orders", data=payload)
     assert response.status_code == 200
-    assert "¡Orden Enviada con Éxito!" in response.text
+    assert "¡Orden enviada con éxito!" in response.text
 
 
 def _toast_message(response) -> str:
@@ -153,3 +153,38 @@ def test_submit_order_with_empty_instagram_toast_error(client, db: Session) -> N
     )
     assert response.status_code == 204
     assert "no puede estar vacío" in _toast_message(response)
+
+
+def test_submit_order_rejects_invalid_instagram_handles(client, db: Session) -> None:
+    product_id, _ = _setup(client, db)
+    date = (datetime.now(tz=TZ) + timedelta(days=3)).date().isoformat()
+
+    for bad_handle, expected_substr in [
+        ("con espacio", "inválido"),
+        (".inicio", "inválido"),
+        ("final.", "inválido"),
+        ("doble..punto", "inválido"),
+        ("guion-medio", "inválido"),
+        ("ñandú", "inválido"),
+        ("a" * 31, "30 caracteres"),
+    ]:
+        # Reset rate limiter between attempts
+        from app.core.rate_limit import limiter
+
+        limiter.reset()
+        response = client.post(
+            "/orders", data=_payload(product_id, date, customer_instagram=bad_handle)
+        )
+        assert response.status_code == 204, f"failed for {bad_handle}"
+        assert expected_substr in _toast_message(response).lower()
+
+    # Valid handle with dots, underscores, digits and leading '@' succeeds
+    from app.core.rate_limit import limiter
+
+    limiter.reset()
+    ok = client.post(
+        "/orders",
+        data=_payload(product_id, date, customer_instagram="  @Cookie_Vale.2026 "),
+    )
+    assert ok.status_code == 200
+    assert "¡Orden enviada con éxito!" in ok.text

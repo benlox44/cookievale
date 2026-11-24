@@ -12,6 +12,7 @@ from app.core.uploads import delete_media_files, save_uploads, update_photo_set
 from app.modules.orders.cart import ParsedCart
 from app.modules.orders.domain import (
     DeliveryMethod,
+    InstagramSuggestion,
     Order,
     OrderItem,
     OrderStatus,
@@ -135,6 +136,7 @@ class OrderService:
         offset: int = 0,
         sort_by: str | None = None,
         sort_dir: str = "desc",
+        customer_query: str | None = None,
     ) -> list[Order]:
         return self.repository.list_all(
             include_delivered=include_delivered,
@@ -142,10 +144,15 @@ class OrderService:
             offset=offset,
             sort_by=sort_by,
             sort_dir=sort_dir,
+            customer_query=customer_query,
         )
 
-    def count_orders(self, include_delivered: bool = False) -> int:
-        return self.repository.count(include_delivered)
+    def count_orders(
+        self, include_delivered: bool = False, customer_query: str | None = None
+    ) -> int:
+        return self.repository.count(
+            include_delivered=include_delivered, customer_query=customer_query
+        )
 
     def get_sales_stats(
         self,
@@ -161,6 +168,11 @@ class OrderService:
 
     def get_best_selling_product_id(self) -> int | None:
         return self.repository.get_best_selling_product_id()
+
+    def suggest_instagrams(
+        self, query: str, limit: int = 8
+    ) -> list[InstagramSuggestion]:
+        return self.repository.suggest_instagrams(query=query, limit=limit)
 
     def get_production_schedule(self) -> list[ProductionWeek]:
         orders = self.repository.list_all(

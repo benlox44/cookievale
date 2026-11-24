@@ -1,9 +1,9 @@
 from dataclasses import dataclass, field
 from datetime import date, datetime, timedelta
-from enum import Enum
+from enum import StrEnum
 
 
-class OrderStatus(str, Enum):
+class OrderStatus(StrEnum):
     PENDING = "pending"
     CONFIRMED = "confirmed"
     PAID = "paid"
@@ -38,7 +38,7 @@ def reconcile_payment(
     return status, clamped
 
 
-class DeliveryMethod(str, Enum):
+class DeliveryMethod(StrEnum):
     PICKUP = "pickup"
     DELIVERY = "delivery"
 
@@ -67,6 +67,12 @@ class Order:
     reference_photos: list[str] | None = None
     status: OrderStatus = OrderStatus.PENDING
     created_at: datetime | None = None
+
+
+@dataclass(frozen=True)
+class InstagramSuggestion:
+    handle: str
+    order_count: int
 
 
 @dataclass

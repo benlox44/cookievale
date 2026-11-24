@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session, selectinload
 
 from app.modules.orders.domain import (
     FULLY_PAID_STATUSES,
+    InstagramSuggestion,
     Order,
     OrderItem,
     OrderStatus,
@@ -15,6 +16,10 @@ from app.modules.orders.domain import (
 )
 from app.modules.orders.models import OrderItemModel, OrderModel
 from app.modules.products.models import ProductModel
+
+
+def _escape_like(value: str) -> str:
+    return value.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
 
 
 class OrderRepository(Protocol):
@@ -27,8 +32,11 @@ class OrderRepository(Protocol):
         offset: int = 0,
         sort_by: str | None = None,
         sort_dir: str = "desc",
+        customer_query: str | None = None,
     ) -> list[Order]: ...
-    def count(self, include_delivered: bool = False) -> int: ...
+    def count(
+        self, include_delivered: bool = False, customer_query: str | None = None
+    ) -> int: ...
     def delete(self, order_id: int) -> None: ...
     def get_occupied_slot_ids(self) -> set[int]: ...
     def replace_items(
@@ -45,6 +53,9 @@ class OrderRepository(Protocol):
     ) -> SalesStats: ...
     def get_order_date_bounds(self) -> tuple[date | None, date | None]: ...
     def get_best_selling_product_id(self) -> int | None: ...
+    def suggest_instagrams(
+        self, query: str, limit: int = 8
+    ) -> list[InstagramSuggestion]: ...
 
 
 class SQLAlchemyOrderRepository:
@@ -125,12 +136,21 @@ class SQLAlchemyOrderRepository:
         offset: int = 0,
         sort_by: str | None = None,
         sort_dir: str = "desc",
+        customer_query: str | None = None,
     ) -> list[Order]:
         stmt = select(OrderModel).options(
             selectinload(OrderModel.items).selectinload(OrderItemModel.product)
         )
         if not include_delivered:
             stmt = stmt.where(OrderModel.status != OrderStatus.DELIVERED)
+
+        cleaned_q = (customer_query or "").strip().lstrip("@").lower()
+        if cleaned_q:
+            stmt = stmt.where(
+                OrderModel.customer_instagram.like(
+                    f"%{_escape_like(cleaned_q)}%", escape="\\"
+                )
+            )
 
         if sort_by == "date":
             sort_col = OrderModel.delivery_date
@@ -148,10 +168,19 @@ class SQLAlchemyOrderRepository:
         db_orders = self.db.execute(stmt).scalars().all()
         return [self._to_domain(o) for o in db_orders]
 
-    def count(self, include_delivered: bool = False) -> int:
+    def count(
+        self, include_delivered: bool = False, customer_query: str | None = None
+    ) -> int:
         stmt = select(func.count()).select_from(OrderModel)
         if not include_delivered:
             stmt = stmt.where(OrderModel.status != OrderStatus.DELIVERED)
+        cleaned_q = (customer_query or "").strip().lstrip("@").lower()
+        if cleaned_q:
+            stmt = stmt.where(
+                OrderModel.customer_instagram.like(
+                    f"%{_escape_like(cleaned_q)}%", escape="\\"
+                )
+            )
         return self.db.execute(stmt).scalar_one()
 
     def delete(self, order_id: int) -> None:
@@ -365,6 +394,49 @@ class SQLAlchemyOrderRepository:
         )
         result = self.db.execute(stmt).scalar_one_or_none()
         return int(result) if result is not None else None
+
+    def suggest_instagrams(
+        self, query: str, limit: int = 8
+    ) -> list[InstagramSuggestion]:
+        cleaned = query.strip().lstrip("@").lower()
+        escaped = _escape_like(cleaned)
+
+        last_order_expr = func.max(OrderModel.created_at)
+        count_expr = func.count(OrderModel.id)
+        stmt = select(
+            OrderModel.customer_instagram,
+            count_expr.label("order_count"),
+        ).group_by(OrderModel.customer_instagram)
+
+        if escaped:
+            contains_pattern = f"%{escaped}%"
+            prefix_pattern = f"{escaped}%"
+            stmt = stmt.where(
+                OrderModel.customer_instagram.like(contains_pattern, escape="\\")
+            ).order_by(
+                case(
+                    (
+                        OrderModel.customer_instagram.like(prefix_pattern, escape="\\"),
+                        0,
+                    ),
+                    else_=1,
+                ).asc(),
+                last_order_expr.desc().nullslast(),
+                count_expr.desc(),
+                OrderModel.customer_instagram.asc(),
+            )
+        else:
+            stmt = stmt.order_by(
+                last_order_expr.desc().nullslast(),
+                count_expr.desc(),
+                OrderModel.customer_instagram.asc(),
+            )
+
+        rows = self.db.execute(stmt.limit(limit)).all()
+        return [
+            InstagramSuggestion(handle=str(row[0]), order_count=int(row[1]))
+            for row in rows
+        ]
 
     def _to_domain(self, db_model: OrderModel) -> Order:
         domain_items = []

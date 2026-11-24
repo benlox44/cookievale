@@ -44,6 +44,12 @@ class OrderModel(Base, TimestampMixin):
             availability_slot_id,
             unique=True,
         ),
+        Index(
+            "ix_orders_customer_instagram_trgm",
+            customer_instagram,
+            postgresql_using="gin",
+            postgresql_ops={"customer_instagram": "gin_trgm_ops"},
+        ),
     )
 
 
