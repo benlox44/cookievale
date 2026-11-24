@@ -29,3 +29,11 @@ def test_token_rejected_for_malformed_input() -> None:
     assert not security.verify_admin_token("abc:def")
     assert not security.verify_admin_token("")
     assert not security.verify_admin_token(None)  # type: ignore[arg-type]
+
+
+def test_token_rejected_when_issued_in_future(monkeypatch: pytest.MonkeyPatch) -> None:
+    now = time.time()
+    monkeypatch.setattr(security.time, "time", lambda: now + 300)
+    future_token = security.create_admin_token()
+    monkeypatch.setattr(security.time, "time", lambda: now)
+    assert not security.verify_admin_token(future_token)
