@@ -327,7 +327,6 @@ def test_suggest_instagrams_ranking_aggregation_and_escaping(db: Session) -> Non
     _create("vale_cookies", minutes_ago=5)
     _create("cookie_vale", minutes_ago=1)
     _create("maria_perez", minutes_ago=10)
-    _create("user_100%", minutes_ago=20)
 
     # Empty query returns unique handles ordered by recency with aggregated counts
     recent = repo.suggest_instagrams("")
@@ -335,7 +334,6 @@ def test_suggest_instagrams_ranking_aggregation_and_escaping(db: Session) -> Non
         "cookie_vale",
         "vale_cookies",
         "maria_perez",
-        "user_100%",
     ]
     assert recent[1].order_count == 2
 
@@ -348,8 +346,42 @@ def test_suggest_instagrams_ranking_aggregation_and_escaping(db: Session) -> Non
     ]
 
     # SQL LIKE wildcards ('%' and '_') are escaped literally
-    assert [s.handle for s in repo.suggest_instagrams("%")] == ["user_100%"]
+    assert repo.suggest_instagrams("%") == []
     assert [s.handle for s in repo.suggest_instagrams("_p")] == ["maria_perez"]
 
     # Limit is respected
     assert len(repo.suggest_instagrams("", limit=2)) == 2
+
+
+@pytest.mark.parametrize(
+    "invalid_handle",
+    ["", "papá", "Abc", ".abc", "abc.", "a..b", "user 1", "a" * 31],
+)
+def test_order_customer_instagram_db_constraint_rejects_invalid(
+    db: Session, invalid_handle: str
+) -> None:
+    from sqlalchemy.exc import DataError, IntegrityError
+
+    from app.modules.orders.models import OrderModel
+
+    with pytest.raises((IntegrityError, DataError)):
+        with db.begin_nested():
+            db.add(
+                OrderModel(
+                    customer_instagram=invalid_handle,
+                    delivery_date=datetime.now(tz=TZ) + timedelta(days=2),
+                    delivery_method=DeliveryMethod.PICKUP,
+                    total_amount=1000,
+                    amount_paid=0,
+                )
+            )
+            db.flush()
+
+
+@pytest.mark.parametrize("valid_handle", ["a", "cookie.vale_1", "a" * 30])
+def test_order_customer_instagram_db_constraint_accepts_valid(
+    db: Session, valid_handle: str
+) -> None:
+    product = make_product(db)
+    saved = make_order(db, product, customer=valid_handle)
+    assert saved.customer_instagram == valid_handle

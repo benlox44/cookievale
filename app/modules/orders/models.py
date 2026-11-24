@@ -1,6 +1,14 @@
 from datetime import datetime
 
-from sqlalchemy import ARRAY, DateTime, ForeignKey, Index, Integer, String
+from sqlalchemy import (
+    ARRAY,
+    CheckConstraint,
+    DateTime,
+    ForeignKey,
+    Index,
+    Integer,
+    String,
+)
 from sqlalchemy import Enum as SAEnum
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -13,7 +21,7 @@ class OrderModel(Base, TimestampMixin):
     __tablename__ = "orders"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
-    customer_instagram: Mapped[str] = mapped_column(String, nullable=False)
+    customer_instagram: Mapped[str] = mapped_column(String(30), nullable=False)
     delivery_date: Mapped[datetime] = mapped_column(DateTime, nullable=False)
     availability_slot_id: Mapped[int | None] = mapped_column(
         ForeignKey("availability_slots.id", ondelete="SET NULL"), nullable=True
@@ -49,6 +57,11 @@ class OrderModel(Base, TimestampMixin):
             customer_instagram,
             postgresql_using="gin",
             postgresql_ops={"customer_instagram": "gin_trgm_ops"},
+        ),
+        CheckConstraint(
+            "customer_instagram ~ '^[a-z0-9_]([a-z0-9_.]{0,28}[a-z0-9_])?$' "
+            "AND customer_instagram NOT LIKE '%..%'",
+            name="ck_orders_customer_instagram_format",
         ),
     )
 
